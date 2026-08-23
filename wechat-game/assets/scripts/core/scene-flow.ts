@@ -73,4 +73,3 @@ export function toggleSound(state: SceneFlowState): SceneFlowState {
 export function toggleSettings(state: SceneFlowState): SceneFlowState {
   return { ...state, settingsOpen: !state.settingsOpen };
 }
-

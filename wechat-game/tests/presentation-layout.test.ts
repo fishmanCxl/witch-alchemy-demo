@@ -10,10 +10,34 @@ import {
   bottlePlacement,
   buttonBaseLayout,
   buttonSpritePath,
+  levelButtonVisual,
   levelSelectButton,
   shouldRenderBottle,
   squareBottomFit,
 } from '../assets/scripts/presentation/presentation-layout.ts';
+
+test('selector maps completed, current, unlocked, and locked states to approved artwork', () => {
+  assert.deepEqual(levelButtonVisual('completed'), {
+    variant: 'gold',
+    disabled: false,
+    highlighted: false,
+  });
+  assert.deepEqual(levelButtonVisual('current'), {
+    variant: 'gold',
+    disabled: false,
+    highlighted: true,
+  });
+  assert.deepEqual(levelButtonVisual('unlocked'), {
+    variant: 'purple',
+    disabled: false,
+    highlighted: false,
+  });
+  assert.deepEqual(levelButtonVisual('locked'), {
+    variant: 'purple',
+    disabled: true,
+    highlighted: false,
+  });
+});
 
 test('level selector fits fifteen square buttons inside the 393 by 852 safe frame', () => {
   const cells = Array.from({ length: 15 }, (_, index) => levelSelectButton(index));
@@ -34,6 +58,7 @@ test('home layout preserves the accepted prototype hierarchy without a progress 
   assert.deepEqual(HOME_LAYOUT.witch, { x: 0, y: 51, width: 246, height: 304 });
   assert.deepEqual(HOME_LAYOUT.continueButton, { x: 0, y: -348, width: 286, height: 72 });
   assert.equal(HOME_LAYOUT.showsProgressCard, false);
+  assert.deepEqual(HOME_LAYOUT.selectButton, { x: 0, y: -266, width: 224, height: 56 });
 });
 
 test('level layout keeps the witch, board, message, and controls in the accepted 393 by 852 frame', () => {

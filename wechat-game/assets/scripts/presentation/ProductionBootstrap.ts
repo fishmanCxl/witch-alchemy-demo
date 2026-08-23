@@ -7,9 +7,14 @@ import {
   completePendingBottles, createGameSession, finishWitchReturn, grantRewardBottle, pressBottle, restartSession,
   settleWitch, undoSession, type GameSession, type SessionResult, type WitchMood,
 } from '../core/game-session.ts';
-import { DEMO_LEVEL_CONFIG } from '../core/level-config.ts';
+import { FIRST_CHAPTER_LEVELS, getLevelConfig, nextLevelConfig } from '../core/level-catalog.ts';
+import type { LevelConfig } from '../core/level-config.ts';
 import {
-  createSceneFlow, enterSelectedLevel, returnHome, toggleSettings, toggleSound, type SceneFlowState,
+  completeLevel, createDefaultProgress, isLevelUnlocked, selectCurrentLevel, type PlayerProgress,
+} from '../core/level-progress.ts';
+import {
+  createSceneFlow, enterSelectedLevel, openLevelSelect, returnHome, showLevelComplete,
+  toggleSettings, toggleSound, type SceneFlowState,
 } from '../core/scene-flow.ts';
 import type { PotionColor } from '../core/types.ts';
 import { LocalProgressStore } from '../platform/LocalProgressStore.ts';
@@ -18,8 +23,9 @@ import { RewardedBottleCoordinator, type RewardFlowStatus } from '../platform/re
 import { createPlatformStorage } from '../platform/storage-port.ts';
 import { AudioDirector } from './AudioDirector.ts';
 import {
-  HOME_LAYOUT, LEVEL_LAYOUT, SETTINGS_LAYOUT, bottlePlacement, buttonBaseLayout, buttonSpritePath,
-  shouldRenderBottle, type ButtonBaseLayout, type ButtonVariant,
+  HOME_LAYOUT, LEVEL_COMPLETE_LAYOUT, LEVEL_LAYOUT, LEVEL_SELECT_LAYOUT, SETTINGS_LAYOUT,
+  bottlePlacement, buttonBaseLayout, buttonSpritePath, levelButtonVisual, levelSelectButton,
+  shouldRenderBottle, type ButtonBaseLayout, type ButtonVariant, type LevelButtonState,
 } from './presentation-layout.ts';
 import { WitchAnimator } from './WitchAnimator.ts';
 
@@ -38,7 +44,9 @@ function color(hex: string, alpha = 255): Color {
 @ccclass('ProductionBootstrap')
 export class ProductionBootstrap extends Component {
   private flow: SceneFlowState = createSceneFlow();
-  private session: GameSession = createGameSession(DEMO_LEVEL_CONFIG);
+  private progress: PlayerProgress = createDefaultProgress();
+  private currentLevel: LevelConfig = FIRST_CHAPTER_LEVELS[0];
+  private session: GameSession = createGameSession(this.currentLevel);
   private surface: Node | null = null;
   private renderToken = 0;
   private audio: AudioDirector | null = null;
@@ -50,11 +58,18 @@ export class ProductionBootstrap extends Component {
   private readonly platform = new PlatformRuntime();
   private rewarded: RewardedBottleCoordinator | null = null;
   private rewardBusy = false;
+  private completionSaveFailed = false;
 
   start(): void {
     view.setDesignResolutionSize(393, 852, ResolutionPolicy.FIXED_WIDTH);
-    this.session = this.store.loadSession(DEMO_LEVEL_CONFIG);
-    this.flow = { ...this.flow, soundEnabled: this.store.loadSoundEnabled() };
+    this.progress = this.store.migrateLegacyLevel12();
+    this.currentLevel = getLevelConfig(this.progress.currentLevel) ?? FIRST_CHAPTER_LEVELS[0];
+    this.session = this.store.loadSession(this.currentLevel);
+    this.flow = {
+      ...this.flow,
+      selectedLevelId: this.currentLevel.id,
+      soundEnabled: this.store.loadSoundEnabled(),
+    };
     this.audio = this.node.getComponent(AudioDirector) ?? this.node.addComponent(AudioDirector);
     this.audio.initialize(this.flow.soundEnabled);
     const rewardPorts = this.platform.createRewardedPorts(REWARDED_AD_UNIT_ID);
@@ -77,6 +92,8 @@ export class ProductionBootstrap extends Component {
     this.surface = new Node('ProductionSurface');
     this.node.addChild(this.surface);
     if (this.flow.scene === 'home') this.renderHome(this.surface, this.renderToken);
+    else if (this.flow.scene === 'levelSelect') this.renderLevelSelect(this.surface, this.renderToken);
+    else if (this.flow.scene === 'levelComplete') this.renderLevelComplete(this.surface, this.renderToken);
     else this.renderLevel(this.surface, this.renderToken);
     this.renderSettingsButton(this.surface, this.renderToken);
     if (this.flow.settingsOpen) this.renderSettings(this.surface, this.renderToken);
@@ -87,16 +104,142 @@ export class ProductionBootstrap extends Component {
     this.addPanel(root, 393, 852, 0, 0, color('#170D29', 34));
     const completed = this.session.game.bottles.filter((bottle) => bottle.status === 'vanished').length;
     this.addLabel(root, '暮影炼金室', 12, HOME_LAYOUT.header.x, 350, color('#DDBED2'), HOME_LAYOUT.header.width, Label.HorizontalAlign.LEFT);
-    this.addLabel(root, '第 12 关', 34, HOME_LAYOUT.header.x, 316, color('#FFF4DF'), HOME_LAYOUT.header.width, Label.HorizontalAlign.LEFT);
+    this.addLabel(root, `第 ${this.currentLevel.number} 关`, 34, HOME_LAYOUT.header.x, 316,
+      color('#FFF4DF'), HOME_LAYOUT.header.width, Label.HorizontalAlign.LEFT);
     this.addPanel(root, 82, 28, -133, 278, color('#23102B', 194), color('#D6AFC3', 76), 14);
-    this.addLabel(root, `魔药 ${completed}/8`, 12, -133, 278, color('#F3DFCF'), 78);
+    this.addLabel(root, `目标 ${completed}/${this.targetPotionCount(this.currentLevel)}`, 12,
+      -133, 278, color('#F3DFCF'), 78);
     this.addWitch(root, 'idle', HOME_LAYOUT.witch.x, HOME_LAYOUT.witch.y, HOME_LAYOUT.witch.width, HOME_LAYOUT.witch.height);
-    this.addRasterButton(root, '继续炼金 · 第 12 关', 'purple', HOME_LAYOUT.continueButton.width,
+    this.addRasterButton(root, '选择关卡', 'gold', HOME_LAYOUT.selectButton.width,
+      HOME_LAYOUT.selectButton.height, HOME_LAYOUT.selectButton.x, HOME_LAYOUT.selectButton.y, () => {
+        this.resumeAudio();
+        this.store.saveSession(this.session);
+        this.flow = openLevelSelect(this.flow);
+        this.render();
+      }, false, undefined, 16);
+    this.addRasterButton(root, `继续炼金 · 第 ${this.currentLevel.number} 关`, 'purple', HOME_LAYOUT.continueButton.width,
       HOME_LAYOUT.continueButton.height, HOME_LAYOUT.continueButton.x, HOME_LAYOUT.continueButton.y, () => {
       this.resumeAudio();
-      this.flow = enterSelectedLevel(this.flow, this.session.levelId, true);
-      this.render();
+      this.switchLevel(this.progress.currentLevel);
     }, false, undefined, 18);
+  }
+
+  private renderLevelSelect(root: Node, token: number): void {
+    this.addSprite(root, 'game/chibi/background/alchemy-room/spriteFrame', 393, 852, 0, 0, token);
+    this.addPanel(root, 393, 852, 0, 0, color('#130A20', 96));
+    this.addLabel(root, '第一章 · 选择关卡', 28, LEVEL_SELECT_LAYOUT.header.x,
+      LEVEL_SELECT_LAYOUT.header.y, color('#FFF4DF'), LEVEL_SELECT_LAYOUT.header.width);
+
+    FIRST_CHAPTER_LEVELS.forEach((level, index) => {
+      const state = this.levelButtonState(level);
+      const visual = levelButtonVisual(state);
+      const layout = levelSelectButton(index);
+      this.addLevelSelectButton(root, level, layout, state, visual, token);
+    });
+
+    this.addRasterButton(root, '返回主页', 'purple', LEVEL_SELECT_LAYOUT.backButton.width,
+      LEVEL_SELECT_LAYOUT.backButton.height, LEVEL_SELECT_LAYOUT.backButton.x,
+      LEVEL_SELECT_LAYOUT.backButton.y, () => this.returnToHome(), false, 'icon-settings-home', 16);
+  }
+
+  private renderLevelComplete(root: Node, token: number): void {
+    const next = nextLevelConfig(this.session.levelId);
+    const best = this.progress.bestMoves[this.session.levelId] ?? this.session.game.moves;
+    this.addSprite(root, 'game/chibi/background/alchemy-room/spriteFrame', 393, 852, 0, 0, token);
+    this.addPanel(root, 393, 852, 0, 0, color('#0C0614', 166));
+    this.addSprite(root, 'game/chibi/ui/settings-dialog-panel/spriteFrame',
+      LEVEL_COMPLETE_LAYOUT.panel.width, LEVEL_COMPLETE_LAYOUT.panel.height,
+      LEVEL_COMPLETE_LAYOUT.panel.x, LEVEL_COMPLETE_LAYOUT.panel.y, token);
+    this.addLabel(root, next ? '炼金完成！' : '第一章完成！', 30,
+      LEVEL_COMPLETE_LAYOUT.title.x, LEVEL_COMPLETE_LAYOUT.title.y,
+      color('#FFF2CF'), LEVEL_COMPLETE_LAYOUT.title.width);
+    this.addLabel(root, `本局 ${this.session.game.moves} 步 · 最佳 ${best} 步`, 15,
+      LEVEL_COMPLETE_LAYOUT.stats.x, LEVEL_COMPLETE_LAYOUT.stats.y,
+      color('#EFD9C9'), LEVEL_COMPLETE_LAYOUT.stats.width);
+
+    this.addRasterButton(root, next ? `下一关 · 第 ${next.number} 关` : '返回选关', 'gold',
+      LEVEL_COMPLETE_LAYOUT.primaryButton.width, LEVEL_COMPLETE_LAYOUT.primaryButton.height,
+      LEVEL_COMPLETE_LAYOUT.primaryButton.x, LEVEL_COMPLETE_LAYOUT.primaryButton.y, () => {
+        if (next) this.switchLevel(next.id);
+        else this.openSelector();
+      }, false, undefined, 17);
+    this.addRasterButton(root, next ? '选择关卡' : '返回主页', 'purple',
+      LEVEL_COMPLETE_LAYOUT.secondaryButton.width, LEVEL_COMPLETE_LAYOUT.secondaryButton.height,
+      LEVEL_COMPLETE_LAYOUT.secondaryButton.x, LEVEL_COMPLETE_LAYOUT.secondaryButton.y, () => {
+        if (next) this.openSelector();
+        else this.returnToHome();
+      }, false, undefined, 16);
+  }
+
+  private levelButtonState(level: LevelConfig): LevelButtonState {
+    if (level.id === this.progress.currentLevel) return 'current';
+    if (this.progress.completedLevels.includes(level.id)) return 'completed';
+    return isLevelUnlocked(this.progress, level.id) ? 'unlocked' : 'locked';
+  }
+
+  private addLevelSelectButton(
+    root: Node,
+    level: LevelConfig,
+    layout: Readonly<{ x: number; y: number; width: number; height: number }>,
+    state: LevelButtonState,
+    visual: ReturnType<typeof levelButtonVisual>,
+    token: number,
+  ): void {
+    const node = new Node(`Level-${level.number}`);
+    node.setPosition(layout.x, layout.y);
+    node.addComponent(UITransform).setContentSize(layout.width, layout.height);
+    root.addChild(node);
+    this.decorateRasterButton(node, visual.variant, visual.disabled,
+      () => this.switchLevel(level.id), buttonBaseLayout(layout, 'contain'));
+    if (visual.highlighted) {
+      this.addPanel(node, layout.width + 8, layout.height + 8, 0, 0,
+        color('#8A4BC4', 8), color('#FFF0A8'), 18);
+    }
+    this.addLabel(node, String(level.number), 18, 0, state === 'completed' ? 4 : 0,
+      color(visual.disabled ? '#937D9E' : '#FFF8DF'), layout.width);
+    if (state === 'completed') this.addLabel(node, '✓', 11, 15, -16, color('#FFF0A8'), 20);
+    if (state === 'locked') this.addLabel(node, '·', 14, 0, -17, color('#8D7998'), 20);
+    void token;
+  }
+
+  private targetPotionCount(level: LevelConfig): number {
+    return level.completionRule.type === 'all-colors' ? level.completionRule.targetCount : 1;
+  }
+
+  private openSelector(): void {
+    this.store.saveSession(this.session);
+    this.flow = openLevelSelect(this.flow);
+    this.render();
+  }
+
+  private returnToHome(): void {
+    this.store.saveSession(this.session);
+    const current = getLevelConfig(this.progress.currentLevel) ?? FIRST_CHAPTER_LEVELS[0];
+    if (current.id !== this.currentLevel.id) {
+      this.currentLevel = current;
+      this.session = this.store.loadSession(current);
+    }
+    this.flow = returnHome(this.flow);
+    this.render();
+  }
+
+  private switchLevel(levelId: string): void {
+    const level = getLevelConfig(levelId);
+    if (!level || !isLevelUnlocked(this.progress, levelId)) return;
+    this.store.saveSession(this.session);
+    const selected = selectCurrentLevel(this.progress, levelId);
+    if (!selected) return;
+    if (selected !== this.progress) this.store.saveProgress(selected);
+    this.progress = selected;
+    this.currentLevel = level;
+    this.session = this.store.loadSession(level);
+    this.flow = enterSelectedLevel(this.flow, levelId, true);
+    this.unscheduleAllCallbacks();
+    this.completionScheduled = false;
+    this.completionSaveFailed = false;
+    this.invalid.clear();
+    this.pouring.clear();
+    this.render();
   }
 
   private renderLevel(root: Node, token: number): void {
@@ -104,24 +247,34 @@ export class ProductionBootstrap extends Component {
     this.addPanel(root, 393, 852, 0, 0, color('#130A20', 16));
     const completed = this.session.game.bottles.filter((bottle) => bottle.status === 'vanished').length;
     this.addLabel(root, '暮影炼金室', 11, -86, 350, color('#DCBACB'), 176, Label.HorizontalAlign.LEFT);
-    this.addLabel(root, '第 12 关', 30, -86, 318, color('#FFF4DF'), 176, Label.HorizontalAlign.LEFT);
+    this.addLabel(root, `第 ${this.currentLevel.number} 关`, 30, -86, 318,
+      color('#FFF4DF'), 176, Label.HorizontalAlign.LEFT);
     this.addPanel(root, 54, 24, -147, 280, color('#221023', 184), color('#DEB5A1', 70), 12);
     this.addLabel(root, `步数 ${this.session.game.moves}`, 11, -147, 280, color('#EFD9C9'), 52);
     this.addPanel(root, 66, 24, -80, 280, color('#221023', 184), color('#DEB5A1', 70), 12);
-    this.addLabel(root, `魔药 ${completed}/8`, 11, -80, 280, color('#EFD9C9'), 64);
+    this.addLabel(root, `目标 ${completed}/${this.targetPotionCount(this.currentLevel)}`, 11,
+      -80, 280, color('#EFD9C9'), 64);
     this.addWitch(root, this.session.witchMood, LEVEL_LAYOUT.witch.x, LEVEL_LAYOUT.witch.y,
       LEVEL_LAYOUT.witch.width, LEVEL_LAYOUT.witch.height);
 
     this.session.game.bottles.forEach((bottle, index) => {
       if (!shouldRenderBottle(bottle.status)) return;
-      const placement = bottlePlacement(12, index);
+      const placement = bottlePlacement(this.currentLevel.presentationSeed, index);
       this.addBottle(root, index, placement.x, placement.y, placement.angle, token);
     });
     this.addMessage(root, this.session.message, token);
-    this.addControlButton(root, '撤销', 'icon-undo', LEVEL_LAYOUT.controlCenters[0], () => this.handleUndo(), this.session.history.length === 0);
-    this.addControlButton(root, '重开', 'icon-restart', LEVEL_LAYOUT.controlCenters[1], () => this.handleRestart());
-    this.addControlButton(root, this.session.game.rewardBottleUsed ? '已加瓶' : '加空瓶', 'icon-add-bottle', LEVEL_LAYOUT.controlCenters[2], () => { void this.handleRewardedBottle(); },
-      this.session.game.rewardBottleUsed || this.rewardBusy);
+    if (this.completionSaveFailed) {
+      this.addRasterButton(root, '重试保存', 'gold', 224, 72, 0, LEVEL_LAYOUT.controlY,
+        () => this.persistCompletion(), false, undefined, 16);
+    } else {
+      this.addControlButton(root, '撤销', 'icon-undo', LEVEL_LAYOUT.controlCenters[0], () => this.handleUndo(),
+        this.session.levelComplete || this.session.history.length === 0);
+      this.addControlButton(root, '重开', 'icon-restart', LEVEL_LAYOUT.controlCenters[1], () => this.handleRestart(),
+        this.session.levelComplete);
+      this.addControlButton(root, this.session.game.rewardBottleUsed ? '已加瓶' : '加空瓶', 'icon-add-bottle',
+        LEVEL_LAYOUT.controlCenters[2], () => { void this.handleRewardedBottle(); },
+        this.session.levelComplete || this.session.game.rewardBottleUsed || this.rewardBusy);
+    }
   }
 
   private addWitch(root: Node, mood: WitchMood, x: number, y: number, width: number, height: number): void {
@@ -214,12 +367,12 @@ export class ProductionBootstrap extends Component {
 
   private async handleRewardedBottle(): Promise<void> {
     this.resumeAudio();
-    if (!this.rewarded || this.rewardBusy || this.session.game.rewardBottleUsed) return;
+    if (!this.rewarded || this.rewardBusy || this.session.levelComplete || this.session.game.rewardBottleUsed) return;
     this.rewardBusy = true;
     this.session = { ...this.session, message: '正在准备激励广告…', witchMood: 'idle' };
     this.render();
-    const claimId = `level-012-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
-    const result = await this.rewarded.run('level-012', claimId, this.platform.isOnline());
+    const claimId = `${this.session.levelId}-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
+    const result = await this.rewarded.run(this.session.levelId, claimId, this.platform.isOnline());
     this.rewardBusy = false;
     if (result.activateBottle) {
       this.applySessionResult(grantRewardBottle(this.session));
@@ -243,19 +396,58 @@ export class ProductionBootstrap extends Component {
     this.invalid = new Set(result.invalid);
     this.pouring = new Set(result.pouring);
     this.audio?.play(result.cue);
-    if (this.session.pendingCompletion.length === 0) this.store.saveSession(this.session);
+    if (this.session.pendingCompletion.length === 0 && !this.session.levelComplete) {
+      this.store.saveSession(this.session);
+    }
     this.render();
     if (this.invalid.size > 0) this.scheduleOnce(() => { this.invalid.clear(); this.refreshBottleHighlights(); }, 0.52);
     if (this.pouring.size > 0) this.scheduleOnce(() => { this.pouring.clear(); this.refreshBottleHighlights(); }, 0.52);
+    if (this.session.levelComplete && this.session.pendingCompletion.length === 0 && !this.completionScheduled) {
+      this.completionScheduled = true;
+      this.scheduleOnce(() => {
+        this.completionScheduled = false;
+        this.persistCompletion();
+      }, 0.65);
+    }
     if (this.session.pendingCompletion.length > 0 && !this.completionScheduled) {
       this.completionScheduled = true;
       this.scheduleOnce(() => this.audio?.play('potion-vanish'), 0.3);
       this.scheduleOnce(() => {
         this.session = completePendingBottles(this.session);
         this.completionScheduled = false;
-        this.store.saveSession(this.session);
-        this.render();
+        if (this.session.levelComplete) this.persistCompletion();
+        else {
+          this.store.saveSession(this.session);
+          this.render();
+        }
       }, 1.08);
+    }
+  }
+
+  private persistCompletion(): void {
+    const nextProgress = completeLevel(
+      this.progress,
+      this.session.levelId,
+      this.session.game.moves,
+    );
+    if (!nextProgress) {
+      this.completionSaveFailed = true;
+      this.session = { ...this.session, message: '进度保存失败，请重试', witchMood: 'oops' };
+      this.render();
+      return;
+    }
+
+    try {
+      this.store.saveProgress(nextProgress);
+      this.store.clearSession(this.session.levelId);
+      this.progress = nextProgress;
+      this.completionSaveFailed = false;
+      this.flow = showLevelComplete(this.flow, nextLevelConfig(this.session.levelId)?.id ?? null);
+      this.render();
+    } catch {
+      this.completionSaveFailed = true;
+      this.session = { ...this.session, message: '进度保存失败，请重试', witchMood: 'oops' };
+      this.render();
     }
   }
 
@@ -302,12 +494,10 @@ export class ProductionBootstrap extends Component {
       this.audio?.setEnabled(this.flow.soundEnabled);
       this.render();
     }, false, this.flow.soundEnabled ? 'icon-audio-settings' : 'icon-sfx-off', 16);
-    if (this.flow.scene === 'level') this.addRasterButton(panel, '返回主页', 'gold',
+    if (this.flow.scene !== 'home') this.addRasterButton(panel, '返回主页', 'gold',
       SETTINGS_LAYOUT.homeButton.width, SETTINGS_LAYOUT.homeButton.height,
       SETTINGS_LAYOUT.homeButton.x, SETTINGS_LAYOUT.homeButton.y, () => {
-      this.flow = returnHome(this.flow);
-      this.store.saveSession(this.session);
-      this.render();
+      this.returnToHome();
     }, false, 'icon-settings-home', 16);
   }
 

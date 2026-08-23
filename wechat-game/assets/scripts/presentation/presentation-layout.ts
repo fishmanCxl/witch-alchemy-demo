@@ -21,6 +21,7 @@ export const HOME_LAYOUT = Object.freeze({
   header: Object.freeze({ x: -86, y: 326, width: 176, align: 'left' as const }),
   witch: Object.freeze({ x: 0, y: 51, width: 246, height: 304 }),
   continueButton: Object.freeze({ x: 0, y: -348, width: 286, height: 72 }),
+  selectButton: Object.freeze({ x: 0, y: -266, width: 224, height: 56 }),
   showsProgressCard: false,
 });
 
@@ -106,6 +107,26 @@ export function shouldRenderBottle(status: BottleStatus): boolean {
 }
 
 export type ButtonVariant = 'purple' | 'gold';
+export type LevelButtonState = 'completed' | 'current' | 'unlocked' | 'locked';
+
+export interface LevelButtonVisual {
+  readonly variant: ButtonVariant;
+  readonly disabled: boolean;
+  readonly highlighted: boolean;
+}
+
+export function levelButtonVisual(state: LevelButtonState): LevelButtonVisual {
+  if (state === 'completed') {
+    return Object.freeze({ variant: 'gold', disabled: false, highlighted: false });
+  }
+  if (state === 'current') {
+    return Object.freeze({ variant: 'gold', disabled: false, highlighted: true });
+  }
+  if (state === 'locked') {
+    return Object.freeze({ variant: 'purple', disabled: true, highlighted: false });
+  }
+  return Object.freeze({ variant: 'purple', disabled: false, highlighted: false });
+}
 
 export function buttonSpritePath(variant: ButtonVariant, disabled: boolean, pressed: boolean): string {
   const state = disabled ? 'disabled' : pressed ? 'pressed' : 'normal';

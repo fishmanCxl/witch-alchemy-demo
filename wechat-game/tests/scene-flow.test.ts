@@ -69,4 +69,3 @@ test('settings and sound state are preserved and settings close across navigatio
   assert.equal(home.settingsOpen, false);
   assert.equal(home.soundEnabled, false);
 });
-

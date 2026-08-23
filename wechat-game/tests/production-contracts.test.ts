@@ -157,3 +157,31 @@ test('production buttons use sliced wide bases and contained square control base
   assert.match(bootstrap, /sprite\.type = Sprite\.Type\.SLICED/);
   assert.doesNotMatch(bootstrap, /decorateRasterButton\(node, variant, disabled, action\)/);
 });
+
+test('production presentation derives level copy, targets, seeds, and reward ids from the active config', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(bootstrap, /level-012/);
+  assert.doesNotMatch(bootstrap, /第 12 关/);
+  assert.doesNotMatch(bootstrap, /bottlePlacement\(12,/);
+  assert.doesNotMatch(bootstrap, /魔药 \$\{completed\}\/8/);
+  assert.match(bootstrap, /this\.currentLevel\.number/);
+  assert.match(bootstrap, /this\.currentLevel\.presentationSeed/);
+  assert.match(bootstrap, /this\.session\.levelId/);
+  assert.match(bootstrap, /renderLevelSelect/);
+  assert.match(bootstrap, /renderLevelComplete/);
+  assert.match(bootstrap, /switchLevel/);
+  assert.match(bootstrap, /persistCompletion/);
+});
+
+test('completion persistence orders local progress before snapshot clearing and result rendering', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const save = bootstrap.indexOf('this.store.saveProgress(nextProgress)');
+  const clear = bootstrap.indexOf('this.store.clearSession(this.session.levelId)');
+  const show = bootstrap.indexOf('showLevelComplete(this.flow');
+
+  assert.ok(save >= 0);
+  assert.ok(clear > save);
+  assert.ok(show > clear);
+  assert.match(bootstrap, /进度保存失败，请重试/);
+});
