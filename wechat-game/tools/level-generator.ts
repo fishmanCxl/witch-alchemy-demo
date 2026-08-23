@@ -36,6 +36,11 @@ export interface GeneratedCandidate {
   readonly scoreComponents: GenerationScoreComponents;
 }
 
+export function generatedOutputMatches(actual: string, expected: string): boolean {
+  const normalizeLineEndings = (value: string): string => value.replace(/\r\n?/g, '\n');
+  return normalizeLineEndings(actual) === normalizeLineEndings(expected);
+}
+
 interface ReverseTransition {
   readonly from: number;
   readonly to: number;

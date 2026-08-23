@@ -5,6 +5,7 @@ import { validateLevelConfig, type LevelConfig } from '../assets/scripts/core/le
 import { isCompleteBottle } from '../assets/scripts/core/water-sort.ts';
 import {
   generateCandidate,
+  generatedOutputMatches,
   type GenerationSpec,
 } from '../tools/level-generator.ts';
 import { applyMoveAndVanish } from '../tools/level-solver.ts';
@@ -69,4 +70,9 @@ test('candidate generation fails after maxAttempts with a stable diagnostic', ()
     }, 7),
     new Error('Unable to generate level 4 from seed 7 after 2 attempts'),
   );
+});
+
+test('generated output comparison normalizes line endings without hiding content changes', () => {
+  assert.equal(generatedOutputMatches('alpha\r\nbeta\r\n', 'alpha\nbeta\n'), true);
+  assert.equal(generatedOutputMatches('alpha\r\nwrong\r\n', 'alpha\nbeta\n'), false);
 });

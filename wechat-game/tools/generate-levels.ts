@@ -15,6 +15,7 @@ import type { BottleState, GameState, PotionColor } from '../assets/scripts/core
 import {
   analyzeState,
   generateCandidate,
+  generatedOutputMatches,
   type GeneratedCandidate,
   type GenerationScoreComponents,
   type GenerationSpec,
@@ -248,7 +249,7 @@ function generatedReport(report: readonly ReportLevel[]): string {
 }
 
 function checkOrWrite(path: string, content: string, check: boolean): boolean {
-  if (check) return existsSync(path) && readFileSync(path, 'utf8') === content;
+  if (check) return existsSync(path) && generatedOutputMatches(readFileSync(path, 'utf8'), content);
   writeFileSync(path, content, 'utf8');
   return true;
 }
