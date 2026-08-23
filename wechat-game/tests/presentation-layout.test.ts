@@ -3,14 +3,31 @@ import assert from 'node:assert/strict';
 
 import {
   HOME_LAYOUT,
+  LEVEL_COMPLETE_LAYOUT,
   LEVEL_LAYOUT,
+  LEVEL_SELECT_LAYOUT,
   SETTINGS_LAYOUT,
   bottlePlacement,
   buttonBaseLayout,
   buttonSpritePath,
+  levelSelectButton,
   shouldRenderBottle,
   squareBottomFit,
 } from '../assets/scripts/presentation/presentation-layout.ts';
+
+test('level selector fits fifteen square buttons inside the 393 by 852 safe frame', () => {
+  const cells = Array.from({ length: 15 }, (_, index) => levelSelectButton(index));
+  assert.equal(LEVEL_SELECT_LAYOUT.columns, 5);
+  assert.equal(LEVEL_SELECT_LAYOUT.rows, 3);
+  assert.equal(cells.length, 15);
+  for (const cell of cells) {
+    assert.equal(cell.width, cell.height);
+    assert.ok(cell.x - cell.width / 2 >= -393 / 2);
+    assert.ok(cell.x + cell.width / 2 <= 393 / 2);
+    assert.ok(cell.y - cell.height / 2 >= -852 / 2);
+    assert.ok(cell.y + cell.height / 2 <= 852 / 2);
+  }
+});
 
 test('home layout preserves the accepted prototype hierarchy without a progress card', () => {
   assert.deepEqual(HOME_LAYOUT.header, { x: -86, y: 326, width: 176, align: 'left' });
@@ -72,6 +89,28 @@ test('wide raster buttons preserve their corners with the prototype nine-slice g
     sourceInset: 72,
     renderMode: 'sliced',
   });
+  assert.equal(
+    buttonBaseLayout(LEVEL_COMPLETE_LAYOUT.primaryButton, 'sliced').renderMode,
+    'sliced',
+  );
+  assert.equal(
+    buttonBaseLayout(LEVEL_COMPLETE_LAYOUT.secondaryButton, 'sliced').renderMode,
+    'sliced',
+  );
+});
+
+test('selector and completion actions use wide sliced buttons inside safe bounds', () => {
+  assert.deepEqual(LEVEL_SELECT_LAYOUT.backButton, { x: 0, y: -342, width: 224, height: 72 });
+  assert.deepEqual(LEVEL_COMPLETE_LAYOUT.primaryButton, { x: 0, y: -72, width: 240, height: 72 });
+  assert.deepEqual(LEVEL_COMPLETE_LAYOUT.secondaryButton, { x: 0, y: -164, width: 240, height: 72 });
+  for (const button of [
+    LEVEL_SELECT_LAYOUT.backButton,
+    LEVEL_COMPLETE_LAYOUT.primaryButton,
+    LEVEL_COMPLETE_LAYOUT.secondaryButton,
+  ]) {
+    assert.ok(Math.abs(button.x) + button.width / 2 <= 393 / 2);
+    assert.ok(Math.abs(button.y) + button.height / 2 <= 852 / 2);
+  }
 });
 
 test('bottom control artwork stays square and centered inside its wider hit target', () => {

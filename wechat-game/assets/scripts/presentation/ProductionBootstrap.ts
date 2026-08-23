@@ -9,7 +9,7 @@ import {
 } from '../core/game-session.ts';
 import { DEMO_LEVEL_CONFIG } from '../core/level-config.ts';
 import {
-  createSceneFlow, enterLevel, returnHome, toggleSettings, toggleSound, type SceneFlowState,
+  createSceneFlow, enterSelectedLevel, returnHome, toggleSettings, toggleSound, type SceneFlowState,
 } from '../core/scene-flow.ts';
 import type { PotionColor } from '../core/types.ts';
 import { LocalProgressStore } from '../platform/LocalProgressStore.ts';
@@ -94,7 +94,7 @@ export class ProductionBootstrap extends Component {
     this.addRasterButton(root, '继续炼金 · 第 12 关', 'purple', HOME_LAYOUT.continueButton.width,
       HOME_LAYOUT.continueButton.height, HOME_LAYOUT.continueButton.x, HOME_LAYOUT.continueButton.y, () => {
       this.resumeAudio();
-      this.flow = enterLevel(this.flow);
+      this.flow = enterSelectedLevel(this.flow, this.session.levelId, true);
       this.render();
     }, false, undefined, 18);
   }

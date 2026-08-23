@@ -35,6 +35,24 @@ export const LEVEL_LAYOUT = Object.freeze({
   controlY: -338,
 });
 
+export const LEVEL_SELECT_LAYOUT = Object.freeze({
+  header: Object.freeze({ x: 0, y: 330, width: 321, height: 58 }),
+  columns: 5,
+  rows: 3,
+  buttonSize: 56,
+  columnCenters: Object.freeze([-136, -68, 0, 68, 136] as const),
+  rowCenters: Object.freeze([138, 58, -22] as const),
+  backButton: Object.freeze({ x: 0, y: -342, width: 224, height: 72 }),
+});
+
+export const LEVEL_COMPLETE_LAYOUT = Object.freeze({
+  panel: Object.freeze({ x: 0, y: -5, width: 321, height: 470 }),
+  title: Object.freeze({ x: 0, y: 142, width: 260, height: 52 }),
+  stats: Object.freeze({ x: 0, y: 68, width: 250, height: 46 }),
+  primaryButton: Object.freeze({ x: 0, y: -72, width: 240, height: 72 }),
+  secondaryButton: Object.freeze({ x: 0, y: -164, width: 240, height: 72 }),
+});
+
 export const SETTINGS_LAYOUT = Object.freeze({
   trigger: Object.freeze({ x: 155, y: 340, width: 48, height: 48 }),
   dialog: Object.freeze({ x: 0, y: -21, width: 304, height: 360 }),
@@ -42,6 +60,18 @@ export const SETTINGS_LAYOUT = Object.freeze({
   soundButton: Object.freeze({ x: 0, y: 14, width: 224, height: 72 }),
   homeButton: Object.freeze({ x: 0, y: -81, width: 224, height: 72 }),
 });
+
+export function levelSelectButton(index: number): RectLayout {
+  if (!Number.isInteger(index) || index < 0 || index >= 15) {
+    throw new RangeError('level selector index must be from 0 to 14');
+  }
+  return Object.freeze({
+    x: LEVEL_SELECT_LAYOUT.columnCenters[index % LEVEL_SELECT_LAYOUT.columns],
+    y: LEVEL_SELECT_LAYOUT.rowCenters[Math.floor(index / LEVEL_SELECT_LAYOUT.columns)],
+    width: LEVEL_SELECT_LAYOUT.buttonSize,
+    height: LEVEL_SELECT_LAYOUT.buttonSize,
+  });
+}
 
 function hash32(value: number): number {
   let hash = value | 0;
