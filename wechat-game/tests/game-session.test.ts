@@ -10,9 +10,10 @@ import {
   undoSession,
 } from '../assets/scripts/core/game-session.ts';
 import { createDemoState } from '../assets/scripts/core/demo-level.ts';
+import { DEMO_LEVEL_CONFIG } from '../assets/scripts/core/level-config.ts';
 
 test('selecting a filled bottle prepares the witch and preserves the board', () => {
-  const initial = createGameSession();
+  const initial = createGameSession(DEMO_LEVEL_CONFIG);
   const result = pressBottle(initial, 0);
 
   assert.equal(result.session.selected, 0);
@@ -23,7 +24,7 @@ test('selecting a filled bottle prepares the witch and preserves the board', () 
 });
 
 test('a valid pour records history and queues a completed bottle for departure', () => {
-  const selected = pressBottle(createGameSession(), 0).session;
+  const selected = pressBottle(createGameSession(DEMO_LEVEL_CONFIG), 0).session;
   const result = pressBottle(selected, 1);
 
   assert.equal(result.session.game.moves, 1);
@@ -39,12 +40,12 @@ test('a valid pour records history and queues a completed bottle for departure',
 });
 
 test('invalid starts and targets return an oops state without adding history', () => {
-  const emptyStart = pressBottle(createGameSession(), 9);
+  const emptyStart = pressBottle(createGameSession(DEMO_LEVEL_CONFIG), 9);
   assert.equal(emptyStart.session.witchMood, 'oops');
   assert.equal(emptyStart.session.message, '空瓶不能作为起点');
   assert.equal(emptyStart.cue, 'pour-invalid');
 
-  const selected = pressBottle(createGameSession(), 0).session;
+  const selected = pressBottle(createGameSession(DEMO_LEVEL_CONFIG), 0).session;
   const invalidTarget = pressBottle(selected, 2);
   assert.equal(invalidTarget.session.witchMood, 'oops');
   assert.deepEqual(invalidTarget.invalid, [0, 2]);
@@ -52,7 +53,7 @@ test('invalid starts and targets return an oops state without adding history', (
 });
 
 test('undo and restart restore stable gameplay state', () => {
-  const selected = pressBottle(createGameSession(), 0).session;
+  const selected = pressBottle(createGameSession(DEMO_LEVEL_CONFIG), 0).session;
   const poured = pressBottle(selected, 9).session;
   const undone = undoSession(poured);
 
@@ -66,7 +67,7 @@ test('undo and restart restore stable gameplay state', () => {
 });
 
 test('reward bottle activates the reserved fifteenth slot once', () => {
-  const first = grantRewardBottle(createGameSession());
+  const first = grantRewardBottle(createGameSession(DEMO_LEVEL_CONFIG));
   assert.equal(first.session.game.bottles[14]?.status, 'active');
   assert.equal(first.cue, 'reward-empty-bottle');
 

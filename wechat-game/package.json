@@ -8,7 +8,7 @@
     "version": "3.8.8"
   },
   "scripts": {
-    "test:core": "node --experimental-strip-types --test tests/water-sort.test.ts tests/level-config.test.ts tests/level-solver.test.ts tests/level-generator.test.ts tests/level-catalog.test.ts tests/production-contracts.test.ts tests/scene-flow.test.ts tests/game-session.test.ts tests/rewarded-bottle.test.ts tests/presentation-layout.test.ts",
+    "test:core": "node --experimental-strip-types --test tests/water-sort.test.ts tests/level-config.test.ts tests/level-solver.test.ts tests/level-generator.test.ts tests/level-catalog.test.ts tests/production-contracts.test.ts tests/scene-flow.test.ts tests/game-session.test.ts tests/level-completion.test.ts tests/rewarded-bottle.test.ts tests/presentation-layout.test.ts",
     "generate:levels": "node --experimental-strip-types tools/generate-levels.ts",
     "check:levels": "node --experimental-strip-types tools/generate-levels.ts --check",
     "prepare:sprites": "node tools/configure-sprite-frames.mjs",

@@ -7,6 +7,7 @@ import {
   completePendingBottles, createGameSession, finishWitchReturn, grantRewardBottle, pressBottle, restartSession,
   settleWitch, undoSession, type GameSession, type SessionResult, type WitchMood,
 } from '../core/game-session.ts';
+import { DEMO_LEVEL_CONFIG } from '../core/level-config.ts';
 import {
   createSceneFlow, enterLevel, returnHome, toggleSettings, toggleSound, type SceneFlowState,
 } from '../core/scene-flow.ts';
@@ -36,7 +37,7 @@ function color(hex: string, alpha = 255): Color {
 @ccclass('ProductionBootstrap')
 export class ProductionBootstrap extends Component {
   private flow: SceneFlowState = createSceneFlow();
-  private session: GameSession = createGameSession();
+  private session: GameSession = createGameSession(DEMO_LEVEL_CONFIG);
   private surface: Node | null = null;
   private renderToken = 0;
   private audio: AudioDirector | null = null;

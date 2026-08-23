@@ -1,6 +1,7 @@
 import { sys } from 'cc';
 
 import { createGameSession, type GameSession } from '../core/game-session.ts';
+import { DEMO_LEVEL_CONFIG } from '../core/level-config.ts';
 import { createLocalSnapshot, decodeLocalSnapshot } from '../core/save-schema.ts';
 
 const PROGRESS_KEY = 'witch-water-sort:level-012:v1';
@@ -31,9 +32,9 @@ function setStored(key: string, value: string): void {
 export class LocalProgressStore {
   loadSession(): GameSession {
     const snapshot = decodeLocalSnapshot(getStored(PROGRESS_KEY));
-    if (!snapshot) return createGameSession();
+    if (!snapshot) return createGameSession(DEMO_LEVEL_CONFIG);
     return {
-      ...createGameSession(snapshot.state),
+      ...createGameSession(DEMO_LEVEL_CONFIG, snapshot.state),
       history: snapshot.history,
       selected: snapshot.selected,
       message: snapshot.selected === null ? '进度已恢复' : '法杖已锁定，再点目标瓶',
@@ -42,8 +43,8 @@ export class LocalProgressStore {
 
   saveSession(session: GameSession): void {
     const snapshot = createLocalSnapshot({
-      levelId: 'level-012',
-      configVersion: '2026.08.23.1',
+      levelId: session.levelId,
+      configVersion: session.configVersion,
       revision: session.game.moves,
       state: session.game,
       history: session.history,

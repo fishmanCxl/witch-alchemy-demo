@@ -1,5 +1,5 @@
-import { createDemoState } from './demo-level.ts';
 import { addRewardBottle, pour, vanishBottle } from './water-sort.ts';
+import type { CompletionRule, LevelConfig } from './level-config.ts';
 import type { GameState } from './types.ts';
 
 export type WitchMood = 'idle' | 'prepare' | 'raise' | 'cast' | 'celebrate' | 'return' | 'oops';
@@ -15,10 +15,15 @@ export type GameCue =
   | 'reward-empty-bottle';
 
 export interface GameSession {
+  readonly levelId: string;
+  readonly configVersion: string;
+  readonly completionRule: CompletionRule;
+  readonly initialState: GameState;
   readonly game: GameState;
   readonly history: readonly GameState[];
   readonly selected: number | null;
   readonly pendingCompletion: readonly number[];
+  readonly levelComplete: boolean;
   readonly witchMood: WitchMood;
   readonly message: string;
 }
@@ -32,19 +37,40 @@ export interface SessionResult {
 
 const NO_EFFECTS = { invalid: [], pouring: [] } as const;
 
-export function createGameSession(game: GameState = createDemoState()): GameSession {
+export function createGameSession(level: LevelConfig, game: GameState = level.initialState): GameSession {
   return {
+    levelId: level.id,
+    configVersion: level.configVersion,
+    completionRule: level.completionRule,
+    initialState: level.initialState,
     game,
     history: [],
     selected: null,
     pendingCompletion: [],
+    levelComplete: false,
     witchMood: 'idle',
     message: '选择一瓶，再选择目标瓶',
   };
 }
 
+export function isSessionComplete(session: GameSession): boolean {
+  return session.levelComplete;
+}
+
+function completedBottleCount(game: GameState): number {
+  return game.bottles.filter((bottle) => bottle.status === 'vanished').length;
+}
+
+function completesAfterVanish(session: GameSession, game: GameState): boolean {
+  if (session.completionRule.type === 'first-valid-pour') return session.levelComplete;
+  if (session.completionRule.type === 'first-bottle-complete') {
+    return completedBottleCount(game) >= 1;
+  }
+  return completedBottleCount(game) >= session.completionRule.targetCount;
+}
+
 export function pressBottle(session: GameSession, index: number): SessionResult {
-  if (session.pendingCompletion.length > 0) {
+  if (session.levelComplete || session.pendingCompletion.length > 0) {
     return { session, cue: null, ...NO_EFFECTS };
   }
 
@@ -94,14 +120,22 @@ export function pressBottle(session: GameSession, index: number): SessionResult 
   }
 
   const completed = result.completed.length > 0;
+  const levelComplete = session.levelComplete
+    || session.completionRule.type === 'first-valid-pour';
   return {
     session: {
+      ...session,
       game: result.state,
       history: [...session.history, session.game],
       selected: null,
       pendingCompletion: result.completed,
+      levelComplete,
       witchMood: completed ? 'celebrate' : 'cast',
-      message: completed ? '魔药合成成功！' : `倒入 ${result.moved} 层药液`,
+      message: levelComplete
+        ? '教学目标完成！'
+        : completed
+          ? '魔药合成成功！'
+          : `倒入 ${result.moved} 层药液`,
     },
     cue: completed ? 'potion-complete' : 'pour-valid',
     invalid: [],
@@ -111,17 +145,21 @@ export function pressBottle(session: GameSession, index: number): SessionResult 
 
 export function completePendingBottles(session: GameSession): GameSession {
   if (session.pendingCompletion.length === 0) return session;
+  const game = session.pendingCompletion.reduce(vanishBottle, session.game);
+  const levelComplete = completesAfterVanish(session, game);
   return {
     ...session,
-    game: session.pendingCompletion.reduce(vanishBottle, session.game),
+    game,
     pendingCompletion: [],
+    levelComplete,
     witchMood: 'return',
+    message: levelComplete ? '关卡完成！' : session.message,
   };
 }
 
 export function undoSession(session: GameSession): SessionResult {
   const previous = session.history.at(-1);
-  if (!previous || session.pendingCompletion.length > 0) {
+  if (session.levelComplete || !previous || session.pendingCompletion.length > 0) {
     return { session, cue: null, ...NO_EFFECTS };
   }
 
@@ -139,16 +177,29 @@ export function undoSession(session: GameSession): SessionResult {
   };
 }
 
-export function restartSession(_session: GameSession): SessionResult {
+export function restartSession(session: GameSession): SessionResult {
+  if (session.levelComplete) return { session, cue: null, ...NO_EFFECTS };
+  const game = session.game.rewardBottleUsed
+    ? addRewardBottle(session.initialState)
+    : session.initialState;
   return {
-    session: { ...createGameSession(), witchMood: 'cast', message: '关卡已重新开始' },
+    session: {
+      ...session,
+      game,
+      history: [],
+      selected: null,
+      pendingCompletion: [],
+      levelComplete: false,
+      witchMood: 'cast',
+      message: '关卡已重新开始',
+    },
     cue: 'restart',
     ...NO_EFFECTS,
   };
 }
 
 export function grantRewardBottle(session: GameSession): SessionResult {
-  if (session.pendingCompletion.length > 0) {
+  if (session.levelComplete || session.pendingCompletion.length > 0) {
     return { session, cue: null, ...NO_EFFECTS };
   }
 
