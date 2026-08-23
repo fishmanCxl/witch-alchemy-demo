@@ -145,3 +145,38 @@ export function mergePlayerProgress(
   };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+export function decodePlayerProgress(serialized: string | null | undefined): PlayerProgress | null {
+  if (!serialized) return null;
+  try {
+    const value: unknown = JSON.parse(serialized);
+    if (!isRecord(value) || value.schemaVersion !== 2) return null;
+    if (!Number.isInteger(value.revision) || Number(value.revision) < 0) return null;
+    if (typeof value.currentLevel !== 'string' || typeof value.highestUnlockedLevel !== 'string') {
+      return null;
+    }
+    if (!getLevelConfig(value.currentLevel) || !getLevelConfig(value.highestUnlockedLevel)) return null;
+    if (!Array.isArray(value.completedLevels) || !value.completedLevels.every((id) => (
+      typeof id === 'string' && getLevelConfig(id) !== null
+    ))) return null;
+    if (new Set(value.completedLevels).size !== value.completedLevels.length) return null;
+    if (!isRecord(value.bestMoves) || !Object.entries(value.bestMoves).every(([id, moves]) => (
+      getLevelConfig(id) !== null && Number.isInteger(moves) && Number(moves) > 0
+    ))) return null;
+    if (typeof value.configVersion !== 'string' || value.configVersion.length === 0) return null;
+
+    const progress = value as unknown as PlayerProgress;
+    if (!isLevelUnlocked(progress, progress.currentLevel)) return null;
+    return {
+      ...progress,
+      completedLevels: sortedPublishedIds(progress.completedLevels),
+      bestMoves: mergedBestMoves(progress.bestMoves, {}),
+      configVersion: FIRST_CHAPTER_CONFIG_VERSION,
+    };
+  } catch {
+    return null;
+  }
+}

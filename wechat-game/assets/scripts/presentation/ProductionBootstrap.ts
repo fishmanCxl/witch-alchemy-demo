@@ -1,6 +1,6 @@
 import {
   _decorator, BlockInputEvents, Button, Color, Component, Graphics, Label, Mask,
-  Node, ResolutionPolicy, resources, Sprite, SpriteFrame, UITransform, Vec3, view, tween,
+  Node, ResolutionPolicy, resources, Sprite, SpriteFrame, sys, UITransform, Vec3, view, tween,
 } from 'cc';
 
 import {
@@ -15,6 +15,7 @@ import type { PotionColor } from '../core/types.ts';
 import { LocalProgressStore } from '../platform/LocalProgressStore.ts';
 import { PlatformRuntime } from '../platform/WeChatPlatform.ts';
 import { RewardedBottleCoordinator, type RewardFlowStatus } from '../platform/rewarded-bottle.ts';
+import { createPlatformStorage } from '../platform/storage-port.ts';
 import { AudioDirector } from './AudioDirector.ts';
 import {
   HOME_LAYOUT, LEVEL_LAYOUT, SETTINGS_LAYOUT, bottlePlacement, buttonBaseLayout, buttonSpritePath,
@@ -41,7 +42,7 @@ export class ProductionBootstrap extends Component {
   private surface: Node | null = null;
   private renderToken = 0;
   private audio: AudioDirector | null = null;
-  private store = new LocalProgressStore();
+  private store = new LocalProgressStore(createPlatformStorage(sys.localStorage));
   private invalid = new Set<number>();
   private pouring = new Set<number>();
   private bottleNodes = new Map<number, Node>();
@@ -52,7 +53,7 @@ export class ProductionBootstrap extends Component {
 
   start(): void {
     view.setDesignResolutionSize(393, 852, ResolutionPolicy.FIXED_WIDTH);
-    this.session = this.store.loadSession();
+    this.session = this.store.loadSession(DEMO_LEVEL_CONFIG);
     this.flow = { ...this.flow, soundEnabled: this.store.loadSoundEnabled() };
     this.audio = this.node.getComponent(AudioDirector) ?? this.node.addComponent(AudioDirector);
     this.audio.initialize(this.flow.soundEnabled);
