@@ -1,0 +1,957 @@
+.alchemy-scroll {
+  background: #130b18;
+}
+
+.alchemy-scroll .mobile-scroll-content {
+  min-height: 100%;
+}
+
+.alchemy-screen {
+  --slot-width: 64px;
+  --slot-height: 112px;
+  --bottle-width: 48px;
+  --bottle-height: 104px;
+  position: relative;
+  min-height: 100%;
+  overflow: hidden;
+  color: #fff8ee;
+  background-color: #130b18;
+  background-image: url("/assets/game/chibi/background/alchemy-room.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  font-family: "Roboto", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.alchemy-screen::before {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 54px;
+  background: rgba(229, 184, 146, 0.78);
+  content: "";
+}
+
+.status-bar {
+  color: #21121f;
+}
+
+.level-header {
+  position: absolute;
+  z-index: 3;
+  top: 62px;
+  left: 22px;
+  width: 176px;
+}
+
+.chapter-label {
+  margin: 0 0 2px;
+  color: #dcbacb;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+}
+
+.level-header h1 {
+  margin: 0;
+  color: #fff4df;
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1.15;
+  text-shadow: 0 2px 12px rgba(20, 7, 23, 0.9);
+}
+
+.level-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  color: #efd9c9;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.level-meta span {
+  padding: 6px 8px;
+  border: 1px solid rgba(222, 181, 161, 0.28);
+  border-radius: 12px;
+  background: rgba(34, 16, 35, 0.72);
+  box-shadow: 0 5px 16px rgba(12, 5, 15, 0.3);
+}
+
+.audio-settings {
+  position: absolute;
+  z-index: 8;
+  top: 62px;
+  right: 18px;
+  width: 48px;
+  height: 48px;
+  pointer-events: auto;
+}
+
+.audio-settings-trigger {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.audio-settings-trigger img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.audio-settings-trigger:focus-visible,
+.audio-settings-switch:focus-visible {
+  outline: 2px solid #8fe8dc;
+  outline-offset: 2px;
+}
+
+.audio-settings-popover {
+  position: absolute;
+  top: 0;
+  right: 50px;
+  display: grid;
+  width: 124px;
+  height: 48px;
+  grid-template-columns: repeat(2, 1fr);
+  background-image: url("/assets/game/chibi/ui/audio-settings-panel.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  transform-origin: 100% 50%;
+  animation: audio-settings-enter 160ms ease-out both;
+  pointer-events: auto;
+}
+
+.audio-settings-popover.is-exiting {
+  animation: audio-settings-exit 160ms ease-in both;
+  pointer-events: auto;
+}
+
+.audio-settings-popover.is-exiting .audio-settings-switch {
+  pointer-events: none;
+}
+
+.audio-settings-switch {
+  position: relative;
+  display: grid;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 2px 4px 10px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #fff5df;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.audio-settings-switch img {
+  width: 27px;
+  height: 27px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.audio-settings-switch-label {
+  position: absolute;
+  right: 0;
+  bottom: 3px;
+  left: 0;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(24, 7, 30, 0.92);
+  pointer-events: none;
+}
+
+.home-scene {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.home-scene::before {
+  position: absolute;
+  z-index: -1;
+  inset: 54px 0 0;
+  background: linear-gradient(180deg, rgba(20, 8, 25, 0.04), rgba(12, 4, 18, 0.38));
+  content: "";
+  pointer-events: none;
+}
+
+.home-header {
+  position: absolute;
+  z-index: 3;
+  top: 66px;
+  left: 22px;
+  display: grid;
+  max-width: 210px;
+  gap: 2px;
+  text-shadow: 0 2px 12px rgba(20, 7, 23, 0.92);
+}
+
+.home-header p,
+.home-header h1,
+.home-header span {
+  margin: 0;
+}
+
+.home-header p {
+  color: #ddbed2;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.home-header h1 {
+  color: #fff4df;
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 34px;
+  line-height: 1.12;
+}
+
+.home-header span {
+  justify-self: start;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border: 1px solid rgba(229, 193, 166, 0.3);
+  border-radius: 999px;
+  background: rgba(35, 14, 40, 0.76);
+  color: #f3dfcf;
+  font-size: 12px;
+  box-shadow: 0 6px 18px rgba(10, 3, 14, 0.3);
+}
+
+.home-hero {
+  position: absolute;
+  z-index: 2;
+  top: 154px;
+  right: 34px;
+  left: 34px;
+  display: grid;
+  height: min(442px, calc(100% - 342px));
+  min-height: 330px;
+  place-items: center;
+  pointer-events: none;
+}
+
+.home-hero > section {
+  position: relative;
+  z-index: 2;
+  top: auto;
+  right: auto;
+  width: 246px;
+  height: 304px;
+  transform: translateY(-4px);
+  animation: home-witch-idle 3.2s ease-in-out infinite;
+}
+
+.home-cauldron-glow {
+  position: absolute;
+  z-index: 1;
+  bottom: 22px;
+  left: 50%;
+  width: 226px;
+  height: 86px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(152, 91, 255, 0.5), rgba(82, 37, 112, 0.16) 52%, transparent 73%);
+  filter: blur(7px);
+  transform: translateX(-50%);
+}
+
+.home-continue {
+  position: absolute;
+  z-index: 4;
+  right: 50%;
+  bottom: max(48px, calc(var(--mobile-safe-area-height, 0px) + 30px));
+  min-width: 286px;
+  min-height: 72px;
+  padding: 14px 34px;
+  border: 18px solid transparent;
+  border-image: url("/assets/game/chibi/ui/button-purple-normal.png") 72 fill / 24px / 0 stretch;
+  background: transparent;
+  color: #fff8df;
+  font: 800 18px/1.1 Georgia, "Songti SC", serif;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 3px rgba(42, 9, 48, 0.94);
+  transform: translateX(50%);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.home-continue:active {
+  border-image-source: url("/assets/game/chibi/ui/button-purple-pressed.png");
+  transform: translate3d(50%, 2px, 0) scale(0.985);
+}
+
+.game-settings {
+  position: absolute;
+  z-index: 12;
+  top: 62px;
+  right: 18px;
+  width: 48px;
+  height: 48px;
+  pointer-events: auto;
+}
+
+.game-settings-trigger,
+.game-settings-close {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.game-settings-trigger {
+  width: 48px;
+  height: 48px;
+}
+
+.game-settings-trigger img,
+.game-settings-close img,
+.game-settings-sound img,
+.game-settings-home img {
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.game-settings-trigger img,
+.game-settings-close img {
+  width: 100%;
+  height: 100%;
+}
+
+.game-settings-trigger:focus-visible,
+.game-settings-close:focus-visible,
+.game-settings-sound:focus-visible,
+.game-settings-home:focus-visible,
+.home-continue:focus-visible {
+  outline: 3px solid #91f1df;
+  outline-offset: 3px;
+}
+
+.game-settings-layer {
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 70px 18px max(28px, var(--mobile-safe-area-height, 0px));
+  background: rgba(10, 3, 15, 0.7);
+  animation: game-settings-mask-enter 160ms ease-out both;
+  pointer-events: auto;
+}
+
+.game-settings-layer.is-exiting {
+  animation: game-settings-mask-exit 160ms ease-in both;
+  pointer-events: auto;
+}
+
+.game-settings-dialog {
+  position: relative;
+  display: grid;
+  width: min(304px, calc(100% - 36px));
+  min-height: 360px;
+  max-height: calc(100% - 8px);
+  padding: 56px 40px 38px;
+  align-content: center;
+  gap: 22px;
+  background-image: url("/assets/game/chibi/ui/settings-dialog-panel.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  filter: drop-shadow(0 20px 28px rgba(7, 2, 11, 0.68));
+  animation: game-settings-dialog-enter 160ms cubic-bezier(0.2, 0.86, 0.3, 1.1) both;
+}
+
+.game-settings-layer.is-exiting .game-settings-dialog {
+  animation: game-settings-dialog-exit 160ms ease-in both;
+}
+
+.game-settings-dialog h2 {
+  margin: 0 0 2px;
+  color: #fff2cf;
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 27px;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(42, 7, 47, 0.94);
+}
+
+.game-settings-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+}
+
+.game-settings-sound,
+.game-settings-home {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-height: 72px;
+  align-items: center;
+  padding: 10px 20px 10px 68px;
+  border: 18px solid transparent;
+  background: transparent;
+  color: #fff4df;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.game-settings-sound {
+  border-image: url("/assets/game/chibi/ui/button-purple-normal.png") 72 fill / 24px / 0 stretch;
+  grid-template-columns: 1fr auto;
+  column-gap: 8px;
+}
+
+.game-settings-home {
+  border-image: url("/assets/game/chibi/ui/button-gold-normal.png") 72 fill / 24px / 0 stretch;
+  grid-template-columns: 1fr;
+}
+
+.game-settings-sound img,
+.game-settings-home img {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  width: 52px;
+  height: 52px;
+  transform: translateY(-50%);
+}
+
+.game-settings-sound span,
+.game-settings-home span {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 0 2px 3px rgba(42, 9, 48, 0.9);
+}
+
+.game-settings-sound strong {
+  color: #f5d489;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.game-settings-dialog button:disabled {
+  cursor: default;
+  pointer-events: none;
+}
+
+.game-settings-sound:active:not(:disabled) {
+  border-image-source: url("/assets/game/chibi/ui/button-purple-pressed.png");
+}
+
+.game-settings-home:active:not(:disabled) {
+  border-image-source: url("/assets/game/chibi/ui/button-gold-pressed.png");
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
+  margin: -1px;
+  white-space: nowrap;
+}
+
+.witch-stage {
+  position: absolute;
+  z-index: 3;
+  top: 122px;
+  right: 110px;
+  width: 174px;
+  height: 182px;
+  overflow: visible;
+  transform-origin: 50% 90%;
+  pointer-events: none;
+}
+
+.witch-frame {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: 50% 100%;
+  filter: drop-shadow(0 10px 14px rgba(10, 3, 13, 0.72));
+}
+
+.witch-magic-frame {
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: 50% 100%;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 7px rgba(255, 191, 72, 0.82));
+  pointer-events: none;
+}
+
+.witch-shadow {
+  position: absolute;
+  z-index: 1;
+  right: 26px;
+  bottom: 2px;
+  width: 112px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(12, 4, 14, 0.54);
+  filter: blur(5px);
+}
+
+.board-shell {
+  position: absolute;
+  z-index: 2;
+  top: 296px;
+  right: 28px;
+  left: 28px;
+}
+
+.bottle-grid {
+  display: grid;
+  grid-template-columns: repeat(5, var(--slot-width));
+  grid-template-rows: repeat(3, var(--slot-height));
+  justify-content: center;
+  column-gap: 4px;
+  row-gap: 10px;
+  width: 100%;
+}
+
+.bottle-slot {
+  position: relative;
+  display: grid;
+  width: var(--slot-width);
+  height: var(--slot-height);
+  padding: 0;
+  place-items: end center;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottle-slot:disabled {
+  cursor: default;
+}
+
+.bottle-slot:nth-child(1) {
+  transform: translateX(10px);
+}
+
+.bottle-slot:nth-child(2) {
+  transform: translateX(5px);
+}
+
+.bottle-slot:nth-child(4) {
+  transform: translateX(-5px);
+}
+
+.bottle-slot:nth-child(5) {
+  transform: translateX(-10px);
+}
+
+.potion-bottle {
+  position: relative;
+  display: block;
+  width: var(--bottle-width);
+  height: var(--bottle-height);
+  transform: translate3d(var(--pose-x, 0px), var(--pose-y, 0px), 0) rotate(var(--pose-rotate, 0deg));
+  transform-origin: 50% 88%;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.bottle-frame {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+.liquid-stack {
+  position: absolute;
+  z-index: 2;
+  right: 6px;
+  bottom: 9px;
+  left: 6px;
+  display: flex;
+  flex-direction: column-reverse;
+  height: 65px;
+  overflow: hidden;
+  border-radius: 12px 12px 14px 14px;
+  opacity: 0.95;
+  box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.18);
+}
+
+.liquid-layer {
+  position: relative;
+  flex: 0 0 25%;
+  min-height: 0;
+  overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.potion-particles {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.potion-particles img {
+  position: absolute;
+  bottom: -4px;
+  left: var(--particle-x);
+  width: 14px;
+  max-width: 40%;
+  height: auto;
+  opacity: 0.36;
+  transform: translate3d(-50%, 0, 0);
+  animation: particle-idle-rise 2.2s ease-in-out var(--particle-delay) infinite;
+}
+
+.potion-particles.is-selected img {
+  opacity: 0.45;
+  animation-duration: 1.76s;
+}
+
+.potion-particles.is-pouring img {
+  animation: particle-pour 520ms ease-out var(--particle-delay) both;
+}
+
+.potion-particles.is-complete img {
+  opacity: 0.52;
+  animation: particle-complete 360ms ease-out var(--particle-delay) both;
+}
+
+.potion-bottle.is-selected {
+  transform: translate3d(var(--pose-x, 0px), calc(var(--pose-y, 0px) - 10px), 0) rotate(var(--pose-rotate, 0deg)) scale(1.04);
+  filter: drop-shadow(0 0 8px rgba(135, 216, 255, 0.9));
+}
+
+.potion-bottle.is-invalid {
+  animation: bottle-invalid 360ms ease-in-out;
+  filter: drop-shadow(0 0 7px rgba(255, 101, 111, 0.9));
+}
+
+.potion-bottle.is-departing {
+  z-index: 8;
+  animation: potion-depart 780ms cubic-bezier(0.24, 0.72, 0.3, 1) 300ms forwards;
+  filter: drop-shadow(0 0 13px rgba(147, 222, 255, 0.95));
+  pointer-events: none;
+}
+
+.completion-burst {
+  position: absolute;
+  z-index: 4;
+  top: 13px;
+  left: 50%;
+  width: 78px;
+  max-width: none;
+  height: 78px;
+  object-fit: contain;
+  opacity: 0;
+  transform: translate3d(-50%, 0, 0) scale(0.34);
+  pointer-events: none;
+  animation: completion-burst 300ms cubic-bezier(0.16, 0.84, 0.32, 1) both;
+}
+
+.game-controls {
+  position: absolute;
+  z-index: 6;
+  right: 20px;
+  bottom: calc(var(--mobile-safe-area-height) + 20px);
+  left: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.bottle-slot:focus-visible {
+  outline: 2px solid #8fe8dc;
+  outline-offset: 2px;
+}
+
+.chibi-control-button {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  height: 72px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #f5e6db;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.chibi-control-base {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.chibi-control-icon {
+  position: relative;
+  z-index: 1;
+  width: 31px;
+  height: 31px;
+  margin-top: -10px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.chibi-control-label {
+  position: absolute;
+  z-index: 1;
+  bottom: 7px;
+  max-width: calc(100% - 8px);
+  overflow: hidden;
+  color: #fff9ed;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 2px rgba(38, 12, 34, 0.75);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.chibi-control-badge {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 6px;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.chibi-control-button:focus-visible {
+  outline: 2px solid #8fe8dc;
+  outline-offset: 2px;
+}
+
+.chibi-control-button:disabled {
+  cursor: default;
+}
+
+.game-message {
+  position: absolute;
+  z-index: 5;
+  right: 36px;
+  bottom: calc(var(--mobile-safe-area-height) + 101px);
+  left: 36px;
+  display: grid;
+  min-height: 46px;
+  padding: 12px 20px;
+  place-items: center;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  color: #fff4db;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(23, 7, 29, 0.9);
+  pointer-events: none;
+}
+
+.game-message.is-enter {
+  animation: game-message-enter 180ms ease-out both;
+}
+
+.game-message.is-exit {
+  animation: game-message-exit 240ms ease-in both;
+}
+
+.game-message.is-replace .game-message-text {
+  animation: game-message-replace 120ms ease-in-out both;
+}
+
+.game-message.is-done {
+  opacity: 0;
+}
+
+@keyframes bottle-invalid {
+  0%, 100% { transform: translate3d(var(--pose-x, 0px), var(--pose-y, 0px), 0) rotate(var(--pose-rotate, 0deg)); }
+  25% { transform: translate3d(calc(var(--pose-x, 0px) - 5px), var(--pose-y, 0px), 0) rotate(calc(var(--pose-rotate, 0deg) - 2deg)); }
+  75% { transform: translate3d(calc(var(--pose-x, 0px) + 5px), var(--pose-y, 0px), 0) rotate(calc(var(--pose-rotate, 0deg) + 2deg)); }
+}
+
+@keyframes potion-depart {
+  0% { transform: translate3d(var(--pose-x, 0px), var(--pose-y, 0px), 0) rotate(var(--pose-rotate, 0deg)) scale(1); opacity: 1; }
+  32% { transform: translate3d(var(--pose-x, 0px), calc(var(--pose-y, 0px) - 18px), 0) rotate(var(--pose-rotate, 0deg)) scale(1.08); opacity: 1; }
+  100% { transform: translate3d(calc(var(--pose-x, 0px) - 84px), calc(var(--pose-y, 0px) - 310px), 0) rotate(calc(var(--pose-rotate, 0deg) - 16deg)) scale(0.12); opacity: 0; }
+}
+
+@keyframes particle-idle-rise {
+  0%, 100% { transform: translate3d(-50%, 0, 0) scale(0.78); opacity: 0.2; }
+  48% { transform: translate3d(calc(-50% + 3px), -17px, 0) scale(1); opacity: 0.46; }
+}
+
+@keyframes particle-pour {
+  0% { transform: translate3d(-50%, 0, 0) scale(0.88); opacity: 0.4; }
+  100% { transform: translate3d(calc(-50% + 34px), 18px, 0) scale(0.64); opacity: 0; }
+}
+
+@keyframes particle-complete {
+  0% { transform: translate3d(-50%, 0, 0) scale(0.75); opacity: 0.54; }
+  100% { transform: translate3d(calc(-50% + 12px), -36px, 0) scale(1.12); opacity: 0; }
+}
+
+@keyframes completion-burst {
+  0% { transform: translate3d(-50%, 0, 0) scale(0.34); opacity: 0; }
+  38% { opacity: 1; }
+  100% { transform: translate3d(-50%, -8px, 0) scale(1.08); opacity: 0; }
+}
+
+@keyframes completion-fade {
+  to { opacity: 0; }
+}
+
+@keyframes game-message-enter {
+  from { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.96); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes game-message-exit {
+  from { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  to { opacity: 0; transform: translate3d(0, -6px, 0) scale(0.98); }
+}
+
+@keyframes game-message-replace {
+  0% { opacity: 0; transform: translateY(2px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes audio-settings-enter {
+  from { opacity: 0; transform: translate3d(6px, 0, 0) scale(0.96); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes audio-settings-exit {
+  from { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  to { opacity: 0; transform: translate3d(6px, 0, 0) scale(0.96); }
+}
+
+@keyframes home-witch-idle {
+  0%, 100% { transform: translateY(-4px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes game-settings-mask-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes game-settings-mask-exit {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes game-settings-dialog-enter {
+  from { opacity: 0; transform: translateY(10px) scale(0.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes game-settings-dialog-exit {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(8px) scale(0.96); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .witch-stage,
+  .potion-bottle {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+
+  .potion-particles img,
+  .potion-particles.is-selected img,
+  .potion-particles.is-pouring img,
+  .potion-particles.is-complete img {
+    opacity: 0.38;
+    animation: none;
+  }
+
+  .potion-bottle.is-departing,
+  .completion-burst {
+    animation: completion-fade 1ms linear forwards;
+  }
+
+  .game-message,
+  .game-message.is-enter,
+  .game-message.is-exit,
+  .game-message.is-replace .game-message-text {
+    animation: none;
+    transform: none;
+  }
+
+  .audio-settings-popover,
+  .audio-settings-popover.is-exiting {
+    animation-duration: 1ms;
+  }
+
+  .home-hero .witch-stage,
+  .game-settings-layer,
+  .game-settings-layer.is-exiting,
+  .game-settings-dialog,
+  .game-settings-layer.is-exiting .game-settings-dialog {
+    animation-duration: 1ms;
+    animation-iteration-count: 1;
+    transition-duration: 1ms;
+  }
+}

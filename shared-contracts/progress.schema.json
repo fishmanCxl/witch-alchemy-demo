@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "witch-water-sort/progress.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["baseRevision", "currentLevel", "completedLevels", "bestMoves", "configVersion"],
+  "properties": {
+    "baseRevision": { "type": "integer", "minimum": 0 },
+    "currentLevel": { "type": "string", "pattern": "^level-[0-9]{3}$" },
+    "completedLevels": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^level-[0-9]{3}$" }
+    },
+    "bestMoves": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 1 }
+    },
+    "configVersion": { "type": "string", "maxLength": 64 }
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "background": "/assets/game/chibi/background/alchemy-room.png",
+  "witch": {
+    "idle": {
+      "frames": 18,
+      "durationMs": 3600,
+      "loop": true,
+      "pattern": "/assets/game/chibi/character/idle/idle-{index}.png"
+    },
+    "prepare": {
+      "frames": 12,
+      "durationMs": 720,
+      "loop": false,
+      "pattern": "/assets/game/chibi/character/prepare/prepare-{index}.png"
+    },
+    "raise": {
+      "frames": 12,
+      "durationMs": 720,
+      "loop": false,
+      "pattern": "/assets/game/chibi/character/raise/raise-{index}.png"
+    },
+    "cast": {
+      "frames": 20,
+      "durationMs": 1200,
+      "loop": false,
+      "pattern": "/assets/game/chibi/character/cast/cast-{index}.png"
+    },
+    "celebrate": {
+      "frames": 14,
+      "durationMs": 1120,
+      "loop": false,
+      "pattern": "/assets/game/chibi/character/celebrate/celebrate-{index}.png"
+    },
+    "return": {
+      "frames": 18,
+      "durationMs": 1080,
+      "loop": false,
+      "pattern": "/assets/game/chibi/character/return/return-{index}.png"
+    },
+    "oops": {
+      "frames": 12,
+      "durationMs": 960,
+      "loop": false,
+      "pattern": "/assets/game/chibi/character/oops/oops-{index}.png"
+    }
+  },
+  "bottle": "/assets/game/chibi/items/bottle-frame.png",
+  "particles": {
+    "rose": "/assets/game/chibi/effects/particle-rose-heart.png",
+    "violet": "/assets/game/chibi/effects/particle-violet-star.png",
+    "amber": "/assets/game/chibi/effects/particle-amber-spark.png",
+    "cyan": "/assets/game/chibi/effects/particle-cyan-bubble.png",
+    "mint": "/assets/game/chibi/effects/particle-mint-leaf.png",
+    "blue": "/assets/game/chibi/effects/particle-blue-snow.png",
+    "gold": "/assets/game/chibi/effects/particle-gold-dust.png",
+    "lilac": "/assets/game/chibi/effects/particle-lilac-moon.png"
+  },
+  "ui": {
+    "buttons": {
+      "purple": {
+        "normal": "/assets/game/chibi/ui/button-purple-normal.png",
+        "pressed": "/assets/game/chibi/ui/button-purple-pressed.png",
+        "disabled": "/assets/game/chibi/ui/button-purple-disabled.png"
+      },
+      "gold": {
+        "normal": "/assets/game/chibi/ui/button-gold-normal.png",
+        "pressed": "/assets/game/chibi/ui/button-gold-pressed.png",
+        "disabled": "/assets/game/chibi/ui/button-gold-disabled.png"
+      }
+    },
+    "icons": {
+      "undo": "/assets/game/chibi/ui/icon-undo.png",
+      "restart": "/assets/game/chibi/ui/icon-restart.png",
+      "add-bottle": "/assets/game/chibi/ui/icon-add-bottle.png"
+    },
+    "badgePlus": "/assets/game/chibi/ui/badge-plus.png",
+    "messagePanel": "/assets/game/chibi/ui/message-panel.png"
+  },
+  "effects": {
+    "completionBurst": "/assets/game/chibi/effects/completion-burst.png",
+    "witchMagic": {
+      "cast": {
+        "frames": 20,
+        "pattern": "/assets/game/chibi/effects/witch-magic/cast/cast-{index}.png"
+      },
+      "celebrate": {
+        "frames": 14,
+        "pattern": "/assets/game/chibi/effects/witch-magic/celebrate/celebrate-{index}.png"
+      }
+    }
+  }
+}

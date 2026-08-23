@@ -1,0 +1,16 @@
+.pnpm-store/
+.superpowers/
+.tmp/
+
+**/node_modules/
+**/dist/
+**/build/
+**/library/
+**/local/
+**/temp/
+**/profiles/
+**/test-results/
+**/playwright-report/
+
+Thumbs.db
+.DS_Store

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "witch-water-sort/reward-claim.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["levelId", "claimId"],
+  "properties": {
+    "levelId": { "type": "string", "pattern": "^level-[0-9]{3}$" },
+    "claimId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{8,128}$" }
+  }
+}

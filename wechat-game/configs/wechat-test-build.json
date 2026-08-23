@@ -1,0 +1,26 @@
+{
+  "name": "witch-water-sort",
+  "taskName": "wechatgame",
+  "outputName": "wechatgame",
+  "platform": "wechatgame",
+  "debug": false,
+  "md5Cache": false,
+  "includedModules": [
+    "base",
+    "gfx-webgl",
+    "2d",
+    "ui",
+    "graphics",
+    "mask",
+    "audio",
+    "tween"
+  ],
+  "packages": {
+    "wechatgame": {
+      "appid": "wx6ac3f5090a6b99c5",
+      "orientation": "portrait",
+      "separateEngine": false,
+      "highPerformanceMode": false
+    }
+  }
+}
