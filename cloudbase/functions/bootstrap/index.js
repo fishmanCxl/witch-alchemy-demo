@@ -1,5 +1,5 @@
 'use strict';
-const { db, getOpenId, safeMain } = require('./_shared/runtime');
+const { createBootstrapPayload, db, getOpenId, safeMain } = require('./_shared/runtime');
 
 exports.main = safeMain(async () => {
   const openid = getOpenId();
@@ -9,9 +9,9 @@ exports.main = safeMain(async () => {
     db.collection('player_progress').doc(openid).get().catch(() => ({ data: null })),
     db.collection('level_configs').where({ enabled: true }).orderBy('publishedAt', 'desc').limit(1).get(),
   ]);
-  const configVersion = configResult.data[0]?.version || '2026.08.23.1';
-  const progress = progressResult.data || {
-    revision: 0, currentLevel: 'level-012', completedLevels: [], bestMoves: {}, configVersion,
+  const configVersion = configResult.data[0]?.version || 'chapter-1.2026-08-23.1';
+  return {
+    ok: true,
+    ...createBootstrapPayload({ progress: progressResult.data, configVersion, serverTime: now }),
   };
-  return { ok: true, progress, configVersion, serverTime: now };
 });

@@ -20,6 +20,7 @@ import type { PotionColor } from '../core/types.ts';
 import { LocalProgressStore } from '../platform/LocalProgressStore.ts';
 import { PlatformRuntime } from '../platform/WeChatPlatform.ts';
 import { RewardedBottleCoordinator, type RewardFlowStatus } from '../platform/rewarded-bottle.ts';
+import { ProgressSyncCoordinator } from '../platform/progress-sync.ts';
 import { createPlatformStorage } from '../platform/storage-port.ts';
 import { AudioDirector } from './AudioDirector.ts';
 import {
@@ -57,8 +58,11 @@ export class ProductionBootstrap extends Component {
   private completionScheduled = false;
   private readonly platform = new PlatformRuntime();
   private rewarded: RewardedBottleCoordinator | null = null;
+  private progressSync: ProgressSyncCoordinator | null = null;
   private rewardBusy = false;
   private completionSaveFailed = false;
+  private levelStartedAt = Date.now();
+  private undoCount = 0;
 
   start(): void {
     view.setDesignResolutionSize(393, 852, ResolutionPolicy.FIXED_WIDTH);
@@ -74,11 +78,13 @@ export class ProductionBootstrap extends Component {
     this.audio.initialize(this.flow.soundEnabled);
     const rewardPorts = this.platform.createRewardedPorts(REWARDED_AD_UNIT_ID);
     this.rewarded = new RewardedBottleCoordinator(rewardPorts.ad, rewardPorts.claims);
+    this.progressSync = new ProgressSyncCoordinator(this.platform.createProgressSyncPort());
     this.platform.bindLifecycle(
-      () => this.audio?.setForeground(true),
+      () => { this.audio?.setForeground(true); void this.syncCloudProgress(); },
       () => { this.store.saveSession(this.session); this.audio?.setForeground(false); },
     );
     this.render();
+    void this.syncCloudProgress();
   }
 
   onDestroy(): void {
@@ -237,6 +243,8 @@ export class ProductionBootstrap extends Component {
     this.unscheduleAllCallbacks();
     this.completionScheduled = false;
     this.completionSaveFailed = false;
+    this.levelStartedAt = Date.now();
+    this.undoCount = 0;
     this.invalid.clear();
     this.pouring.clear();
     this.render();
@@ -353,7 +361,9 @@ export class ProductionBootstrap extends Component {
 
   private handleUndo(): void {
     this.resumeAudio();
-    this.applySessionResult(undoSession(this.session));
+    const result = undoSession(this.session);
+    if (result.cue === 'undo') this.undoCount += 1;
+    this.applySessionResult(result);
   }
 
   private handleRestart(): void {
@@ -444,11 +454,39 @@ export class ProductionBootstrap extends Component {
       this.completionSaveFailed = false;
       this.flow = showLevelComplete(this.flow, nextLevelConfig(this.session.levelId)?.id ?? null);
       this.render();
+      void this.syncAfterCompletion();
     } catch {
       this.completionSaveFailed = true;
       this.session = { ...this.session, message: '进度保存失败，请重试', witchMood: 'oops' };
       this.render();
     }
+  }
+
+  private async syncCloudProgress(): Promise<void> {
+    if (!this.progressSync) return;
+    const result = await this.progressSync.sync(this.progress, this.platform.isOnline());
+    if (result.status !== 'synced') return;
+    this.progress = result.progress;
+    try {
+      this.store.saveProgress(this.progress);
+    } catch {
+      // Local progress remains authoritative when a background cloud merge cannot be cached.
+    }
+  }
+
+  private async syncAfterCompletion(): Promise<void> {
+    if (!this.progressSync) return;
+    const durationMs = Math.max(1, Math.min(86_400_000, Date.now() - this.levelStartedAt));
+    await Promise.all([
+      this.syncCloudProgress(),
+      this.progressSync.submitLevelResult({
+        levelId: this.session.levelId,
+        moves: this.session.game.moves,
+        durationMs,
+        undoCount: this.undoCount,
+        rewardedBottleUsed: this.session.game.rewardBottleUsed,
+      }, this.platform.isOnline()),
+    ]);
   }
 
   private refreshBottleHighlights(): void {

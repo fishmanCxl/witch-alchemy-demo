@@ -1,4 +1,6 @@
 import type { RewardClaimPort, RewardClaimResult, RewardedAdPort, RewardedAdResult } from './rewarded-bottle.ts';
+import type { PlayerProgress } from '../core/level-progress.ts';
+import type { LevelResult, ProgressSyncPort } from './progress-sync.ts';
 
 interface CloseResult { readonly isEnded?: boolean }
 interface RewardedVideoAdLike {
@@ -87,6 +89,42 @@ export class FakeRewardClaimClient implements RewardClaimPort {
   async claim(): Promise<RewardClaimResult> { return 'granted'; }
 }
 
+export class WeChatProgressClient implements ProgressSyncPort {
+  private readonly api: WeChatApiLike;
+
+  constructor(api: WeChatApiLike) {
+    this.api = api;
+    this.api.cloud?.init({ traceUser: true });
+  }
+
+  async sync(progress: PlayerProgress): Promise<unknown> {
+    if (!this.api.cloud) return null;
+    const response = await this.api.cloud.callFunction({
+      name: 'syncProgress',
+      data: { ...progress },
+    });
+    const result = response.result as { ok?: unknown; progress?: unknown } | undefined;
+    if (result?.ok !== true) throw new Error('progress sync rejected');
+    return result.progress ?? null;
+  }
+
+  async submitLevelResult(result: LevelResult): Promise<void> {
+    if (!this.api.cloud) return;
+    const response = await this.api.cloud.callFunction({
+      name: 'submitLevelResult',
+      data: { ...result },
+    });
+    if ((response.result as { ok?: unknown } | undefined)?.ok !== true) {
+      throw new Error('level result rejected');
+    }
+  }
+}
+
+export class UnavailableProgressClient implements ProgressSyncPort {
+  async sync(): Promise<unknown> { return null; }
+  async submitLevelResult(): Promise<void> {}
+}
+
 export class PlatformRuntime {
   private online = true;
   private readonly api = runtimeWx();
@@ -108,6 +146,10 @@ export class PlatformRuntime {
       ad: adUnitId ? new WeChatRewardedAd(this.api, adUnitId) : new UnavailableRewardedAd(),
       claims: new WeChatRewardClaimClient(this.api),
     };
+  }
+
+  createProgressSyncPort(): ProgressSyncPort {
+    return this.api?.cloud ? new WeChatProgressClient(this.api) : new UnavailableProgressClient();
   }
 
   bindLifecycle(onShow: () => void, onHide: () => void): void {
