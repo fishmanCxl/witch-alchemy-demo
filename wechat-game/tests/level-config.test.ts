@@ -48,11 +48,11 @@ test('demo level exposes the immutable runtime contract and validates cleanly', 
   });
   assert.deepEqual(DEMO_LEVEL_CONFIG.metrics, {
     colorCount: 8,
-    optimalMoves: 0,
+    optimalMoves: 23,
     segmentCount: 30,
-    exploredStates: 0,
+    exploredStates: 89_354,
     openingMoves: 20,
-    difficultyScore: 0,
+    difficultyScore: 2_134,
   });
   assert.deepEqual(validateLevelConfig(DEMO_LEVEL_CONFIG), []);
 });

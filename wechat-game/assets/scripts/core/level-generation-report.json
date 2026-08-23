@@ -1,0 +1,351 @@
+{
+  "schemaVersion": 1,
+  "configVersion": "chapter-1.2026-08-23.1",
+  "levels": [
+    {
+      "id": "level-001",
+      "source": "tutorial",
+      "generatorSeed": null,
+      "attempt": null,
+      "reverseMoves": null,
+      "metrics": {
+        "colorCount": 1,
+        "optimalMoves": 1,
+        "segmentCount": 2,
+        "exploredStates": 1,
+        "openingMoves": 6,
+        "difficultyScore": 300
+      },
+      "scoreComponents": {
+        "color": 0,
+        "solution": 24,
+        "segments": 20,
+        "search": 0,
+        "openingConstraint": 1080,
+        "wrongBranchPenalty": 12
+      }
+    },
+    {
+      "id": "level-002",
+      "source": "tutorial",
+      "generatorSeed": null,
+      "attempt": null,
+      "reverseMoves": null,
+      "metrics": {
+        "colorCount": 2,
+        "optimalMoves": 1,
+        "segmentCount": 4,
+        "exploredStates": 1,
+        "openingMoves": 8,
+        "difficultyScore": 600
+      },
+      "scoreComponents": {
+        "color": 100,
+        "solution": 24,
+        "segments": 40,
+        "search": 0,
+        "openingConstraint": 960,
+        "wrongBranchPenalty": 18
+      }
+    },
+    {
+      "id": "level-003",
+      "source": "tutorial",
+      "generatorSeed": null,
+      "attempt": null,
+      "reverseMoves": null,
+      "metrics": {
+        "colorCount": 2,
+        "optimalMoves": 2,
+        "segmentCount": 4,
+        "exploredStates": 2,
+        "openingMoves": 12,
+        "difficultyScore": 900
+      },
+      "scoreComponents": {
+        "color": 100,
+        "solution": 48,
+        "segments": 40,
+        "search": 18,
+        "openingConstraint": 720,
+        "wrongBranchPenalty": 30
+      }
+    },
+    {
+      "id": "level-004",
+      "source": "generated",
+      "generatorSeed": 2027809456,
+      "attempt": 5,
+      "reverseMoves": 7,
+      "metrics": {
+        "colorCount": 3,
+        "optimalMoves": 6,
+        "segmentCount": 8,
+        "exploredStates": 50,
+        "openingMoves": 6,
+        "difficultyScore": 1606
+      },
+      "scoreComponents": {
+        "color": 200,
+        "solution": 144,
+        "segments": 80,
+        "search": 90,
+        "openingConstraint": 1080,
+        "wrongBranchPenalty": 12
+      }
+    },
+    {
+      "id": "level-005",
+      "source": "generated",
+      "generatorSeed": 2175735982,
+      "attempt": 18,
+      "reverseMoves": 9,
+      "metrics": {
+        "colorCount": 3,
+        "optimalMoves": 7,
+        "segmentCount": 9,
+        "exploredStates": 104,
+        "openingMoves": 6,
+        "difficultyScore": 1658
+      },
+      "scoreComponents": {
+        "color": 200,
+        "solution": 168,
+        "segments": 90,
+        "search": 108,
+        "openingConstraint": 1080,
+        "wrongBranchPenalty": 12
+      }
+    },
+    {
+      "id": "level-006",
+      "source": "generated",
+      "generatorSeed": 1549113674,
+      "attempt": 21,
+      "reverseMoves": 10,
+      "metrics": {
+        "colorCount": 4,
+        "optimalMoves": 8,
+        "segmentCount": 11,
+        "exploredStates": 142,
+        "openingMoves": 8,
+        "difficultyScore": 1706
+      },
+      "scoreComponents": {
+        "color": 300,
+        "solution": 192,
+        "segments": 110,
+        "search": 126,
+        "openingConstraint": 960,
+        "wrongBranchPenalty": 18
+      }
+    },
+    {
+      "id": "level-007",
+      "source": "generated",
+      "generatorSeed": 683146978,
+      "attempt": 32,
+      "reverseMoves": 11,
+      "metrics": {
+        "colorCount": 4,
+        "optimalMoves": 9,
+        "segmentCount": 12,
+        "exploredStates": 278,
+        "openingMoves": 8,
+        "difficultyScore": 1758
+      },
+      "scoreComponents": {
+        "color": 300,
+        "solution": 216,
+        "segments": 120,
+        "search": 144,
+        "openingConstraint": 960,
+        "wrongBranchPenalty": 18
+      }
+    },
+    {
+      "id": "level-008",
+      "source": "generated",
+      "generatorSeed": 1514187467,
+      "attempt": 76,
+      "reverseMoves": 13,
+      "metrics": {
+        "colorCount": 5,
+        "optimalMoves": 11,
+        "segmentCount": 14,
+        "exploredStates": 513,
+        "openingMoves": 10,
+        "difficultyScore": 1830
+      },
+      "scoreComponents": {
+        "color": 400,
+        "solution": 264,
+        "segments": 140,
+        "search": 162,
+        "openingConstraint": 840,
+        "wrongBranchPenalty": 24
+      }
+    },
+    {
+      "id": "level-009",
+      "source": "generated",
+      "generatorSeed": 1161831760,
+      "attempt": 16,
+      "reverseMoves": 15,
+      "metrics": {
+        "colorCount": 5,
+        "optimalMoves": 12,
+        "segmentCount": 15,
+        "exploredStates": 503,
+        "openingMoves": 10,
+        "difficultyScore": 1846
+      },
+      "scoreComponents": {
+        "color": 400,
+        "solution": 288,
+        "segments": 150,
+        "search": 144,
+        "openingConstraint": 840,
+        "wrongBranchPenalty": 24
+      }
+    },
+    {
+      "id": "level-010",
+      "source": "generated",
+      "generatorSeed": 3359148187,
+      "attempt": 122,
+      "reverseMoves": 17,
+      "metrics": {
+        "colorCount": 6,
+        "optimalMoves": 12,
+        "segmentCount": 17,
+        "exploredStates": 1066,
+        "openingMoves": 12,
+        "difficultyScore": 1888
+      },
+      "scoreComponents": {
+        "color": 500,
+        "solution": 288,
+        "segments": 170,
+        "search": 180,
+        "openingConstraint": 720,
+        "wrongBranchPenalty": 30
+      }
+    },
+    {
+      "id": "level-011",
+      "source": "generated",
+      "generatorSeed": 2732520879,
+      "attempt": 125,
+      "reverseMoves": 19,
+      "metrics": {
+        "colorCount": 7,
+        "optimalMoves": 17,
+        "segmentCount": 22,
+        "exploredStates": 3290,
+        "openingMoves": 14,
+        "difficultyScore": 2062
+      },
+      "scoreComponents": {
+        "color": 600,
+        "solution": 408,
+        "segments": 220,
+        "search": 198,
+        "openingConstraint": 600,
+        "wrongBranchPenalty": 36
+      }
+    },
+    {
+      "id": "level-012",
+      "source": "legacy",
+      "generatorSeed": null,
+      "attempt": null,
+      "reverseMoves": null,
+      "metrics": {
+        "colorCount": 8,
+        "optimalMoves": 23,
+        "segmentCount": 30,
+        "exploredStates": 89354,
+        "openingMoves": 20,
+        "difficultyScore": 2134
+      },
+      "scoreComponents": {
+        "color": 700,
+        "solution": 552,
+        "segments": 300,
+        "search": 288,
+        "openingConstraint": 240,
+        "wrongBranchPenalty": 54
+      }
+    },
+    {
+      "id": "level-013",
+      "source": "generated",
+      "generatorSeed": 3098222358,
+      "attempt": 41,
+      "reverseMoves": 22,
+      "metrics": {
+        "colorCount": 8,
+        "optimalMoves": 20,
+        "segmentCount": 26,
+        "exploredStates": 5889,
+        "openingMoves": 16,
+        "difficultyScore": 2178
+      },
+      "scoreComponents": {
+        "color": 700,
+        "solution": 480,
+        "segments": 260,
+        "search": 216,
+        "openingConstraint": 480,
+        "wrongBranchPenalty": 42
+      }
+    },
+    {
+      "id": "level-014",
+      "source": "generated",
+      "generatorSeed": 2902034865,
+      "attempt": 227,
+      "reverseMoves": 23,
+      "metrics": {
+        "colorCount": 8,
+        "optimalMoves": 21,
+        "segmentCount": 26,
+        "exploredStates": 6991,
+        "openingMoves": 16,
+        "difficultyScore": 2202
+      },
+      "scoreComponents": {
+        "color": 700,
+        "solution": 504,
+        "segments": 260,
+        "search": 216,
+        "openingConstraint": 480,
+        "wrongBranchPenalty": 42
+      }
+    },
+    {
+      "id": "level-015",
+      "source": "generated",
+      "generatorSeed": 1297621705,
+      "attempt": 1770,
+      "reverseMoves": 24,
+      "metrics": {
+        "colorCount": 8,
+        "optimalMoves": 23,
+        "segmentCount": 28,
+        "exploredStates": 9114,
+        "openingMoves": 16,
+        "difficultyScore": 2288
+      },
+      "scoreComponents": {
+        "color": 700,
+        "solution": 552,
+        "segments": 280,
+        "search": 234,
+        "openingConstraint": 480,
+        "wrongBranchPenalty": 42
+      }
+    }
+  ]
+}

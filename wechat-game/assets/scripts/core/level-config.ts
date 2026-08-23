@@ -140,11 +140,11 @@ export const DEMO_LEVEL_CONFIG: LevelConfig = Object.freeze({
   completionRule: Object.freeze({ type: 'all-colors', targetCount: 8 }),
   metrics: Object.freeze({
     colorCount: 8,
-    optimalMoves: 0,
+    optimalMoves: 23,
     segmentCount: 30,
-    exploredStates: 0,
+    exploredStates: 89_354,
     openingMoves: 20,
-    difficultyScore: 0,
+    difficultyScore: 2_134,
   }),
   initialState: createDemoState(),
 });

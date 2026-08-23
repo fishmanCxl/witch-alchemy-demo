@@ -62,6 +62,7 @@ test('pure core stays independent from Cocos and WeChat runtime APIs', () => {
     const source = readFileSync(new URL(file, coreRoot), 'utf8');
     assert.doesNotMatch(source, /from\s+['"]cc['"]/);
     assert.doesNotMatch(source, /\bwx\s*\./);
+    assert.doesNotMatch(source, /from\s+['"][^'"]*tools[\\/]/);
   }
 });
 
