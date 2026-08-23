@@ -2,6 +2,8 @@ import { PUBLISHED_LEVEL_DATA } from './level-data.generated.ts';
 import type { BottleState, GameState } from './types.ts';
 import type { LevelConfig } from './level-config.ts';
 
+export const FIRST_CHAPTER_CONFIG_VERSION = 'chapter-1.2026-08-23.1' as const;
+
 function freezeState(state: GameState): GameState {
   const bottles = state.bottles.map((bottle): BottleState => Object.freeze({
     ...bottle,
@@ -36,4 +38,3 @@ export function nextLevelConfig(id: string): LevelConfig | null {
   const current = getLevelConfig(id);
   return current ? getLevelConfig(`level-${String(current.number + 1).padStart(3, '0')}`) : null;
 }
-

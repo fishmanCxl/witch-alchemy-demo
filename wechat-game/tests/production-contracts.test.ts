@@ -33,13 +33,66 @@ test('versioned local snapshots round-trip active progress and selected bottle',
   });
 
   assert.equal(snapshot.schemaVersion, CURRENT_SNAPSHOT_VERSION);
-  assert.deepEqual(decodeLocalSnapshot(JSON.stringify(snapshot)), snapshot);
+  assert.equal(CURRENT_SNAPSHOT_VERSION, 2);
+  assert.deepEqual(decodeLocalSnapshot(JSON.stringify(snapshot), DEMO_LEVEL_CONFIG), snapshot);
 });
 
 test('snapshot decoder rejects corrupt or future-schema data without throwing', () => {
-  assert.equal(decodeLocalSnapshot('{bad json'), null);
-  assert.equal(decodeLocalSnapshot(JSON.stringify({ schemaVersion: 999 })), null);
-  assert.equal(decodeLocalSnapshot(JSON.stringify({ schemaVersion: 1, levelId: 12 })), null);
+  assert.equal(decodeLocalSnapshot('{bad json', DEMO_LEVEL_CONFIG), null);
+  assert.equal(decodeLocalSnapshot(JSON.stringify({ schemaVersion: 999 }), DEMO_LEVEL_CONFIG), null);
+  assert.equal(decodeLocalSnapshot(JSON.stringify({ schemaVersion: 1, levelId: 12 }), DEMO_LEVEL_CONFIG), null);
+});
+
+test('snapshot decoder enforces the selected level, fixed board, capacity, and history bounds', () => {
+  const state = createDemoState();
+  const snapshot = createLocalSnapshot({
+    levelId: DEMO_LEVEL_CONFIG.id,
+    configVersion: DEMO_LEVEL_CONFIG.configVersion,
+    revision: 1,
+    state,
+    history: [state],
+    selected: 0,
+    updatedAt: 99,
+  });
+  const wrongLevel = { ...snapshot, levelId: 'level-011' };
+  const wrongVersion = { ...snapshot, configVersion: 'stale' };
+  const shortBoard = { ...snapshot, state: { ...state, bottles: state.bottles.slice(0, 14) } };
+  const overCapacity = {
+    ...snapshot,
+    history: [{
+      ...state,
+      bottles: state.bottles.map((bottle, index) => index === 0
+        ? { ...bottle, layers: ['rose', 'rose', 'rose', 'rose', 'rose'] }
+        : bottle),
+    }],
+  };
+
+  assert.equal(decodeLocalSnapshot(JSON.stringify(wrongLevel), DEMO_LEVEL_CONFIG), null);
+  assert.equal(decodeLocalSnapshot(JSON.stringify(wrongVersion), DEMO_LEVEL_CONFIG), null);
+  assert.equal(decodeLocalSnapshot(JSON.stringify(shortBoard), DEMO_LEVEL_CONFIG), null);
+  assert.equal(decodeLocalSnapshot(JSON.stringify(overCapacity), DEMO_LEVEL_CONFIG), null);
+  assert.equal(decodeLocalSnapshot(JSON.stringify({ ...snapshot, selected: 15 }), DEMO_LEVEL_CONFIG), null);
+  assert.equal(decodeLocalSnapshot(JSON.stringify({ ...snapshot, updatedAt: -1 }), DEMO_LEVEL_CONFIG), null);
+});
+
+test('shared progress schema exposes the same v2 progress field names as the core contract', () => {
+  const schema = JSON.parse(readFileSync(
+    new URL('../../shared-contracts/progress.schema.json', import.meta.url),
+    'utf8',
+  ));
+
+  assert.deepEqual(schema.required, [
+    'schemaVersion',
+    'revision',
+    'currentLevel',
+    'highestUnlockedLevel',
+    'completedLevels',
+    'bestMoves',
+    'configVersion',
+  ]);
+  assert.equal(schema.properties.schemaVersion.const, 2);
+  assert.equal(schema.properties.highestUnlockedLevel.pattern, '^level-[0-9]{3}$');
+  assert.equal(schema.additionalProperties, false);
 });
 
 test('approved chibi and audio manifests are synchronized into Cocos resources', () => {

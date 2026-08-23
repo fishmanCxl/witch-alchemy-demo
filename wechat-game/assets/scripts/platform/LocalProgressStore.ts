@@ -31,7 +31,7 @@ function setStored(key: string, value: string): void {
 
 export class LocalProgressStore {
   loadSession(): GameSession {
-    const snapshot = decodeLocalSnapshot(getStored(PROGRESS_KEY));
+    const snapshot = decodeLocalSnapshot(getStored(PROGRESS_KEY), DEMO_LEVEL_CONFIG);
     if (!snapshot) return createGameSession(DEMO_LEVEL_CONFIG);
     return {
       ...createGameSession(DEMO_LEVEL_CONFIG, snapshot.state),
