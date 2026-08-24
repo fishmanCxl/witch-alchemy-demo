@@ -1,5 +1,5 @@
 import {
-  _decorator, BlockInputEvents, Button, Color, Component, Graphics, Label, Mask,
+  _decorator, BlockInputEvents, Button, Color, Component, Font, Graphics, Label, LabelOutline, Mask,
   Node, ResolutionPolicy, resources, Sprite, SpriteFrame, sys, UITransform, Vec3, view, tween,
 } from 'cc';
 
@@ -24,10 +24,14 @@ import { ProgressSyncCoordinator } from '../platform/progress-sync.ts';
 import { createPlatformStorage } from '../platform/storage-port.ts';
 import { AudioDirector } from './AudioDirector.ts';
 import {
-  HOME_LAYOUT, LEVEL_COMPLETE_LAYOUT, LEVEL_LAYOUT, LEVEL_SELECT_LAYOUT, SETTINGS_LAYOUT,
-  bottlePlacement, buttonBaseLayout, buttonSpritePath, levelButtonVisual, levelSelectButton,
-  shouldRenderBottle, type ButtonBaseLayout, type ButtonVariant, type LevelButtonState,
+  ART_FONT_RESOURCE, HOME_LAYOUT, LEVEL_COMPLETE_LAYOUT, LEVEL_LAYOUT, LEVEL_SELECT_LAYOUT, RESTART_LABEL,
+  SETTINGS_LAYOUT, bottleFeedbackVisual, bottlePlacement, buttonBaseLayout, buttonSpritePath,
+  levelButtonVisual, levelSelectButton, potionParticleState, potionParticleVisuals,
+  potionProgressLabel, shouldRenderBottle,
+  type ButtonBaseLayout, type ButtonVariant, type LevelButtonState, type PotionParticleState,
+  type PotionParticleVisual,
 } from './presentation-layout.ts';
+import { PotionParticleAnimator } from './PotionParticleAnimator.ts';
 import { WitchAnimator } from './WitchAnimator.ts';
 
 const { ccclass } = _decorator;
@@ -50,11 +54,13 @@ export class ProductionBootstrap extends Component {
   private session: GameSession = createGameSession(this.currentLevel);
   private surface: Node | null = null;
   private renderToken = 0;
+  private artFont: Font | null = null;
   private audio: AudioDirector | null = null;
   private store = new LocalProgressStore(createPlatformStorage(sys.localStorage));
   private invalid = new Set<number>();
   private pouring = new Set<number>();
   private bottleNodes = new Map<number, Node>();
+  private particleAnimators = new Map<number, PotionParticleAnimator[]>();
   private completionScheduled = false;
   private readonly platform = new PlatformRuntime();
   private rewarded: RewardedBottleCoordinator | null = null;
@@ -83,6 +89,11 @@ export class ProductionBootstrap extends Component {
       () => { this.audio?.setForeground(true); void this.syncCloudProgress(); },
       () => { this.store.saveSession(this.session); this.audio?.setForeground(false); },
     );
+    resources.load(ART_FONT_RESOURCE, Font, (error, font) => {
+      if (error || !this.node.isValid) return;
+      this.artFont = font;
+      this.render();
+    });
     this.render();
     void this.syncCloudProgress();
   }
@@ -95,6 +106,7 @@ export class ProductionBootstrap extends Component {
     this.renderToken += 1;
     this.surface?.destroy();
     this.bottleNodes.clear();
+    this.particleAnimators.clear();
     this.surface = new Node('ProductionSurface');
     this.node.addChild(this.surface);
     if (this.flow.scene === 'home') this.renderHome(this.surface, this.renderToken);
@@ -113,7 +125,7 @@ export class ProductionBootstrap extends Component {
     this.addLabel(root, `第 ${this.currentLevel.number} 关`, 34, HOME_LAYOUT.header.x, 316,
       color('#FFF4DF'), HOME_LAYOUT.header.width, Label.HorizontalAlign.LEFT);
     this.addPanel(root, 82, 28, -133, 278, color('#23102B', 194), color('#D6AFC3', 76), 14);
-    this.addLabel(root, `目标 ${completed}/${this.targetPotionCount(this.currentLevel)}`, 12,
+    this.addLabel(root, potionProgressLabel(completed, this.targetPotionCount(this.currentLevel)), 12,
       -133, 278, color('#F3DFCF'), 78);
     this.addWitch(root, 'idle', HOME_LAYOUT.witch.x, HOME_LAYOUT.witch.y, HOME_LAYOUT.witch.width, HOME_LAYOUT.witch.height);
     this.addRasterButton(root, '选择关卡', 'gold', HOME_LAYOUT.selectButton.width,
@@ -260,7 +272,7 @@ export class ProductionBootstrap extends Component {
     this.addPanel(root, 54, 24, -147, 280, color('#221023', 184), color('#DEB5A1', 70), 12);
     this.addLabel(root, `步数 ${this.session.game.moves}`, 11, -147, 280, color('#EFD9C9'), 52);
     this.addPanel(root, 66, 24, -80, 280, color('#221023', 184), color('#DEB5A1', 70), 12);
-    this.addLabel(root, `目标 ${completed}/${this.targetPotionCount(this.currentLevel)}`, 11,
+    this.addLabel(root, potionProgressLabel(completed, this.targetPotionCount(this.currentLevel)), 11,
       -80, 280, color('#EFD9C9'), 64);
     this.addWitch(root, this.session.witchMood, LEVEL_LAYOUT.witch.x, LEVEL_LAYOUT.witch.y,
       LEVEL_LAYOUT.witch.width, LEVEL_LAYOUT.witch.height);
@@ -277,7 +289,7 @@ export class ProductionBootstrap extends Component {
     } else {
       this.addControlButton(root, '撤销', 'icon-undo', LEVEL_LAYOUT.controlCenters[0], () => this.handleUndo(),
         this.session.levelComplete || this.session.history.length === 0);
-      this.addControlButton(root, '重开', 'icon-restart', LEVEL_LAYOUT.controlCenters[1], () => this.handleRestart(),
+      this.addControlButton(root, RESTART_LABEL, 'icon-restart', LEVEL_LAYOUT.controlCenters[1], () => this.handleRestart(),
         this.session.levelComplete);
       this.addControlButton(root, this.session.game.rewardBottleUsed ? '已加瓶' : '加空瓶', 'icon-add-bottle',
         LEVEL_LAYOUT.controlCenters[2], () => { void this.handleRewardedBottle(); },
@@ -302,16 +314,25 @@ export class ProductionBootstrap extends Component {
   private addBottle(root: Node, index: number, x: number, y: number, angle: number, token: number): void {
     const bottle = this.session.game.bottles[index];
     if (!bottle) return;
-    const node = new Node(`Bottle-${index + 1}`);
-    node.setPosition(x, y);
+    const hitTarget = new Node(`BottleHitTarget-${index + 1}`);
+    hitTarget.setPosition(x, y);
+    hitTarget.addComponent(UITransform).setContentSize(64, 112);
+    root.addChild(hitTarget);
+
+    const feedback = bottleFeedbackVisual(this.session.selected === index, this.pouring.has(index));
+    const node = new Node(`BottleVisual-${index + 1}`);
+    node.setPosition(0, feedback.yOffset);
     node.angle = angle;
+    node.setScale(new Vec3(feedback.scale, feedback.scale, 1));
     node.addComponent(UITransform).setContentSize(LEVEL_LAYOUT.bottle.width, LEVEL_LAYOUT.bottle.height);
-    root.addChild(node);
+    hitTarget.addChild(node);
     this.bottleNodes.set(index, node);
 
-    const selectedGlow = this.addPanel(node, 54, 110, 0, 0, color('#8A4BC4', 24), color('#E1B2FF'), 22);
-    selectedGlow.name = 'SelectedGlow';
-    selectedGlow.active = this.session.selected === index;
+    const selectedAura = this.addSprite(node, 'game/chibi/items/bottle-frame/spriteFrame', 52, 112, 0, 0, token);
+    selectedAura.name = 'SelectedAura';
+    selectedAura.active = feedback.auraVisible;
+    const auraSprite = selectedAura.getComponent(Sprite);
+    if (auraSprite) auraSprite.color = color('#87D8FF', 88);
     const invalidGlow = this.addPanel(node, 56, 112, 0, 0, color('#EA4F62', 20), color('#FF667A'), 22);
     invalidGlow.name = 'InvalidGlow';
     invalidGlow.active = this.invalid.has(index);
@@ -329,24 +350,48 @@ export class ProductionBootstrap extends Component {
     maskGraphics.fill();
 
     const layerHeight = LEVEL_LAYOUT.liquid.height / 4;
+    const particleState = potionParticleState(
+      this.session.pendingCompletion.includes(index),
+      this.pouring.has(index),
+      this.session.selected === index,
+    );
+    const animators: PotionParticleAnimator[] = [];
     bottle.layers.forEach((layer, layerIndex) => {
       const layerY = -LEVEL_LAYOUT.liquid.height / 2 + layerHeight / 2 + layerIndex * layerHeight;
       const layerNode = this.addPanel(clip, LEVEL_LAYOUT.liquid.width, layerHeight + 0.5, 0, layerY,
         color(POTION_COLORS[layer]), undefined, 1);
-      this.addSprite(layerNode,
-        `game/chibi/effects/particle-${layer}-${this.particleSuffix(layer)}/spriteFrame`,
-        12, 12, layerIndex % 2 ? 7 : -7, 0, token);
+      potionParticleVisuals(this.currentLevel.presentationSeed, index, layerIndex, particleState)
+        .forEach((visual) => {
+          animators.push(this.addPotionParticle(layerNode, layer, visual, particleState, token));
+        });
     });
+    this.particleAnimators.set(index, animators);
     this.addSprite(node, 'game/chibi/items/bottle-frame/spriteFrame', LEVEL_LAYOUT.bottle.width, LEVEL_LAYOUT.bottle.height, 0, 0, token);
 
     if (this.session.pendingCompletion.includes(index)) {
       this.addSprite(node, 'game/chibi/effects/completion-burst/spriteFrame', 78, 78, 0, 4, token);
-      tween(node).to(0.3, { scale: new Vec3(1.12, 1.12, 1) })
+      tween(hitTarget).to(0.3, { scale: new Vec3(1.12, 1.12, 1) })
         .to(0.78, { position: new Vec3(x > 0 ? 96 : -96, 330, 0), scale: new Vec3(0.08, 0.08, 1) }).start();
-    } else if (this.pouring.has(index)) node.setScale(new Vec3(1.06, 1.06, 1));
+    }
 
-    node.addComponent(Button);
-    node.on(Button.EventType.CLICK, () => this.handleBottle(index));
+    hitTarget.addComponent(Button);
+    hitTarget.on(Button.EventType.CLICK, () => this.handleBottle(index));
+  }
+
+  private addPotionParticle(
+    root: Node,
+    layer: PotionColor,
+    visual: PotionParticleVisual,
+    state: PotionParticleState,
+    token: number,
+  ): PotionParticleAnimator {
+    const particle = this.addSprite(root,
+      `game/chibi/effects/particle-${layer}-${this.particleSuffix(layer)}/spriteFrame`,
+      visual.size, visual.size, visual.x, visual.y, token);
+    const sprite = particle.getComponent(Sprite) as Sprite;
+    const animator = particle.addComponent(PotionParticleAnimator);
+    animator.configure(visual, state, sprite);
+    return animator;
   }
 
   private particleSuffix(layer: PotionColor): string {
@@ -491,9 +536,21 @@ export class ProductionBootstrap extends Component {
 
   private refreshBottleHighlights(): void {
     for (const [index, node] of this.bottleNodes) {
+      const feedback = bottleFeedbackVisual(this.session.selected === index, this.pouring.has(index));
+      const selectedAura = node.getChildByName('SelectedAura');
+      if (selectedAura) selectedAura.active = feedback.auraVisible;
       const invalidGlow = node.getChildByName('InvalidGlow');
       if (invalidGlow) invalidGlow.active = this.invalid.has(index);
-      node.setScale(this.pouring.has(index) ? new Vec3(1.06, 1.06, 1) : Vec3.ONE);
+      node.setPosition(0, feedback.yOffset);
+      node.setScale(new Vec3(feedback.scale, feedback.scale, 1));
+      const particleState = potionParticleState(
+        this.session.pendingCompletion.includes(index),
+        this.pouring.has(index),
+        this.session.selected === index,
+      );
+      for (const animator of this.particleAnimators.get(index) ?? []) {
+        animator.setState(particleState);
+      }
     }
   }
 
@@ -614,8 +671,15 @@ export class ProductionBootstrap extends Component {
     label.fontSize = fontSize;
     label.lineHeight = Math.round(fontSize * 1.25);
     label.color = tint;
+    label.font = this.artFont;
+    label.spacingX = fontSize >= 20 ? 1 : 0;
     label.horizontalAlign = align;
     label.verticalAlign = Label.VerticalAlign.CENTER;
+    if (fontSize >= 18) {
+      const outline = node.addComponent(LabelOutline);
+      outline.color = color('#321138', 210);
+      outline.width = 1.5;
+    }
     return node;
   }
 

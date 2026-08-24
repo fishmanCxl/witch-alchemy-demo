@@ -17,6 +17,35 @@ export interface ButtonBaseLayout {
   readonly renderMode: 'simple' | 'sliced';
 }
 
+export interface BottleFeedbackVisual {
+  readonly yOffset: number;
+  readonly scale: number;
+  readonly auraVisible: boolean;
+}
+
+export type PotionParticleState = 'idle' | 'selected' | 'pouring' | 'complete';
+
+export interface PotionParticleVisual {
+  readonly seed: number;
+  readonly x: number;
+  readonly y: number;
+  readonly size: number;
+  readonly opacity: number;
+  readonly duration: number;
+  readonly delay: number;
+}
+
+export interface PotionParticleFrame {
+  readonly x: number;
+  readonly y: number;
+  readonly scale: number;
+  readonly opacity: number;
+  readonly finished: boolean;
+}
+
+export const ART_FONT_RESOURCE = 'game/fonts/noto-serif-sc-ui';
+export const RESTART_LABEL = '重来';
+
 export const HOME_LAYOUT = Object.freeze({
   header: Object.freeze({ x: -86, y: 326, width: 176, align: 'left' as const }),
   witch: Object.freeze({ x: 0, y: 51, width: 246, height: 304 }),
@@ -79,6 +108,118 @@ function hash32(value: number): number {
   hash = Math.imul(hash ^ (hash >>> 16), 0x45d9f3b);
   hash = Math.imul(hash ^ (hash >>> 16), 0x45d9f3b);
   return (hash ^ (hash >>> 16)) >>> 0;
+}
+
+export function bottleFeedbackVisual(selected: boolean, pouring: boolean): BottleFeedbackVisual {
+  if (selected) return Object.freeze({ yOffset: 10, scale: 1.04, auraVisible: true });
+  if (pouring) return Object.freeze({ yOffset: 0, scale: 1.06, auraVisible: false });
+  return Object.freeze({ yOffset: 0, scale: 1, auraVisible: false });
+}
+
+export function potionParticleVisuals(
+  levelSeed: number,
+  slotIndex: number,
+  layerIndex: number,
+  state: PotionParticleState,
+): readonly PotionParticleVisual[] {
+  const seed = levelSeed * 131 + slotIndex * 977 + layerIndex * 6971;
+  const seeds = [hash32(seed) / 0xffffffff, hash32(seed + 1) / 0xffffffff];
+  const style = {
+    idle: { opacity: 0.36, duration: 2.2 },
+    selected: { opacity: 0.45, duration: 1.76 },
+    pouring: { opacity: 0.45, duration: 0.52 },
+    complete: { opacity: 0.52, duration: 0.36 },
+  }[state];
+  return Object.freeze(seeds.map((particleSeed) => Object.freeze({
+    seed: particleSeed,
+    x: -11.52 + 23.04 * particleSeed,
+    y: -5,
+    size: 14,
+    opacity: style.opacity,
+    duration: style.duration,
+    delay: -particleSeed * 1.4,
+  })));
+}
+
+export function potionParticleState(
+  pendingCompletion: boolean,
+  pouring: boolean,
+  selected: boolean,
+): PotionParticleState {
+  if (pendingCompletion) return 'complete';
+  if (pouring) return 'pouring';
+  return selected ? 'selected' : 'idle';
+}
+
+function cubicBezierCoordinate(t: number, first: number, second: number): number {
+  const remaining = 1 - t;
+  return 3 * remaining * remaining * t * first
+    + 3 * remaining * t * t * second
+    + t * t * t;
+}
+
+function cubicBezierAt(progress: number, x1: number, y1: number, x2: number, y2: number): number {
+  if (progress <= 0) return 0;
+  if (progress >= 1) return 1;
+  let lower = 0;
+  let upper = 1;
+  for (let iteration = 0; iteration < 60; iteration += 1) {
+    const midpoint = (lower + upper) / 2;
+    if (cubicBezierCoordinate(midpoint, x1, x2) < progress) lower = midpoint;
+    else upper = midpoint;
+  }
+  return cubicBezierCoordinate((lower + upper) / 2, y1, y2);
+}
+
+function interpolate(from: number, to: number, progress: number): number {
+  return from + (to - from) * progress;
+}
+
+export function potionParticleFrame(
+  visual: PotionParticleVisual,
+  state: PotionParticleState,
+  elapsed: number,
+): PotionParticleFrame {
+  const duration = Math.max(Number.EPSILON, visual.duration);
+  const animationTime = Math.max(0, elapsed - visual.delay);
+
+  if (state === 'idle' || state === 'selected') {
+    const progress = (animationTime % duration) / duration;
+    const rising = progress <= 0.48;
+    const segmentProgress = rising ? progress / 0.48 : (progress - 0.48) / 0.52;
+    const eased = cubicBezierAt(segmentProgress, 0.42, 0, 0.58, 1);
+    const amount = rising ? eased : 1 - eased;
+    return Object.freeze({
+      x: visual.x + 3 * amount,
+      y: visual.y + 17 * amount,
+      scale: interpolate(0.78, 1, amount),
+      opacity: interpolate(0.2, 0.46, amount),
+      finished: false,
+    });
+  }
+
+  const progress = Math.min(1, animationTime / duration);
+  const eased = cubicBezierAt(progress, 0, 0, 0.58, 1);
+  if (state === 'pouring') {
+    return Object.freeze({
+      x: visual.x + 34 * eased,
+      y: visual.y - 18 * eased,
+      scale: interpolate(0.88, 0.64, eased),
+      opacity: interpolate(0.4, 0, eased),
+      finished: progress >= 1,
+    });
+  }
+  return Object.freeze({
+    x: visual.x + 12 * eased,
+    y: visual.y + 36 * eased,
+    scale: interpolate(0.75, 1.12, eased),
+    opacity: interpolate(0.54, 0, eased),
+    finished: progress >= 1,
+  });
+}
+
+export function potionProgressLabel(completed: number, target: number): string {
+  return `魔药 ${completed}/${target}`;
 }
 
 export function seededBottlePose(levelSeed: number, slotIndex: number): Readonly<{ x: number; y: number; rotate: number }> {

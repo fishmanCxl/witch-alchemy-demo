@@ -140,6 +140,12 @@ test('every approved chibi PNG is imported as a SpriteFrame resource', () => {
   assert.ok(pngCount >= 140);
 });
 
+test('the bundled Chinese art font keeps its open-source license beside the runtime asset', () => {
+  const fontRoot = new URL('../assets/resources/game/fonts/', import.meta.url);
+  assert.equal(existsSync(new URL('noto-serif-sc-ui.ttf', fontRoot)), true);
+  assert.equal(existsSync(new URL('OFL.txt', fontRoot)), true);
+});
+
 test('audio playback is unlocked only from a player gesture', () => {
   const director = readFileSync(new URL('../assets/scripts/presentation/AudioDirector.ts', import.meta.url), 'utf8');
   const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
@@ -156,6 +162,27 @@ test('production buttons use sliced wide bases and contained square control base
   assert.match(bootstrap, /buttonBaseLayout\(stage, 'contain'\)/);
   assert.match(bootstrap, /sprite\.type = Sprite\.Type\.SLICED/);
   assert.doesNotMatch(bootstrap, /decorateRasterButton\(node, variant, disabled, action\)/);
+});
+
+test('production bottle feedback uses prototype transforms and deterministic particles', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+
+  assert.match(bootstrap, /bottleFeedbackVisual\(/);
+  assert.match(bootstrap, /potionParticleVisuals\(/);
+  assert.match(bootstrap, /BottleHitTarget/);
+  assert.match(bootstrap, /BottleVisual/);
+  assert.doesNotMatch(bootstrap, /SelectedGlow/);
+  assert.match(bootstrap, /SelectedAura/);
+});
+
+test('production labels use the bundled art font and approved prototype copy', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+
+  assert.match(bootstrap, /resources\.load\(ART_FONT_RESOURCE, Font/);
+  assert.match(bootstrap, /potionProgressLabel\(/);
+  assert.match(bootstrap, /RESTART_LABEL/);
+  assert.doesNotMatch(bootstrap, /`目标 \$\{completed\}/);
+  assert.doesNotMatch(bootstrap, /'重开'/);
 });
 
 test('production presentation derives level copy, targets, seeds, and reward ids from the active config', () => {

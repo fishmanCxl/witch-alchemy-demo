@@ -2,19 +2,25 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  ART_FONT_RESOURCE,
   HOME_LAYOUT,
   LEVEL_COMPLETE_LAYOUT,
   LEVEL_LAYOUT,
   LEVEL_SELECT_LAYOUT,
   SETTINGS_LAYOUT,
+  RESTART_LABEL,
+  bottleFeedbackVisual,
   bottlePlacement,
   buttonBaseLayout,
   buttonSpritePath,
   levelButtonVisual,
   levelSelectButton,
+  potionParticleVisuals,
+  potionProgressLabel,
   shouldRenderBottle,
   squareBottomFit,
 } from '../assets/scripts/presentation/presentation-layout.ts';
+import * as presentationLayout from '../assets/scripts/presentation/presentation-layout.ts';
 
 test('selector maps completed, current, unlocked, and locked states to approved artwork', () => {
   assert.deepEqual(levelButtonVisual('completed'), {
@@ -153,6 +159,165 @@ test('bottom control artwork stays square and centered inside its wider hit targ
 test('bottle and liquid geometry matches the prototype clipping boundary', () => {
   assert.deepEqual(LEVEL_LAYOUT.bottle, { width: 48, height: 104 });
   assert.deepEqual(LEVEL_LAYOUT.liquid, { x: 0, y: -10.5, width: 36, height: 65, radius: 13 });
+});
+
+test('selected bottle feedback matches the prototype lift without moving its hit target', () => {
+  assert.deepEqual(bottleFeedbackVisual(false, false), { yOffset: 0, scale: 1, auraVisible: false });
+  assert.deepEqual(bottleFeedbackVisual(true, false), { yOffset: 10, scale: 1.04, auraVisible: true });
+  assert.deepEqual(bottleFeedbackVisual(false, true), { yOffset: 0, scale: 1.06, auraVisible: false });
+});
+
+test('potion particles reproduce the prototype deterministic two-motif layout', () => {
+  assert.deepEqual(potionParticleVisuals(12, 2, 3, 'idle'), [
+    {
+      seed: 0.09787367193444485,
+      x: -9.26499059863039,
+      y: -5,
+      size: 14,
+      opacity: 0.36,
+      duration: 2.2,
+      delay: -0.13702314070822277,
+    },
+    {
+      seed: 0.35327189307503215,
+      x: -3.3806155835512595,
+      y: -5,
+      size: 14,
+      opacity: 0.36,
+      duration: 2.2,
+      delay: -0.494580650305045,
+    },
+  ]);
+  assert.deepEqual(
+    potionParticleVisuals(12, 2, 3, 'selected').map((particle) => [particle.opacity, particle.duration]),
+    [[0.45, 1.76], [0.45, 1.76]],
+  );
+});
+
+test('potion particle timeline reproduces every prototype keyframe and negative delay', () => {
+  const evaluate = (presentationLayout as unknown as {
+    potionParticleFrame?: (
+      visual: {
+        seed: number;
+        x: number;
+        y: number;
+        size: number;
+        opacity: number;
+        duration: number;
+        delay: number;
+      },
+      state: 'idle' | 'selected' | 'pouring' | 'complete',
+      elapsed: number,
+    ) => { x: number; y: number; scale: number; opacity: number; finished: boolean };
+  }).potionParticleFrame;
+  assert.equal(typeof evaluate, 'function');
+  if (!evaluate) return;
+
+  const idle = {
+    seed: 0,
+    x: -10,
+    y: -5,
+    size: 14,
+    opacity: 0.36,
+    duration: 2.2,
+    delay: 0,
+  };
+  assert.deepEqual(evaluate(idle, 'idle', 0), {
+    x: -10,
+    y: -5,
+    scale: 0.78,
+    opacity: 0.2,
+    finished: false,
+  });
+  assert.deepEqual(evaluate(idle, 'idle', 1.056), {
+    x: -7,
+    y: 12,
+    scale: 1,
+    opacity: 0.46,
+    finished: false,
+  });
+  const idleQuarter = evaluate(idle, 'idle', 0.264);
+  assert.ok(Math.abs(idleQuarter.x - (-9.61251420685804)) < 1e-9);
+  assert.ok(Math.abs(idleQuarter.y - (-2.80424717219556)) < 1e-9);
+  assert.ok(Math.abs(idleQuarter.scale - 0.8084156248304104) < 1e-9);
+  assert.ok(Math.abs(idleQuarter.opacity - 0.23358210207230316) < 1e-9);
+  assert.equal(idleQuarter.finished, false);
+  assert.deepEqual(evaluate({ ...idle, duration: 1.76, delay: -0.8448 }, 'selected', 0), {
+    x: -7,
+    y: 12,
+    scale: 1,
+    opacity: 0.46,
+    finished: false,
+  });
+
+  const pouring = { ...idle, duration: 0.52 };
+  assert.deepEqual(evaluate(pouring, 'pouring', 0), {
+    x: -10,
+    y: -5,
+    scale: 0.88,
+    opacity: 0.4,
+    finished: false,
+  });
+  assert.deepEqual(evaluate(pouring, 'pouring', 0.52), {
+    x: 24,
+    y: -23,
+    scale: 0.64,
+    opacity: 0,
+    finished: true,
+  });
+  const pouringHalf = evaluate(pouring, 'pouring', 0.26);
+  assert.ok(Math.abs(pouringHalf.x - 13.27786837253366) < 1e-9);
+  assert.ok(Math.abs(pouringHalf.y - (-17.32357737369429)) < 1e-9);
+  assert.ok(Math.abs(pouringHalf.scale - 0.7156856350174095) < 1e-9);
+  assert.ok(Math.abs(pouringHalf.opacity - 0.12614272502901578) < 1e-9);
+  assert.equal(pouringHalf.finished, false);
+  assert.deepEqual(evaluate({ ...pouring, delay: -0.7 }, 'pouring', 0), {
+    x: 24,
+    y: -23,
+    scale: 0.64,
+    opacity: 0,
+    finished: true,
+  });
+
+  const complete = { ...idle, duration: 0.36 };
+  assert.deepEqual(evaluate(complete, 'complete', 0), {
+    x: -10,
+    y: -5,
+    scale: 0.75,
+    opacity: 0.54,
+    finished: false,
+  });
+  assert.deepEqual(evaluate(complete, 'complete', 0.36), {
+    x: 2,
+    y: 31,
+    scale: 1.12,
+    opacity: 0,
+    finished: true,
+  });
+});
+
+test('potion particles return to the correct persistent state after pouring ends', () => {
+  const resolveState = (presentationLayout as unknown as {
+    potionParticleState?: (
+      pendingCompletion: boolean,
+      pouring: boolean,
+      selected: boolean,
+    ) => 'idle' | 'selected' | 'pouring' | 'complete';
+  }).potionParticleState;
+  assert.equal(typeof resolveState, 'function');
+  if (!resolveState) return;
+
+  assert.equal(resolveState(false, false, false), 'idle');
+  assert.equal(resolveState(false, false, true), 'selected');
+  assert.equal(resolveState(false, true, false), 'pouring');
+  assert.equal(resolveState(true, true, false), 'complete');
+  assert.equal(resolveState(false, false, false), 'idle');
+});
+
+test('production copy and art-font contract match the approved prototype', () => {
+  assert.equal(potionProgressLabel(3, 8), '魔药 3/8');
+  assert.equal(RESTART_LABEL, '重来');
+  assert.equal(ART_FONT_RESOURCE, 'game/fonts/noto-serif-sc-ui');
 });
 
 test('settings layout uses the accepted raster-backed dialog geometry', () => {
