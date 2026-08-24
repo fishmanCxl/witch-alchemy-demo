@@ -11,6 +11,7 @@ import {
   retryLaunch,
   updateLaunchProgress,
 } from '../assets/scripts/presentation/launch-loading.ts';
+import * as launchLoading from '../assets/scripts/presentation/launch-loading.ts';
 
 test('launch progress clamps invalid values, never regresses, and reserves 100 for completion', () => {
   let state = createLaunchLoadingState(1_000);
@@ -39,6 +40,18 @@ test('launch exits only after resources and the 900ms minimum are both ready', (
   state = beginLaunchExit(state);
   assert.equal(state.phase, 'exiting');
   assert.equal(canExitLaunch(state), false);
+});
+
+test('launch minimum remaining duration preserves the final millisecond before readiness', () => {
+  const remaining = (launchLoading as unknown as {
+    launchMinimumRemainingMs?: (startedAt: number, now: number) => number;
+  }).launchMinimumRemainingMs;
+  assert.equal(typeof remaining, 'function');
+  if (!remaining) return;
+
+  assert.equal(remaining(1_000, 1_899), 1);
+  assert.equal(remaining(1_000, 1_900), 0);
+  assert.equal(remaining(1_000, 2_500), 0);
 });
 
 test('failed launch retries once and ignores stale callbacks', () => {

@@ -142,6 +142,13 @@ export function bottleFeedbackVisual(selected: boolean, pouring: boolean): Bottl
   return Object.freeze({ yOffset: 0, scale: 1, auraVisible: false });
 }
 
+const POTION_PARTICLE_STYLE = Object.freeze({
+  idle: Object.freeze({ opacity: 0.36, duration: 2.2 }),
+  selected: Object.freeze({ opacity: 0.45, duration: 1.76 }),
+  pouring: Object.freeze({ opacity: 0.45, duration: 0.52 }),
+  complete: Object.freeze({ opacity: 0.52, duration: 0.36 }),
+});
+
 export function potionParticleVisuals(
   levelSeed: number,
   slotIndex: number,
@@ -150,12 +157,7 @@ export function potionParticleVisuals(
 ): readonly PotionParticleVisual[] {
   const seed = levelSeed * 131 + slotIndex * 977 + layerIndex * 6971;
   const seeds = [hash32(seed) / 0xffffffff, hash32(seed + 1) / 0xffffffff];
-  const style = {
-    idle: { opacity: 0.36, duration: 2.2 },
-    selected: { opacity: 0.45, duration: 1.76 },
-    pouring: { opacity: 0.45, duration: 0.52 },
-    complete: { opacity: 0.52, duration: 0.36 },
-  }[state];
+  const style = POTION_PARTICLE_STYLE[state];
   return Object.freeze(seeds.map((particleSeed) => Object.freeze({
     seed: particleSeed,
     x: -11.52 + 23.04 * particleSeed,
@@ -206,7 +208,7 @@ export function potionParticleFrame(
   state: PotionParticleState,
   elapsed: number,
 ): PotionParticleFrame {
-  const duration = Math.max(Number.EPSILON, visual.duration);
+  const duration = POTION_PARTICLE_STYLE[state].duration;
   const animationTime = Math.max(0, elapsed - visual.delay);
 
   if (state === 'idle' || state === 'selected') {

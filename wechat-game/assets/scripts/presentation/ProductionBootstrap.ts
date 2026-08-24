@@ -25,7 +25,8 @@ import { createPlatformStorage } from '../platform/storage-port.ts';
 import { AudioDirector } from './AudioDirector.ts';
 import {
   LAUNCH_MIN_VISIBLE_MS, beginLaunchExit, canExitLaunch, completeLaunchResources, failLaunchResources,
-  createLaunchLoadingState, markLaunchMinimumVisible, retryLaunch, updateLaunchProgress, type LaunchLoadingState,
+  createLaunchLoadingState, launchMinimumRemainingMs, markLaunchMinimumVisible, retryLaunch,
+  updateLaunchProgress, type LaunchLoadingState,
 } from './launch-loading.ts';
 import {
   ART_FONT_RESOURCE, HEALTHY_GAME_ADVICE_LINES, HOME_LAYOUT, LAUNCH_LAYOUT, LEVEL_COMPLETE_LAYOUT,
@@ -101,16 +102,26 @@ export class ProductionBootstrap extends Component {
     );
     this.launchState = createLaunchLoadingState(Date.now());
     this.renderLaunch();
-    this.scheduleOnce(() => {
-      this.launchState = markLaunchMinimumVisible(this.launchState, Date.now());
-      this.tryExitLaunch();
-    }, LAUNCH_MIN_VISIBLE_MS / 1000);
+    this.scheduleLaunchMinimumCheck();
     resources.load(ART_FONT_RESOURCE, Font, (error, font) => {
       if (error || !this.node.isValid) return;
       this.artFont = font;
       for (const label of this.surface?.getComponentsInChildren(Label) ?? []) label.font = font;
     });
     this.startLaunchPreload();
+  }
+
+  private scheduleLaunchMinimumCheck(): void {
+    const remainingMs = Math.min(
+      LAUNCH_MIN_VISIBLE_MS,
+      launchMinimumRemainingMs(this.launchState.startedAt, Date.now()),
+    );
+    if (remainingMs > 0) {
+      this.scheduleOnce(() => this.scheduleLaunchMinimumCheck(), remainingMs / 1000);
+      return;
+    }
+    this.launchState = markLaunchMinimumVisible(this.launchState, Date.now());
+    this.tryExitLaunch();
   }
 
   onDestroy(): void {

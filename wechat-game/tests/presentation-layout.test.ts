@@ -345,6 +345,54 @@ test('potion particles return to the correct persistent state after pouring ends
   assert.equal(resolveState(false, false, false), 'idle');
 });
 
+test('pouring particles restore the idle cycle duration after the state changes', () => {
+  const evaluate = (presentationLayout as unknown as {
+    potionParticleFrame: (
+      visual: { seed: number; x: number; y: number; size: number; opacity: number; duration: number; delay: number },
+      state: 'idle' | 'selected' | 'pouring' | 'complete',
+      elapsed: number,
+    ) => { x: number; y: number; scale: number; opacity: number; finished: boolean };
+  }).potionParticleFrame;
+  const pouringVisual = {
+    seed: 0,
+    x: -10,
+    y: -5,
+    size: 14,
+    opacity: 0.45,
+    duration: 0.52,
+    delay: 0,
+  };
+
+  const frame = evaluate(pouringVisual, 'idle', 0.52);
+  assert.ok(frame.x > pouringVisual.x);
+  assert.ok(frame.y > pouringVisual.y);
+  assert.equal(frame.finished, false);
+});
+
+test('pouring particles restore the selected cycle duration after the state changes', () => {
+  const evaluate = (presentationLayout as unknown as {
+    potionParticleFrame: (
+      visual: { seed: number; x: number; y: number; size: number; opacity: number; duration: number; delay: number },
+      state: 'idle' | 'selected' | 'pouring' | 'complete',
+      elapsed: number,
+    ) => { x: number; y: number; scale: number; opacity: number; finished: boolean };
+  }).potionParticleFrame;
+  const pouringVisual = {
+    seed: 0,
+    x: -10,
+    y: -5,
+    size: 14,
+    opacity: 0.45,
+    duration: 0.52,
+    delay: 0,
+  };
+
+  const frame = evaluate(pouringVisual, 'selected', 0.52);
+  assert.ok(frame.x > pouringVisual.x);
+  assert.ok(frame.y > pouringVisual.y);
+  assert.equal(frame.finished, false);
+});
+
 test('production copy and art-font contract match the approved prototype', () => {
   assert.equal(potionProgressLabel(3, 8), '魔药 3/8');
   assert.equal(RESTART_LABEL, '重来');

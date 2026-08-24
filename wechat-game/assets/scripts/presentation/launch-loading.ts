@@ -1,5 +1,9 @@
 export const LAUNCH_MIN_VISIBLE_MS = 900;
 
+export function launchMinimumRemainingMs(startedAt: number, now: number): number {
+  return Math.max(0, LAUNCH_MIN_VISIBLE_MS - (now - startedAt));
+}
+
 export type LaunchLoadingPhase = 'loading' | 'failed' | 'ready' | 'exiting';
 
 export interface LaunchLoadingState {

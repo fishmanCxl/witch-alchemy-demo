@@ -240,6 +240,19 @@ test('production launch uses the approved timing and keeps input blocked through
   assert.match(bootstrap, /addComponent\(UIOpacity\)/);
 });
 
+test('production launch reschedules the minimum gate while real-clock time remains', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const helper = bootstrap.slice(
+    bootstrap.indexOf('private scheduleLaunchMinimumCheck'),
+    bootstrap.indexOf('private handlePlatformForeground'),
+  );
+
+  assert.match(helper, /launchMinimumRemainingMs\(this\.launchState\.startedAt, Date\.now\(\)\)/);
+  assert.match(helper, /if \(remainingMs > 0\)/);
+  assert.match(helper, /this\.scheduleOnce\(\(\) => this\.scheduleLaunchMinimumCheck\(\), remainingMs \/ 1000\)/);
+  assert.ok(helper.indexOf('remainingMs > 0') < helper.indexOf('markLaunchMinimumVisible'));
+});
+
 test('production launch exposes an explicit idempotent retry path', () => {
   const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
   assert.match(bootstrap, /failLaunchResources\(/);
