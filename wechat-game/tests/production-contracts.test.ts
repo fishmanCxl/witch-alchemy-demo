@@ -251,3 +251,28 @@ test('production launch exposes an explicit idempotent retry path', () => {
   assert.match(bootstrap, /updateLaunchProgress\(this\.launchState, attempt,/);
   assert.match(bootstrap, /completeLaunchResources\(this\.launchState, attempt\)/);
 });
+
+test('production launch ignores stale preload callbacks before UI work and clears launch references on exit', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const preloadBody = bootstrap.slice(
+    bootstrap.indexOf('private startLaunchPreload'),
+    bootstrap.indexOf('private showLaunchFailure'),
+  );
+  const filters = [...preloadBody.matchAll(/if \(!this\.isCurrentLaunchAttempt\(attempt\)\) return;/g)]
+    .map((match) => match.index ?? -1);
+  const exitBody = bootstrap.slice(
+    bootstrap.indexOf('private enterHomeAfterLaunch'),
+    bootstrap.indexOf('private render(): void'),
+  );
+
+  assert.match(bootstrap, /private isCurrentLaunchAttempt\(attempt: number\): boolean \{\s+return this\.launchState\.phase === 'loading' && this\.launchState\.attempt === attempt;\s+\}/);
+  assert.equal(filters.length, 2);
+  assert.ok(filters[0] < preloadBody.indexOf('this.updateLaunchView'));
+  assert.ok(filters[1] < preloadBody.indexOf('failLaunchResources'));
+  assert.ok(filters[1] < preloadBody.indexOf('this.showLaunchFailure'));
+  assert.ok(filters[1] < preloadBody.indexOf('completeLaunchResources'));
+  assert.ok(filters[1] < preloadBody.lastIndexOf('this.updateLaunchView'));
+  assert.ok(filters[1] < preloadBody.indexOf('this.tryExitLaunch'));
+  assert.match(exitBody, /this\.clearLaunchNodeReferences\(\);\s+this\.render\(\);/);
+  assert.match(bootstrap, /private clearLaunchNodeReferences\(\): void \{\s+this\.launchProgressFill = null;\s+this\.launchPercentLabel = null;\s+this\.launchStatusLabel = null;\s+this\.launchRetryButton = null;\s+\}/);
+});

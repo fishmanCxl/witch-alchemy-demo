@@ -126,6 +126,10 @@ export class ProductionBootstrap extends Component {
     return this.launchState.phase !== 'exiting' || this.surface?.name === 'LaunchSurface';
   }
 
+  private isCurrentLaunchAttempt(attempt: number): boolean {
+    return this.launchState.phase === 'loading' && this.launchState.attempt === attempt;
+  }
+
   private renderLaunch(): void {
     this.renderToken += 1;
     this.surface?.destroy();
@@ -169,10 +173,12 @@ export class ProductionBootstrap extends Component {
     const attempt = this.launchState.attempt;
     resources.preloadDir('game', (finished, total) => {
       if (!this.node.isValid) return;
+      if (!this.isCurrentLaunchAttempt(attempt)) return;
       this.launchState = updateLaunchProgress(this.launchState, attempt, finished, total);
       this.updateLaunchView();
     }, (error) => {
       if (!this.node.isValid) return;
+      if (!this.isCurrentLaunchAttempt(attempt)) return;
       if (error) {
         this.launchState = failLaunchResources(
           this.launchState,
@@ -246,8 +252,16 @@ export class ProductionBootstrap extends Component {
 
   private enterHomeAfterLaunch(): void {
     if (this.launchState.phase !== 'exiting' || !this.node.isValid) return;
+    this.clearLaunchNodeReferences();
     this.render();
     void this.syncCloudProgress();
+  }
+
+  private clearLaunchNodeReferences(): void {
+    this.launchProgressFill = null;
+    this.launchPercentLabel = null;
+    this.launchStatusLabel = null;
+    this.launchRetryButton = null;
   }
 
   private render(): void {
