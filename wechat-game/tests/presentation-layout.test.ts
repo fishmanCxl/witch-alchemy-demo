@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 
 import {
   ART_FONT_RESOURCE,
+  HEALTHY_GAME_ADVICE_LINES,
   HOME_LAYOUT,
+  LAUNCH_LAYOUT,
   LEVEL_COMPLETE_LAYOUT,
   LEVEL_LAYOUT,
   LEVEL_SELECT_LAYOUT,
@@ -15,12 +17,41 @@ import {
   buttonSpritePath,
   levelButtonVisual,
   levelSelectButton,
+  launchProgressFill,
   potionParticleVisuals,
   potionProgressLabel,
   shouldRenderBottle,
   squareBottomFit,
 } from '../assets/scripts/presentation/presentation-layout.ts';
 import * as presentationLayout from '../assets/scripts/presentation/presentation-layout.ts';
+
+test('launch screen keeps every required element inside the 393 by 852 safe frame', () => {
+  assert.deepEqual(LAUNCH_LAYOUT.ageBadge, { x: -155, y: 376, width: 42, height: 42 });
+  assert.deepEqual(LAUNCH_LAYOUT.title, { x: 0, y: 235, width: 330, height: 74 });
+  assert.deepEqual(LAUNCH_LAYOUT.witch, { x: 0, y: 22, width: 260, height: 260 });
+  assert.deepEqual(LAUNCH_LAYOUT.progressTrack, { x: 0, y: -230, width: 300, height: 18 });
+  assert.deepEqual(LAUNCH_LAYOUT.percent, { x: 0, y: -265, width: 120, height: 32 });
+  assert.deepEqual(LAUNCH_LAYOUT.status, { x: 0, y: -290, width: 330, height: 32 });
+  assert.deepEqual(LAUNCH_LAYOUT.retryButton, { x: 0, y: -334, width: 224, height: 56 });
+  assert.deepEqual(LAUNCH_LAYOUT.adviceCenters, [-374, -394]);
+  assert.equal(HEALTHY_GAME_ADVICE_LINES.join(''),
+    '抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。适度游戏益脑，沉迷游戏伤身。合理安排时间，享受健康生活。');
+
+  for (const rect of [LAUNCH_LAYOUT.ageBadge, LAUNCH_LAYOUT.title, LAUNCH_LAYOUT.witch,
+    LAUNCH_LAYOUT.progressTrack, LAUNCH_LAYOUT.percent, LAUNCH_LAYOUT.status, LAUNCH_LAYOUT.retryButton]) {
+    assert.ok(Math.abs(rect.x) + rect.width / 2 <= 393 / 2);
+    assert.ok(Math.abs(rect.y) + rect.height / 2 <= 852 / 2);
+  }
+});
+
+test('launch progress fill grows from the left edge and clamps to the track', () => {
+  assert.deepEqual(launchProgressFill(-1), { x: -148, width: 0 });
+  assert.deepEqual(launchProgressFill(0), { x: -148, width: 0 });
+  assert.deepEqual(launchProgressFill(0.5), { x: -74, width: 148 });
+  assert.deepEqual(launchProgressFill(1), { x: 0, width: 296 });
+  assert.deepEqual(launchProgressFill(2), { x: 0, width: 296 });
+  assert.deepEqual(launchProgressFill(Number.NaN), { x: -148, width: 0 });
+});
 
 test('selector maps completed, current, unlocked, and locked states to approved artwork', () => {
   assert.deepEqual(levelButtonVisual('completed'), {

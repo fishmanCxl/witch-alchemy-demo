@@ -46,6 +46,32 @@ export interface PotionParticleFrame {
 export const ART_FONT_RESOURCE = 'game/fonts/noto-serif-sc-ui';
 export const RESTART_LABEL = '重来';
 
+export const HEALTHY_GAME_ADVICE_LINES = Object.freeze([
+  '抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。',
+  '适度游戏益脑，沉迷游戏伤身。合理安排时间，享受健康生活。',
+] as const);
+
+export const LAUNCH_LAYOUT = Object.freeze({
+  ageBadge: Object.freeze({ x: -155, y: 376, width: 42, height: 42 }),
+  title: Object.freeze({ x: 0, y: 235, width: 330, height: 74 }),
+  witch: Object.freeze({ x: 0, y: 22, width: 260, height: 260 }),
+  progressTrack: Object.freeze({ x: 0, y: -230, width: 300, height: 18 }),
+  percent: Object.freeze({ x: 0, y: -265, width: 120, height: 32 }),
+  status: Object.freeze({ x: 0, y: -290, width: 330, height: 32 }),
+  retryButton: Object.freeze({ x: 0, y: -334, width: 224, height: 56 }),
+  adviceCenters: Object.freeze([-374, -394] as const),
+});
+
+export function launchProgressFill(progress: number): Readonly<{ x: number; width: number }> {
+  const normalized = Number.isFinite(progress) ? Math.min(1, Math.max(0, progress)) : 0;
+  const fullWidth = LAUNCH_LAYOUT.progressTrack.width - 4;
+  const width = fullWidth * normalized;
+  return Object.freeze({
+    x: -fullWidth / 2 + width / 2,
+    width,
+  });
+}
+
 export const HOME_LAYOUT = Object.freeze({
   header: Object.freeze({ x: -86, y: 326, width: 176, align: 'left' as const }),
   witch: Object.freeze({ x: 0, y: 51, width: 246, height: 304 }),
