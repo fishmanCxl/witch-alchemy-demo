@@ -1,6 +1,6 @@
 import {
   _decorator, BlockInputEvents, Button, Color, Component, Font, Graphics, Label, LabelOutline, Mask,
-  Node, ResolutionPolicy, resources, Sprite, SpriteFrame, sys, UITransform, Vec3, view, tween,
+  Node, ResolutionPolicy, resources, Sprite, SpriteFrame, sys, UIOpacity, UITransform, Vec3, view, tween,
 } from 'cc';
 
 import {
@@ -24,9 +24,14 @@ import { ProgressSyncCoordinator } from '../platform/progress-sync.ts';
 import { createPlatformStorage } from '../platform/storage-port.ts';
 import { AudioDirector } from './AudioDirector.ts';
 import {
-  ART_FONT_RESOURCE, HOME_LAYOUT, LEVEL_COMPLETE_LAYOUT, LEVEL_LAYOUT, LEVEL_SELECT_LAYOUT, RESTART_LABEL,
+  LAUNCH_MIN_VISIBLE_MS, beginLaunchExit, canExitLaunch, completeLaunchResources,
+  createLaunchLoadingState, markLaunchMinimumVisible, updateLaunchProgress, type LaunchLoadingState,
+} from './launch-loading.ts';
+import {
+  ART_FONT_RESOURCE, HEALTHY_GAME_ADVICE_LINES, HOME_LAYOUT, LAUNCH_LAYOUT, LEVEL_COMPLETE_LAYOUT,
+  LEVEL_LAYOUT, LEVEL_SELECT_LAYOUT, RESTART_LABEL,
   SETTINGS_LAYOUT, bottleFeedbackVisual, bottlePlacement, buttonBaseLayout, buttonSpritePath,
-  levelButtonVisual, levelSelectButton, potionParticleState, potionParticleVisuals,
+  launchProgressFill, levelButtonVisual, levelSelectButton, potionParticleState, potionParticleVisuals,
   potionProgressLabel, shouldRenderBottle,
   type ButtonBaseLayout, type ButtonVariant, type LevelButtonState, type PotionParticleState,
   type PotionParticleVisual,
@@ -69,6 +74,11 @@ export class ProductionBootstrap extends Component {
   private completionSaveFailed = false;
   private levelStartedAt = Date.now();
   private undoCount = 0;
+  private launchState: LaunchLoadingState = createLaunchLoadingState(Date.now());
+  private launchProgressFill: Node | null = null;
+  private launchPercentLabel: Label | null = null;
+  private launchStatusLabel: Label | null = null;
+  private launchRetryButton: Node | null = null;
 
   start(): void {
     view.setDesignResolutionSize(393, 852, ResolutionPolicy.FIXED_WIDTH);
@@ -86,20 +96,119 @@ export class ProductionBootstrap extends Component {
     this.rewarded = new RewardedBottleCoordinator(rewardPorts.ad, rewardPorts.claims);
     this.progressSync = new ProgressSyncCoordinator(this.platform.createProgressSyncPort());
     this.platform.bindLifecycle(
-      () => { this.audio?.setForeground(true); void this.syncCloudProgress(); },
+      () => this.handlePlatformForeground(),
       () => { this.store.saveSession(this.session); this.audio?.setForeground(false); },
     );
+    this.launchState = createLaunchLoadingState(Date.now());
+    this.renderLaunch();
+    this.scheduleOnce(() => {
+      this.launchState = markLaunchMinimumVisible(this.launchState, Date.now());
+      this.tryExitLaunch();
+    }, LAUNCH_MIN_VISIBLE_MS / 1000);
     resources.load(ART_FONT_RESOURCE, Font, (error, font) => {
       if (error || !this.node.isValid) return;
       this.artFont = font;
-      this.render();
+      for (const label of this.surface?.getComponentsInChildren(Label) ?? []) label.font = font;
     });
-    this.render();
-    void this.syncCloudProgress();
+    this.startLaunchPreload();
   }
 
   onDestroy(): void {
     this.platform.dispose();
+  }
+
+  private handlePlatformForeground(): void {
+    this.audio?.setForeground(true);
+    if (!this.isLaunchActive()) void this.syncCloudProgress();
+  }
+
+  private isLaunchActive(): boolean {
+    return this.launchState.phase !== 'exiting' || this.surface?.name === 'LaunchSurface';
+  }
+
+  private renderLaunch(): void {
+    this.renderToken += 1;
+    this.surface?.destroy();
+    this.surface = new Node('LaunchSurface');
+    this.surface.addComponent(UITransform).setContentSize(393, 852);
+    this.surface.addComponent(BlockInputEvents);
+    this.surface.addComponent(UIOpacity);
+    this.node.addChild(this.surface);
+    const root = this.surface;
+    const token = this.renderToken;
+
+    this.addPanel(root, 393, 852, 0, 0, color('#13091F'));
+    this.addSprite(root, 'game/chibi/background/alchemy-room/spriteFrame', 393, 852, 0, 0, token);
+    this.addPanel(root, 393, 852, 0, 0, color('#12081F', 94));
+    this.addPanel(root, 42, 42, LAUNCH_LAYOUT.ageBadge.x, LAUNCH_LAYOUT.ageBadge.y,
+      color('#271034', 224), color('#E9C477'), 12);
+    this.addLabel(root, '8+', 14, LAUNCH_LAYOUT.ageBadge.x, LAUNCH_LAYOUT.ageBadge.y,
+      color('#FFF0C2'), LAUNCH_LAYOUT.ageBadge.width);
+    this.addLabel(root, '暮影炼金室', 36, LAUNCH_LAYOUT.title.x, LAUNCH_LAYOUT.title.y,
+      color('#FFE2A0'), LAUNCH_LAYOUT.title.width);
+    this.addLaunchWitch(root);
+
+    const track = LAUNCH_LAYOUT.progressTrack;
+    this.addPanel(root, track.width, track.height, track.x, track.y,
+      color('#1E0D2D', 232), color('#C99CE9', 180), 9);
+    this.launchProgressFill = this.addPanel(root, 0, track.height - 4, track.x - 148, track.y,
+      color('#DCA6FF'), undefined, 7);
+    this.launchPercentLabel = this.addLabel(root, '0%', 13, LAUNCH_LAYOUT.percent.x,
+      LAUNCH_LAYOUT.percent.y, color('#F7E6FF'), LAUNCH_LAYOUT.percent.width).getComponent(Label);
+    this.launchStatusLabel = this.addLabel(root, '正在准备炼金室…', 11,
+      LAUNCH_LAYOUT.status.x, LAUNCH_LAYOUT.status.y,
+      color('#DCC7E8'), LAUNCH_LAYOUT.status.width).getComponent(Label);
+    HEALTHY_GAME_ADVICE_LINES.forEach((line, index) => {
+      this.addLabel(root, line, 8, 0, LAUNCH_LAYOUT.adviceCenters[index], color('#BDAFC4'), 360);
+    });
+    this.renderLaunchAmbientParticles(root, token);
+    this.updateLaunchView();
+  }
+
+  private startLaunchPreload(): void {
+    const attempt = this.launchState.attempt;
+    resources.preloadDir('game', (finished, total) => {
+      if (!this.node.isValid) return;
+      this.launchState = updateLaunchProgress(this.launchState, attempt, finished, total);
+      this.updateLaunchView();
+    }, (error) => {
+      if (!this.node.isValid || error) return;
+      this.launchState = completeLaunchResources(this.launchState, attempt);
+      this.updateLaunchView();
+      this.tryExitLaunch();
+    });
+  }
+
+  private updateLaunchView(): void {
+    const fill = launchProgressFill(this.launchState.progress);
+    if (this.launchProgressFill?.isValid) {
+      this.launchProgressFill.setPosition(fill.x, LAUNCH_LAYOUT.progressTrack.y);
+      this.launchProgressFill.getComponent(UITransform)?.setContentSize(
+        fill.width, LAUNCH_LAYOUT.progressTrack.height - 4,
+      );
+      const graphics = this.launchProgressFill.getComponent(Graphics);
+      if (graphics) {
+        graphics.clear();
+        graphics.fillColor = color('#DCA6FF');
+        graphics.roundRect(-fill.width / 2, -(LAUNCH_LAYOUT.progressTrack.height - 4) / 2,
+          fill.width, LAUNCH_LAYOUT.progressTrack.height - 4, 7);
+        graphics.fill();
+      }
+    }
+    if (this.launchPercentLabel) this.launchPercentLabel.string = `${this.launchState.percent}%`;
+  }
+
+  private tryExitLaunch(): void {
+    if (!canExitLaunch(this.launchState) || !this.surface?.isValid) return;
+    this.launchState = beginLaunchExit(this.launchState);
+    const opacity = this.surface.getComponent(UIOpacity) ?? this.surface.addComponent(UIOpacity);
+    tween(opacity).to(0.22, { opacity: 0 }).call(() => this.enterHomeAfterLaunch()).start();
+  }
+
+  private enterHomeAfterLaunch(): void {
+    if (this.launchState.phase !== 'exiting' || !this.node.isValid) return;
+    this.render();
+    void this.syncCloudProgress();
   }
 
   private render(): void {
@@ -303,6 +412,33 @@ export class ProductionBootstrap extends Component {
     node.addComponent(UITransform).setContentSize(width, height);
     root.addChild(node);
     node.addComponent(WitchAnimator).play(mood, () => this.handleWitchSettled(mood));
+  }
+
+  private addLaunchWitch(root: Node): void {
+    const stage = LAUNCH_LAYOUT.witch;
+    const node = new Node('LaunchWitchAnimator');
+    node.setPosition(stage.x, stage.y);
+    node.addComponent(UITransform).setContentSize(stage.width, stage.height);
+    root.addChild(node);
+    node.addComponent(WitchAnimator).play('idle', () => undefined);
+  }
+
+  private renderLaunchAmbientParticles(root: Node, token: number): void {
+    const particles: readonly Readonly<{ x: number; y: number; layer: PotionColor }>[] = [
+      { x: -108, y: 72, layer: 'violet' },
+      { x: 105, y: 56, layer: 'cyan' },
+      { x: -82, y: -55, layer: 'gold' },
+      { x: 88, y: -78, layer: 'violet' },
+      { x: -126, y: 155, layer: 'cyan' },
+      { x: 126, y: 142, layer: 'gold' },
+    ];
+    particles.forEach((entry, index) => {
+      const anchor = new Node(`LaunchParticleAnchor-${index + 1}`);
+      anchor.setPosition(entry.x, entry.y);
+      root.addChild(anchor);
+      const visual = potionParticleVisuals(20260824, index, 0, 'idle')[index % 2];
+      this.addPotionParticle(anchor, entry.layer, visual, 'idle', token);
+    });
   }
 
   private handleWitchSettled(mood: WitchMood): void {

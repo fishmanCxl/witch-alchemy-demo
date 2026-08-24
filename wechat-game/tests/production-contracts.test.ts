@@ -212,3 +212,30 @@ test('completion persistence orders local progress before snapshot clearing and 
   assert.ok(show > clear);
   assert.match(bootstrap, /进度保存失败，请重试/);
 });
+
+test('production launch preloads the real game directory before rendering home or syncing cloud', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const startBody = bootstrap.slice(bootstrap.indexOf('start(): void'), bootstrap.indexOf('onDestroy(): void'));
+  const transitionBody = bootstrap.slice(
+    bootstrap.indexOf('private enterHomeAfterLaunch'),
+    bootstrap.indexOf('private render(): void'),
+  );
+
+  assert.match(startBody, /this\.renderLaunch\(\)/);
+  assert.match(startBody, /this\.startLaunchPreload\(\)/);
+  assert.doesNotMatch(startBody, /this\.render\(\)/);
+  assert.doesNotMatch(startBody, /this\.syncCloudProgress\(\)/);
+  assert.match(bootstrap, /resources\.preloadDir\('game'/);
+  assert.match(transitionBody, /this\.render\(\)/);
+  assert.match(transitionBody, /void this\.syncCloudProgress\(\)/);
+  assert.ok(transitionBody.indexOf('this.render()') < transitionBody.indexOf('this.syncCloudProgress()'));
+});
+
+test('production launch uses the approved timing and keeps input blocked through fade', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  assert.match(bootstrap, /LAUNCH_MIN_VISIBLE_MS/);
+  assert.match(bootstrap, /\.to\(0\.22, \{ opacity: 0 \}\)/);
+  assert.match(bootstrap, /new Node\('LaunchSurface'\)/);
+  assert.match(bootstrap, /addComponent\(BlockInputEvents\)/);
+  assert.match(bootstrap, /addComponent\(UIOpacity\)/);
+});
