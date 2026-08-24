@@ -239,3 +239,15 @@ test('production launch uses the approved timing and keeps input blocked through
   assert.match(bootstrap, /addComponent\(BlockInputEvents\)/);
   assert.match(bootstrap, /addComponent\(UIOpacity\)/);
 });
+
+test('production launch exposes an explicit idempotent retry path', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  assert.match(bootstrap, /failLaunchResources\(/);
+  assert.match(bootstrap, /'资源加载失败，请检查网络或存储空间'/);
+  assert.match(bootstrap, /'重新加载'/);
+  assert.match(bootstrap, /retryLaunch\(/);
+  assert.match(bootstrap, /button\.interactable = false/);
+  assert.match(bootstrap, /const attempt = this\.launchState\.attempt/);
+  assert.match(bootstrap, /updateLaunchProgress\(this\.launchState, attempt,/);
+  assert.match(bootstrap, /completeLaunchResources\(this\.launchState, attempt\)/);
+});

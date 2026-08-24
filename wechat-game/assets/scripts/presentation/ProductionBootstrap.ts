@@ -24,8 +24,8 @@ import { ProgressSyncCoordinator } from '../platform/progress-sync.ts';
 import { createPlatformStorage } from '../platform/storage-port.ts';
 import { AudioDirector } from './AudioDirector.ts';
 import {
-  LAUNCH_MIN_VISIBLE_MS, beginLaunchExit, canExitLaunch, completeLaunchResources,
-  createLaunchLoadingState, markLaunchMinimumVisible, updateLaunchProgress, type LaunchLoadingState,
+  LAUNCH_MIN_VISIBLE_MS, beginLaunchExit, canExitLaunch, completeLaunchResources, failLaunchResources,
+  createLaunchLoadingState, markLaunchMinimumVisible, retryLaunch, updateLaunchProgress, type LaunchLoadingState,
 } from './launch-loading.ts';
 import {
   ART_FONT_RESOURCE, HEALTHY_GAME_ADVICE_LINES, HOME_LAYOUT, LAUNCH_LAYOUT, LEVEL_COMPLETE_LAYOUT,
@@ -172,11 +172,50 @@ export class ProductionBootstrap extends Component {
       this.launchState = updateLaunchProgress(this.launchState, attempt, finished, total);
       this.updateLaunchView();
     }, (error) => {
-      if (!this.node.isValid || error) return;
+      if (!this.node.isValid) return;
+      if (error) {
+        this.launchState = failLaunchResources(
+          this.launchState,
+          attempt,
+          '资源加载失败，请检查网络或存储空间',
+        );
+        this.showLaunchFailure();
+        return;
+      }
       this.launchState = completeLaunchResources(this.launchState, attempt);
       this.updateLaunchView();
       this.tryExitLaunch();
     });
+  }
+
+  private showLaunchFailure(): void {
+    if (this.launchState.phase !== 'failed' || !this.surface?.isValid) return;
+    if (this.launchProgressFill) this.launchProgressFill.active = false;
+    if (this.launchPercentLabel) this.launchPercentLabel.node.active = false;
+    if (this.launchStatusLabel) this.launchStatusLabel.string = this.launchState.errorMessage ?? '资源加载失败';
+    if (!this.launchRetryButton?.isValid) {
+      this.launchRetryButton = this.addRasterButton(this.surface, '重新加载', 'purple',
+        LAUNCH_LAYOUT.retryButton.width, LAUNCH_LAYOUT.retryButton.height,
+        LAUNCH_LAYOUT.retryButton.x, LAUNCH_LAYOUT.retryButton.y,
+        () => this.handleLaunchRetry(), false, undefined, 16);
+    }
+    const button = this.launchRetryButton.getComponent(Button);
+    if (button) button.interactable = true;
+    this.launchRetryButton.active = true;
+  }
+
+  private handleLaunchRetry(): void {
+    const next = retryLaunch(this.launchState);
+    if (next === this.launchState) return;
+    this.launchState = next;
+    const button = this.launchRetryButton?.getComponent(Button);
+    if (button) button.interactable = false;
+    if (this.launchRetryButton) this.launchRetryButton.active = false;
+    if (this.launchProgressFill) this.launchProgressFill.active = true;
+    if (this.launchPercentLabel) this.launchPercentLabel.node.active = true;
+    if (this.launchStatusLabel) this.launchStatusLabel.string = '正在重新准备炼金室…';
+    this.updateLaunchView();
+    this.startLaunchPreload();
   }
 
   private updateLaunchView(): void {
