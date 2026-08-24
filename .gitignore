@@ -1,6 +1,7 @@
 .pnpm-store/
 .superpowers/
 .tmp/
+.worktrees/
 
 **/node_modules/
 **/dist/
