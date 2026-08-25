@@ -49,6 +49,7 @@ test('invalid starts and targets return an oops state without adding history', (
   const invalidTarget = pressBottle(selected, 2);
   assert.equal(invalidTarget.session.witchMood, 'oops');
   assert.deepEqual(invalidTarget.invalid, [0, 2]);
+  assert.equal(invalidTarget.session.selected, 2);
   assert.equal(invalidTarget.session.history.length, 0);
 });
 

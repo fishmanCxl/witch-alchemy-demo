@@ -112,7 +112,7 @@ export function pressBottle(session: GameSession, index: number): SessionResult 
   const result = pour(session.game, session.selected, index);
   if (result.moved === 0) {
     return {
-      session: { ...session, witchMood: 'oops', message: '只能倒入空瓶或同色药液' },
+      session: { ...session, selected: index, witchMood: 'oops', message: '无法倒入，已改选这个瓶子' },
       cue: 'pour-invalid',
       invalid: [session.selected, index],
       pouring: [],

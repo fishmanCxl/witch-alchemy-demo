@@ -189,13 +189,42 @@ test('bottom control artwork stays square and centered inside its wider hit targ
 
 test('bottle and liquid geometry matches the prototype clipping boundary', () => {
   assert.deepEqual(LEVEL_LAYOUT.bottle, { width: 48, height: 104 });
-  assert.deepEqual(LEVEL_LAYOUT.liquid, { x: 0, y: -10.5, width: 36, height: 65, radius: 13 });
+  assert.deepEqual(LEVEL_LAYOUT.liquid, { x: 0, y: -8.5, width: 36, height: 61, radius: 11 });
 });
 
 test('selected bottle feedback matches the prototype lift without moving its hit target', () => {
   assert.deepEqual(bottleFeedbackVisual(false, false), { yOffset: 0, scale: 1, auraVisible: false });
   assert.deepEqual(bottleFeedbackVisual(true, false), { yOffset: 10, scale: 1.04, auraVisible: true });
   assert.deepEqual(bottleFeedbackVisual(false, true), { yOffset: 0, scale: 1.06, auraVisible: false });
+});
+
+test('selected bottle aura reproduces the prototype cyan drop shadow with three soft layers', () => {
+  const aura = (presentationLayout as unknown as {
+    selectedBottleAuraVisual?: () => readonly Readonly<{
+      width: number;
+      height: number;
+      opacity: number;
+    }>[];
+  }).selectedBottleAuraVisual;
+  assert.equal(typeof aura, 'function');
+  if (!aura) return;
+
+  assert.deepEqual(aura(), [
+    { width: 52, height: 112, opacity: 0.35 },
+    { width: 56, height: 116, opacity: 0.2 },
+    { width: 60, height: 120, opacity: 0.1 },
+  ]);
+});
+
+test('bottle-only session changes never require rebuilding the full production surface', () => {
+  const mode = (presentationLayout as unknown as {
+    levelInteractionRefreshMode?: (gameChanged: boolean) => 'feedback' | 'content';
+  }).levelInteractionRefreshMode;
+  assert.equal(typeof mode, 'function');
+  if (!mode) return;
+
+  assert.equal(mode(false), 'feedback');
+  assert.equal(mode(true), 'content');
 });
 
 test('potion particles reproduce the prototype deterministic two-motif layout', () => {

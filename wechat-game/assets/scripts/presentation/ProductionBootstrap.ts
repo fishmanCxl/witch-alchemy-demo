@@ -1,6 +1,6 @@
 import {
   _decorator, BlockInputEvents, Button, Color, Component, Font, Graphics, Label, LabelOutline, Mask,
-  Node, ResolutionPolicy, resources, Sprite, SpriteFrame, sys, UIOpacity, UITransform, Vec3, view, tween,
+  Node, ResolutionPolicy, resources, Sprite, SpriteFrame, sys, Tween, UIOpacity, UITransform, Vec3, view, tween,
 } from 'cc';
 
 import {
@@ -32,8 +32,8 @@ import {
   ART_FONT_RESOURCE, HEALTHY_GAME_ADVICE_LINES, HOME_LAYOUT, LAUNCH_LAYOUT, LEVEL_COMPLETE_LAYOUT,
   LEVEL_LAYOUT, LEVEL_SELECT_LAYOUT, RESTART_LABEL,
   SETTINGS_LAYOUT, bottleFeedbackVisual, bottlePlacement, buttonBaseLayout, buttonSpritePath,
-  launchProgressFill, levelButtonVisual, levelSelectButton, potionParticleState, potionParticleVisuals,
-  potionProgressLabel, shouldRenderBottle,
+  launchProgressFill, levelButtonVisual, levelInteractionRefreshMode, levelSelectButton, potionParticleState,
+  potionParticleVisuals, potionProgressLabel, selectedBottleAuraVisual, shouldRenderBottle,
   type ButtonBaseLayout, type ButtonVariant, type LevelButtonState, type PotionParticleState,
   type PotionParticleVisual,
 } from './presentation-layout.ts';
@@ -67,6 +67,9 @@ export class ProductionBootstrap extends Component {
   private pouring = new Set<number>();
   private bottleNodes = new Map<number, Node>();
   private particleAnimators = new Map<number, PotionParticleAnimator[]>();
+  private levelContent: Node | null = null;
+  private levelMessageLabel: Label | null = null;
+  private levelWitchAnimator: WitchAnimator | null = null;
   private completionScheduled = false;
   private readonly platform = new PlatformRuntime();
   private rewarded: RewardedBottleCoordinator | null = null;
@@ -277,6 +280,7 @@ export class ProductionBootstrap extends Component {
 
   private render(): void {
     this.renderToken += 1;
+    this.clearLevelReferences();
     this.surface?.destroy();
     this.bottleNodes.clear();
     this.particleAnimators.clear();
@@ -288,6 +292,12 @@ export class ProductionBootstrap extends Component {
     else this.renderLevel(this.surface, this.renderToken);
     this.renderSettingsButton(this.surface, this.renderToken);
     if (this.flow.settingsOpen) this.renderSettings(this.surface, this.renderToken);
+  }
+
+  private clearLevelReferences(): void {
+    this.levelContent = null;
+    this.levelMessageLabel = null;
+    this.levelWitchAnimator = null;
   }
 
   private renderHome(root: Node, token: number): void {
@@ -438,44 +448,78 @@ export class ProductionBootstrap extends Component {
   private renderLevel(root: Node, token: number): void {
     this.addSprite(root, 'game/chibi/background/alchemy-room/spriteFrame', 393, 852, 0, 0, token);
     this.addPanel(root, 393, 852, 0, 0, color('#130A20', 16));
+    this.renderLevelContent(root, token);
+  }
+
+  private renderLevelContent(root: Node, token: number): void {
+    this.bottleNodes.clear();
+    this.particleAnimators.clear();
+    this.levelMessageLabel = null;
+    this.levelWitchAnimator = null;
+    const content = new Node('LevelContent');
+    root.addChild(content);
+    const settingsButton = root.getChildByName('SettingsButton');
+    if (settingsButton) content.setSiblingIndex(settingsButton.getSiblingIndex());
+    this.levelContent = content;
+
     const completed = this.session.game.bottles.filter((bottle) => bottle.status === 'vanished').length;
-    this.addLabel(root, '暮影炼金室', 11, -86, 350, color('#DCBACB'), 176, Label.HorizontalAlign.LEFT);
-    this.addLabel(root, `第 ${this.currentLevel.number} 关`, 30, -86, 318,
+    this.addLabel(content, '暮影炼金室', 11, -86, 350, color('#DCBACB'), 176, Label.HorizontalAlign.LEFT);
+    this.addLabel(content, `第 ${this.currentLevel.number} 关`, 30, -86, 318,
       color('#FFF4DF'), 176, Label.HorizontalAlign.LEFT);
-    this.addPanel(root, 54, 24, -147, 280, color('#221023', 184), color('#DEB5A1', 70), 12);
-    this.addLabel(root, `步数 ${this.session.game.moves}`, 11, -147, 280, color('#EFD9C9'), 52);
-    this.addPanel(root, 66, 24, -80, 280, color('#221023', 184), color('#DEB5A1', 70), 12);
-    this.addLabel(root, potionProgressLabel(completed, this.targetPotionCount(this.currentLevel)), 11,
+    this.addPanel(content, 54, 24, -147, 280, color('#221023', 184), color('#DEB5A1', 70), 12);
+    this.addLabel(content, `步数 ${this.session.game.moves}`, 11, -147, 280, color('#EFD9C9'), 52);
+    this.addPanel(content, 66, 24, -80, 280, color('#221023', 184), color('#DEB5A1', 70), 12);
+    this.addLabel(content, potionProgressLabel(completed, this.targetPotionCount(this.currentLevel)), 11,
       -80, 280, color('#EFD9C9'), 64);
-    this.addWitch(root, this.session.witchMood, LEVEL_LAYOUT.witch.x, LEVEL_LAYOUT.witch.y,
+    this.levelWitchAnimator = this.addWitch(content, this.session.witchMood, LEVEL_LAYOUT.witch.x, LEVEL_LAYOUT.witch.y,
       LEVEL_LAYOUT.witch.width, LEVEL_LAYOUT.witch.height);
 
     this.session.game.bottles.forEach((bottle, index) => {
       if (!shouldRenderBottle(bottle.status)) return;
       const placement = bottlePlacement(this.currentLevel.presentationSeed, index);
-      this.addBottle(root, index, placement.x, placement.y, placement.angle, token);
+      this.addBottle(content, index, placement.x, placement.y, placement.angle, token);
     });
-    this.addMessage(root, this.session.message, token);
+    this.levelMessageLabel = this.addMessage(content, this.session.message, token);
     if (this.completionSaveFailed) {
-      this.addRasterButton(root, '重试保存', 'gold', 224, 72, 0, LEVEL_LAYOUT.controlY,
+      this.addRasterButton(content, '重试保存', 'gold', 224, 72, 0, LEVEL_LAYOUT.controlY,
         () => this.persistCompletion(), false, undefined, 16);
     } else {
-      this.addControlButton(root, '撤销', 'icon-undo', LEVEL_LAYOUT.controlCenters[0], () => this.handleUndo(),
+      this.addControlButton(content, '撤销', 'icon-undo', LEVEL_LAYOUT.controlCenters[0], () => this.handleUndo(),
         this.session.levelComplete || this.session.history.length === 0);
-      this.addControlButton(root, RESTART_LABEL, 'icon-restart', LEVEL_LAYOUT.controlCenters[1], () => this.handleRestart(),
+      this.addControlButton(content, RESTART_LABEL, 'icon-restart', LEVEL_LAYOUT.controlCenters[1], () => this.handleRestart(),
         this.session.levelComplete);
-      this.addControlButton(root, this.session.game.rewardBottleUsed ? '已加瓶' : '加空瓶', 'icon-add-bottle',
+      this.addControlButton(content, this.session.game.rewardBottleUsed ? '已加瓶' : '加空瓶', 'icon-add-bottle',
         LEVEL_LAYOUT.controlCenters[2], () => { void this.handleRewardedBottle(); },
         this.session.levelComplete || this.session.game.rewardBottleUsed || this.rewardBusy);
     }
   }
 
-  private addWitch(root: Node, mood: WitchMood, x: number, y: number, width: number, height: number): void {
+  private refreshLevelContent(): void {
+    if (!this.surface || this.flow.scene !== 'level') return;
+    this.levelContent?.destroy();
+    this.clearLevelReferences();
+    this.renderLevelContent(this.surface, this.renderToken);
+  }
+
+  private refreshLevelFeedback(): void {
+    if (!this.levelContent?.isValid || !this.levelMessageLabel?.node.isValid || !this.levelWitchAnimator?.node.isValid) {
+      this.refreshLevelContent();
+      return;
+    }
+    this.levelMessageLabel.string = this.session.message;
+    const mood = this.session.witchMood;
+    this.levelWitchAnimator.play(mood, () => this.handleWitchSettled(mood));
+    this.refreshBottleHighlights();
+  }
+
+  private addWitch(root: Node, mood: WitchMood, x: number, y: number, width: number, height: number): WitchAnimator {
     const node = new Node('WitchAnimator');
     node.setPosition(x, y);
     node.addComponent(UITransform).setContentSize(width, height);
     root.addChild(node);
-    node.addComponent(WitchAnimator).play(mood, () => this.handleWitchSettled(mood));
+    const animator = node.addComponent(WitchAnimator);
+    animator.play(mood, () => this.handleWitchSettled(mood));
+    return animator;
   }
 
   private addLaunchWitch(root: Node): void {
@@ -508,7 +552,7 @@ export class ProductionBootstrap extends Component {
   private handleWitchSettled(mood: WitchMood): void {
     if (this.session.witchMood !== mood) return;
     this.session = mood === 'return' ? finishWitchReturn(this.session) : settleWitch(this.session);
-    this.render();
+    this.refreshLevelFeedback();
   }
 
   private addBottle(root: Node, index: number, x: number, y: number, angle: number, token: number): void {
@@ -528,11 +572,16 @@ export class ProductionBootstrap extends Component {
     hitTarget.addChild(node);
     this.bottleNodes.set(index, node);
 
-    const selectedAura = this.addSprite(node, 'game/chibi/items/bottle-frame/spriteFrame', 52, 112, 0, 0, token);
-    selectedAura.name = 'SelectedAura';
-    selectedAura.active = feedback.auraVisible;
-    const auraSprite = selectedAura.getComponent(Sprite);
-    if (auraSprite) auraSprite.color = color('#87D8FF', 88);
+    selectedBottleAuraVisual().forEach((aura, auraIndex) => {
+      const selectedAura = this.addSprite(node, 'game/chibi/items/bottle-frame/spriteFrame',
+        aura.width, aura.height, 0, 0, token);
+      selectedAura.name = `SelectedAura-${auraIndex + 1}`;
+      selectedAura.active = feedback.auraVisible;
+      const auraSprite = selectedAura.getComponent(Sprite);
+      if (auraSprite) auraSprite.color = color('#87D8FF', Math.round(aura.opacity * 255));
+      const auraOpacity = selectedAura.addComponent(UIOpacity);
+      auraOpacity.opacity = feedback.auraVisible ? 255 : 0;
+    });
     const invalidGlow = this.addPanel(node, 56, 112, 0, 0, color('#EA4F62', 20), color('#FF667A'), 22);
     invalidGlow.name = 'InvalidGlow';
     invalidGlow.active = this.invalid.has(index);
@@ -647,6 +696,7 @@ export class ProductionBootstrap extends Component {
 
   private applySessionResult(result: SessionResult): void {
     if (result.session === this.session && !result.cue) return;
+    const previousSession = this.session;
     this.session = result.session;
     this.invalid = new Set(result.invalid);
     this.pouring = new Set(result.pouring);
@@ -654,7 +704,9 @@ export class ProductionBootstrap extends Component {
     if (this.session.pendingCompletion.length === 0 && !this.session.levelComplete) {
       this.store.saveSession(this.session);
     }
-    this.render();
+    const refreshMode = levelInteractionRefreshMode(previousSession.game !== this.session.game);
+    if (refreshMode === 'content') this.refreshLevelContent();
+    else this.refreshLevelFeedback();
     if (this.invalid.size > 0) this.scheduleOnce(() => { this.invalid.clear(); this.refreshBottleHighlights(); }, 0.52);
     if (this.pouring.size > 0) this.scheduleOnce(() => { this.pouring.clear(); this.refreshBottleHighlights(); }, 0.52);
     if (this.session.levelComplete && this.session.pendingCompletion.length === 0 && !this.completionScheduled) {
@@ -673,7 +725,7 @@ export class ProductionBootstrap extends Component {
         if (this.session.levelComplete) this.persistCompletion();
         else {
           this.store.saveSession(this.session);
-          this.render();
+          this.refreshLevelContent();
         }
       }, 1.08);
     }
@@ -737,12 +789,22 @@ export class ProductionBootstrap extends Component {
   private refreshBottleHighlights(): void {
     for (const [index, node] of this.bottleNodes) {
       const feedback = bottleFeedbackVisual(this.session.selected === index, this.pouring.has(index));
-      const selectedAura = node.getChildByName('SelectedAura');
-      if (selectedAura) selectedAura.active = feedback.auraVisible;
+      for (const selectedAura of node.children.filter((child) => child.name.startsWith('SelectedAura-'))) {
+        selectedAura.active = true;
+        const auraOpacity = selectedAura.getComponent(UIOpacity);
+        if (!auraOpacity) continue;
+        Tween.stopAllByTarget(auraOpacity);
+        tween(auraOpacity).to(0.18, { opacity: feedback.auraVisible ? 255 : 0 }).call(() => {
+          if (!feedback.auraVisible && auraOpacity.opacity === 0) selectedAura.active = false;
+        }).start();
+      }
       const invalidGlow = node.getChildByName('InvalidGlow');
       if (invalidGlow) invalidGlow.active = this.invalid.has(index);
-      node.setPosition(0, feedback.yOffset);
-      node.setScale(new Vec3(feedback.scale, feedback.scale, 1));
+      Tween.stopAllByTarget(node);
+      tween(node).to(0.18, {
+        position: new Vec3(0, feedback.yOffset, 0),
+        scale: new Vec3(feedback.scale, feedback.scale, 1),
+      }).start();
       const particleState = potionParticleState(
         this.session.pendingCompletion.includes(index),
         this.pouring.has(index),
@@ -796,14 +858,15 @@ export class ProductionBootstrap extends Component {
     }, false, 'icon-settings-home', 16);
   }
 
-  private addMessage(root: Node, text: string, token: number): void {
+  private addMessage(root: Node, text: string, token: number): Label {
     const node = new Node('GameMessage');
     node.setPosition(LEVEL_LAYOUT.message.x, LEVEL_LAYOUT.message.y);
     node.addComponent(UITransform).setContentSize(LEVEL_LAYOUT.message.width, LEVEL_LAYOUT.message.height);
     root.addChild(node);
     this.addSprite(node, 'game/chibi/ui/message-panel/spriteFrame', LEVEL_LAYOUT.message.width,
       LEVEL_LAYOUT.message.height, 0, 0, token);
-    this.addLabel(node, text, 12, 0, 0, color('#FFF4DB'), LEVEL_LAYOUT.message.width - 40);
+    return this.addLabel(node, text, 12, 0, 0, color('#FFF4DB'), LEVEL_LAYOUT.message.width - 40)
+      .getComponent(Label) as Label;
   }
 
   private addControlButton(root: Node, label: string, icon: string, x: number, action: () => void, disabled = false): void {

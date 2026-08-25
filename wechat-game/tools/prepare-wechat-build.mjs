@@ -20,6 +20,7 @@ if (existsSync(sourceBundle)) {
   mkdirSync(dirname(targetBundle), { recursive: true });
   renameSync(sourceBundle, targetBundle);
 }
+writeFileSync(join(targetBundle, 'game.js'), "require('./index.js');\n");
 
 const gamePath = join(outputRoot, 'game.json');
 const game = JSON.parse(readFileSync(gamePath, 'utf8'));
@@ -28,6 +29,19 @@ game.subpackages = [
   { name: 'resources', root: 'subpackages/resources' },
 ];
 writeFileSync(gamePath, `${JSON.stringify(game, null, 2)}\n`);
+
+const projectConfigPath = join(outputRoot, 'project.config.json');
+const projectConfig = JSON.parse(readFileSync(projectConfigPath, 'utf8'));
+projectConfig.setting = projectConfig.setting || {};
+projectConfig.setting.ignoreDevUnusedFiles = false;
+projectConfig.setting.ignoreUploadUnusedFiles = false;
+projectConfig.packOptions = projectConfig.packOptions || {};
+const packageIncludes = Array.isArray(projectConfig.packOptions.include) ? projectConfig.packOptions.include : [];
+projectConfig.packOptions.include = [
+  ...packageIncludes.filter((rule) => rule?.type !== 'folder' || rule?.value !== 'subpackages/resources/'),
+  { type: 'folder', value: 'subpackages/resources/' },
+];
+writeFileSync(projectConfigPath, `${JSON.stringify(projectConfig, null, 2)}\n`);
 
 const settingsPath = join(outputRoot, 'src', 'settings.json');
 const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));

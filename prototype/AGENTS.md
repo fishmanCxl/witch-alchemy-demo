@@ -13,6 +13,7 @@
 - Witch animation uses seven production states: idle 18, prepare 12, raise 12, cast 20, celebrate 14, return 18, and invalid feedback 12. Every runtime frame is 512×512, independently normalized to a 370±3px character height, and uses the fixed foot anchor `(256,470)`; cast/celebrate magic remains a separate synchronized overlay.
 - Potion readability uses both high-separation hues and a unique particle language per potion color.
 - Bottle placement uses deterministic controlled randomness inside the fixed 5 × 3 safety grid: x offset within ±5px, y offset within ±10px, and rotation within ±2 degrees. A level never rerolls positions while active.
+- When a selected bottle cannot pour into another active filled bottle, invalid feedback remains visible on the pair while selection and the cyan highlight transfer immediately to the newly tapped bottle.
 - Bottom controls and game messages use image-backed Q-style UI assets with normal, pressed, disabled, enter, replace, and exit states.
 - The React/Vite mobile prototype is the visual and interaction-validation target only. The production WeChat Mini Game target is Cocos Creator 3.x with TypeScript, reusing the pure game engine and level data rather than the React presentation layer.
 - Phase-one backend uses WeChat Cloud Development / Tencent CloudBase. It owns cloud save, remotely versioned level configuration, idempotent rewarded-empty-bottle claims, and basic completion telemetry. The current React prototype must keep rewarded-ad completion local and must not connect to a real CloudBase environment.

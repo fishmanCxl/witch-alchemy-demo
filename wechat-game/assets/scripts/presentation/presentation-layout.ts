@@ -23,6 +23,12 @@ export interface BottleFeedbackVisual {
   readonly auraVisible: boolean;
 }
 
+export interface SelectedBottleAuraVisual {
+  readonly width: number;
+  readonly height: number;
+  readonly opacity: number;
+}
+
 export type PotionParticleState = 'idle' | 'selected' | 'pouring' | 'complete';
 
 export interface PotionParticleVisual {
@@ -83,7 +89,7 @@ export const HOME_LAYOUT = Object.freeze({
 export const LEVEL_LAYOUT = Object.freeze({
   witch: Object.freeze({ x: 0, y: 213, width: 174, height: 182 }),
   bottle: Object.freeze({ width: 48, height: 104 }),
-  liquid: Object.freeze({ x: 0, y: -10.5, width: 36, height: 65, radius: 13 }),
+  liquid: Object.freeze({ x: 0, y: -8.5, width: 36, height: 61, radius: 11 }),
   slotColumns: Object.freeze([-136, -68, 0, 68, 136] as const),
   bottleRows: Object.freeze([70, -52, -174] as const),
   message: Object.freeze({ x: 0, y: -270, width: 321, height: 46 }),
@@ -140,6 +146,18 @@ export function bottleFeedbackVisual(selected: boolean, pouring: boolean): Bottl
   if (selected) return Object.freeze({ yOffset: 10, scale: 1.04, auraVisible: true });
   if (pouring) return Object.freeze({ yOffset: 0, scale: 1.06, auraVisible: false });
   return Object.freeze({ yOffset: 0, scale: 1, auraVisible: false });
+}
+
+export function selectedBottleAuraVisual(): readonly SelectedBottleAuraVisual[] {
+  return Object.freeze([
+    Object.freeze({ width: 52, height: 112, opacity: 0.35 }),
+    Object.freeze({ width: 56, height: 116, opacity: 0.2 }),
+    Object.freeze({ width: 60, height: 120, opacity: 0.1 }),
+  ]);
+}
+
+export function levelInteractionRefreshMode(gameChanged: boolean): 'feedback' | 'content' {
+  return gameChanged ? 'content' : 'feedback';
 }
 
 const POTION_PARTICLE_STYLE = Object.freeze({

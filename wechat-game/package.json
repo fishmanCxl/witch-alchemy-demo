@@ -13,6 +13,7 @@
     "check:levels": "node --experimental-strip-types tools/generate-levels.ts --check",
     "prepare:sprites": "node tools/configure-sprite-frames.mjs",
     "prepare:wechat-build": "node tools/prepare-wechat-build.mjs",
+    "test:wechat-build": "node --test tests/wechat-build-preparation.test.mjs",
     "sync:assets": "node tools/sync-approved-assets.mjs"
   }
 }

@@ -12,6 +12,8 @@
 
 - Fixed 5×3 slots; regular content uses at most 14 and slot index 14 is the one-time rewarded empty bottle.
 - Completed bottles fly away and become `vanished`; slots never reflow or become reusable.
+- When a selected bottle cannot pour into another active filled bottle, keep the invalid feedback on both bottles but transfer selection and the cyan highlight to the newly tapped bottle immediately.
+- Bottle interactions must refresh the mounted level nodes; never destroy and rebuild the full production surface for selection, invalid feedback, pouring, or witch-state settling.
 - Bottle capacity is four and only a contiguous matching top run can pour.
 - Witch runtime states and frame counts are idle 18, prepare 12, raise 12, cast 20, celebrate 14, return 18, and oops 12.
 - Wide raster buttons must match the approved prototype with nine-slice rendering: preserve the 72px source corners at one-third display scale and stretch only the center. Bottom control bases remain square and centered inside their wider 110×72 hit targets; never SIMPLE-stretch square button artwork into a rectangle.
@@ -27,3 +29,4 @@
 - Run `node --experimental-strip-types tools/generate-levels.ts --check` and `node --experimental-strip-types --test tests/*.test.ts` after core/data changes.
 - Run CloudBase tests and `tools/prepare-functions.mjs` after changing shared progress, rewards, telemetry, or cloud functions; all copied runtime hashes must match.
 - Open the project in Cocos Creator 3.8.8 before claiming scene or WeChat build compatibility. Cocos generates `.meta` files on first import; retain those generated metadata files afterward.
+- After every WeChat build, run `tools/prepare-wechat-build.mjs` and preview from a fresh Developer Tools process. The uploaded `resources` subpackage must contain the complete Cocos bundle rather than only its JavaScript entry; restart the IDE service after changing `project.config.json` packaging rules.

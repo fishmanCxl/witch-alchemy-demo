@@ -175,6 +175,25 @@ test('production bottle feedback uses prototype transforms and deterministic par
   assert.match(bootstrap, /SelectedAura/);
 });
 
+test('production bottle interactions refresh level nodes without rebuilding the full surface', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const applyBody = bootstrap.slice(
+    bootstrap.indexOf('private applySessionResult'),
+    bootstrap.indexOf('private persistCompletion'),
+  );
+  const refreshBody = bootstrap.slice(
+    bootstrap.indexOf('private refreshLevelContent'),
+    bootstrap.indexOf('private addWitch'),
+  );
+
+  assert.match(applyBody, /levelInteractionRefreshMode\(/);
+  assert.match(applyBody, /this\.refreshLevelFeedback\(\)/);
+  assert.match(applyBody, /this\.refreshLevelContent\(\)/);
+  assert.doesNotMatch(applyBody, /this\.render\(\)/);
+  assert.doesNotMatch(refreshBody, /this\.surface\?\.destroy\(\)/);
+  assert.doesNotMatch(refreshBody, /new Node\('ProductionSurface'\)/);
+});
+
 test('production labels use the bundled art font and approved prototype copy', () => {
   const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
 
