@@ -5,11 +5,31 @@ import { createDemoState, stateOf } from '../assets/scripts/core/demo-level.ts';
 import type { BottleState, GameState } from '../assets/scripts/core/types.ts';
 import {
   applyMoveAndVanish,
+  analyzeOpeningBranches,
   canonicalStateKey,
   legalMoves,
   solveLevel,
   type Move,
 } from '../tools/level-solver.ts';
+
+const twoColorState = stateOf([
+  ['rose'], ['rose', 'rose', 'rose'], ['amber'], ['amber', 'amber', 'amber'],
+]);
+const equalOpeningState = stateOf([
+  ['rose', 'amber', 'violet', 'rose'],
+  ['violet', 'rose', 'amber', 'violet'],
+  ['amber', 'violet', 'rose', 'amber'],
+  [],
+  [],
+]);
+const misleadingOpeningState = stateOf([
+  [],
+  ['violet', 'violet', 'violet', 'rose'],
+  ['cyan', 'amber', 'cyan', 'rose'],
+  [],
+  ['violet', 'cyan', 'rose', 'rose'],
+  ['amber', 'amber', 'amber', 'cyan'],
+]);
 
 function withStatuses(
   state: GameState,
@@ -68,12 +88,7 @@ test('legal moves are deterministic and completed targets vanish automatically',
 });
 
 test('solver finds a shortest two-move solution and leaves its input unchanged', () => {
-  const state = stateOf([
-    ['rose'],
-    ['rose', 'rose', 'rose'],
-    ['amber'],
-    ['amber', 'amber', 'amber'],
-  ]);
+  const state = twoColorState;
   const before = structuredClone(state);
   const result = solveLevel(state, {
     completionRule: { type: 'all-colors', targetCount: 2 },
@@ -86,6 +101,60 @@ test('solver finds a shortest two-move solution and leaves its input unchanged',
     bottle.status === 'vanished'
   )).length, 2);
   assert.deepEqual(state, before);
+});
+
+test('A star keeps the known two-move solution shortest and deterministic', () => {
+  const options = {
+    completionRule: { type: 'all-colors', targetCount: 2 } as const,
+    maxExploredStates: 50_000,
+  };
+  const first = solveLevel(twoColorState, options);
+  const second = solveLevel(twoColorState, options);
+
+  assert.equal(first.moves.length, 2);
+  assert.deepEqual(second, first);
+});
+
+test('opening analysis does not penalize branches with equal optimal length', () => {
+  const rule = { type: 'all-colors', targetCount: 3 } as const;
+  const solved = solveLevel(equalOpeningState, {
+    completionRule: rule,
+    maxExploredStates: 50_000,
+  });
+  const analysis = analyzeOpeningBranches(
+    equalOpeningState,
+    rule,
+    solved.moves.length,
+    50_000,
+  );
+
+  assert.equal(solved.moves.length, 10);
+  assert.deepEqual(analysis, {
+    totalBranches: 6,
+    misleadingBranches: 0,
+    ratio: 0,
+  });
+});
+
+test('opening analysis marks branches longer than the optimum as misleading', () => {
+  const rule = { type: 'all-colors', targetCount: 4 } as const;
+  const solved = solveLevel(misleadingOpeningState, {
+    completionRule: rule,
+    maxExploredStates: 50_000,
+  });
+  const analysis = analyzeOpeningBranches(
+    misleadingOpeningState,
+    rule,
+    solved.moves.length,
+    50_000,
+  );
+
+  assert.equal(solved.moves.length, 8);
+  assert.deepEqual(analysis, {
+    totalBranches: 8,
+    misleadingBranches: 2,
+    ratio: 0.25,
+  });
 });
 
 test('solver reports a stable unsolved result when the exploration budget is exhausted', () => {

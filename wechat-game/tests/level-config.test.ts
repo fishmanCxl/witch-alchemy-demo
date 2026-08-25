@@ -2,13 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  countColorSegments,
   DEMO_LEVEL_CONFIG,
+  difficultyRating,
   levelId,
   levelNumber,
   validateLevelConfig,
   type LevelConfig,
 } from '../assets/scripts/core/level-config.ts';
 import type { BottleState, GameState, PotionColor } from '../assets/scripts/core/types.ts';
+import { stateOf } from '../assets/scripts/core/demo-level.ts';
 
 function withConfig(changes: Partial<LevelConfig>): LevelConfig {
   return { ...DEMO_LEVEL_CONFIG, ...changes };
@@ -46,15 +49,92 @@ test('demo level exposes the immutable runtime contract and validates cleanly', 
     type: 'all-colors',
     targetCount: 8,
   });
+  assert.equal(DEMO_LEVEL_CONFIG.metrics.difficultyRating >= 0, true);
+  assert.equal(DEMO_LEVEL_CONFIG.metrics.difficultyRating <= 1, true);
+  assert.equal(DEMO_LEVEL_CONFIG.metrics.misleadingBranchRatio >= 0, true);
   assert.deepEqual(DEMO_LEVEL_CONFIG.metrics, {
     colorCount: 8,
     optimalMoves: 23,
     segmentCount: 30,
-    exploredStates: 89_354,
+    exploredStates: 1_075,
     openingMoves: 20,
-    difficultyScore: 2_134,
+    misleadingBranchRatio: 0.7,
+    difficultyRating: 0.665,
+    difficultyScore: 6_650,
   });
   assert.deepEqual(validateLevelConfig(DEMO_LEVEL_CONFIG), []);
+});
+
+test('validator accepts the twelve approved potion colors', () => {
+  const colors: PotionColor[] = [
+    'rose', 'violet', 'amber', 'cyan', 'mint', 'blue', 'gold', 'lilac',
+    'scarlet', 'chartreuse', 'indigo', 'pearl',
+  ];
+  const bottles: BottleState[] = colors.map((_, index) => ({
+    layers: [
+      colors[index],
+      colors[(index + 1) % colors.length],
+      colors[(index + 2) % colors.length],
+      colors[(index + 3) % colors.length],
+    ],
+    status: 'active',
+  }));
+  bottles.push({ layers: [], status: 'active' });
+  bottles.push({ layers: [], status: 'active' });
+  bottles.push({ layers: [], status: 'reserved' });
+
+  const config = withConfig({
+    id: 'level-004',
+    number: 4,
+    completionRule: { type: 'all-colors', targetCount: 12 },
+    metrics: {
+      colorCount: 12,
+      optimalMoves: 30,
+      segmentCount: 48,
+      exploredStates: 10_000,
+      openingMoves: 24,
+      misleadingBranchRatio: 0.5,
+      difficultyRating: 0.6,
+      difficultyScore: 6_000,
+    },
+    initialState: { bottles, rewardBottleUsed: false, moves: 0 },
+  });
+
+  assert.equal(new Set(colors).size, 12);
+  assert.deepEqual(validateLevelConfig(config), []);
+});
+
+test('segment counting and normalized difficulty use the shared literal formula', () => {
+  const state = stateOf([
+    ['rose', 'rose', 'amber', 'rose'],
+    ['amber', 'amber'],
+    [],
+  ]);
+  const rating = difficultyRating({
+    colorCount: 4,
+    optimalMoves: 20,
+    segmentCount: 14,
+    exploredStates: 999,
+    openingMoves: 8,
+    misleadingBranchRatio: 0.5,
+  });
+
+  assert.equal(countColorSegments(state), 4);
+  assert.equal(rating, 0.66);
+});
+
+test('validation rejects non-finite and out-of-range normalized metrics', () => {
+  const invalidRatios = [Number.NaN, Number.POSITIVE_INFINITY, -0.01, 1.01];
+  for (const misleadingBranchRatio of invalidRatios) {
+    assert.match(validateLevelConfig(withConfig({
+      metrics: { ...DEMO_LEVEL_CONFIG.metrics, misleadingBranchRatio },
+    })).join('\n'), /misleadingBranchRatio must be finite and from 0 to 1/);
+  }
+  for (const difficultyRating of invalidRatios) {
+    assert.match(validateLevelConfig(withConfig({
+      metrics: { ...DEMO_LEVEL_CONFIG.metrics, difficultyRating },
+    })).join('\n'), /difficultyRating must be finite and from 0 to 1/);
+  }
 });
 
 test('validation reports identity, fixed-board, and reward-slot violations deterministically', () => {
@@ -88,7 +168,7 @@ test('validation rejects over-capacity layers, unknown colors, and wrong color t
   });
   const unknownColor = withConfig({
     initialState: withBottle(DEMO_LEVEL_CONFIG.initialState, 0, {
-      layers: ['violet', 'amber', 'violet', 'scarlet' as PotionColor],
+      layers: ['violet', 'amber', 'violet', 'ochre' as PotionColor],
       status: 'active',
     }),
   });
@@ -100,7 +180,7 @@ test('validation rejects over-capacity layers, unknown colors, and wrong color t
   });
 
   assert.match(validateLevelConfig(overCapacity).join('\n'), /capacity 4/);
-  assert.match(validateLevelConfig(unknownColor).join('\n'), /unknown color scarlet/);
+  assert.match(validateLevelConfig(unknownColor).join('\n'), /unknown color ochre/);
   assert.match(validateLevelConfig(wrongTotal).join('\n'), /color rose must total 4 layers/);
 });
 

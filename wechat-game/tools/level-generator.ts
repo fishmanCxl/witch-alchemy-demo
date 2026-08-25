@@ -1,8 +1,13 @@
-import type { LevelMetrics } from '../assets/scripts/core/level-config.ts';
-import type { CompletionRule } from '../assets/scripts/core/level-config.ts';
+import {
+  countColorSegments,
+  difficultyRating,
+  type CompletionRule,
+  type LevelMetrics,
+} from '../assets/scripts/core/level-config.ts';
 import type { BottleState, GameState, PotionColor } from '../assets/scripts/core/types.ts';
 import { canPour, isCompleteBottle, pour } from '../assets/scripts/core/water-sort.ts';
 import {
+  analyzeOpeningBranches,
   applyMoveAndVanish,
   solveLevel,
   type Move,
@@ -13,8 +18,14 @@ export interface GenerationSpec {
   readonly colorCount: number;
   readonly emptyBottleCount: number;
   readonly reverseMoves: number;
-  readonly minimumDifficulty: number;
-  readonly maximumDifficulty: number;
+  readonly targetDifficulty: number;
+  readonly minimumOptimalMoves: number;
+  readonly maximumOptimalMoves: number;
+  readonly minimumSegments: number;
+  readonly minimumExploredStates: number;
+  readonly minimumOpeningMoves: number;
+  readonly maximumOpeningMoves: number;
+  readonly minimumMisleadingBranchRatio: number;
   readonly maxAttempts: number;
 }
 
@@ -56,6 +67,10 @@ const COLORS: readonly PotionColor[] = [
   'blue',
   'gold',
   'lilac',
+  'scarlet',
+  'chartreuse',
+  'indigo',
+  'pearl',
 ];
 
 function active(layers: readonly PotionColor[]): BottleState {
@@ -178,18 +193,6 @@ function scramble(spec: GenerationSpec, seed: number): {
   return { state, inverseMoves: inverses.reverse() };
 }
 
-function segmentCount(state: GameState): number {
-  let segments = 0;
-  for (const bottle of state.bottles) {
-    let previous: PotionColor | undefined;
-    for (const color of bottle.layers) {
-      if (color !== previous) segments += 1;
-      previous = color;
-    }
-  }
-  return segments;
-}
-
 function replayIsValid(
   state: GameState,
   inverseMoves: readonly Move[],
@@ -209,6 +212,7 @@ export function scoreCandidate(
   segments: number,
   exploredStates: number,
   openingMoves: number,
+  misleadingBranchRatio = 0,
 ): { readonly difficultyScore: number; readonly components: GenerationScoreComponents } {
   const components: GenerationScoreComponents = {
     color: Math.max(0, colorCount - 1) * 100,
@@ -218,8 +222,16 @@ export function scoreCandidate(
     openingConstraint: Math.max(0, 24 - openingMoves) * 60,
     wrongBranchPenalty: Math.max(0, openingMoves - 2) * 3,
   };
+  const rating = difficultyRating({
+    colorCount,
+    optimalMoves,
+    segmentCount: segments,
+    exploredStates,
+    openingMoves,
+    misleadingBranchRatio,
+  });
   return {
-    difficultyScore: Object.values(components).reduce((total, value) => total + value, 0),
+    difficultyScore: Math.round(rating * 10_000),
     components,
   };
 }
@@ -236,13 +248,28 @@ export function analyzeState(
 } | null {
   const result = solveLevel(state, { completionRule, maxExploredStates });
   if (!result.solved) return null;
-  const segments = segmentCount(state);
+  const segments = countColorSegments(state);
+  const openingAnalysis = analyzeOpeningBranches(
+    state,
+    completionRule,
+    result.moves.length,
+    maxExploredStates,
+  );
+  const rating = difficultyRating({
+    colorCount,
+    optimalMoves: result.moves.length,
+    segmentCount: segments,
+    exploredStates: result.exploredStates,
+    openingMoves: result.openingMoves,
+    misleadingBranchRatio: openingAnalysis.ratio,
+  });
   const score = scoreCandidate(
     colorCount,
     result.moves.length,
     segments,
     result.exploredStates,
     result.openingMoves,
+    openingAnalysis.ratio,
   );
   return {
     metrics: {
@@ -251,7 +278,9 @@ export function analyzeState(
       segmentCount: segments,
       exploredStates: result.exploredStates,
       openingMoves: result.openingMoves,
-      difficultyScore: score.difficultyScore,
+      misleadingBranchRatio: openingAnalysis.ratio,
+      difficultyRating: rating,
+      difficultyScore: Math.round(rating * 10_000),
     },
     scoreComponents: score.components,
     solution: result.moves,
@@ -289,6 +318,9 @@ function validateSpec(spec: GenerationSpec): void {
 
 export function generateCandidate(spec: GenerationSpec, seed: number): GeneratedCandidate {
   validateSpec(spec);
+  let bestCandidate: GeneratedCandidate | null = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
+
   for (let attempt = 0; attempt < spec.maxAttempts; attempt += 1) {
     const attemptSeed = (seed + Math.imul(attempt, 0x9E3779B1)) >>> 0;
     const scrambled = scramble(spec, attemptSeed);
@@ -300,24 +332,33 @@ export function generateCandidate(spec: GenerationSpec, seed: number): Generated
       spec.colorCount,
       { type: 'all-colors', targetCount: spec.colorCount },
     );
-    if (!analysis || analysis.metrics.openingMoves < 2) continue;
-    if (
-      analysis.metrics.difficultyScore < spec.minimumDifficulty
-      || analysis.metrics.difficultyScore > spec.maximumDifficulty
-    ) {
-      continue;
-    }
+    if (!analysis) continue;
+    const metrics = analysis.metrics;
+    if (metrics.optimalMoves < spec.minimumOptimalMoves) continue;
+    if (metrics.optimalMoves > spec.maximumOptimalMoves) continue;
+    if (metrics.segmentCount < spec.minimumSegments) continue;
+    if (metrics.exploredStates < spec.minimumExploredStates) continue;
+    if (metrics.openingMoves < spec.minimumOpeningMoves) continue;
+    if (metrics.openingMoves > spec.maximumOpeningMoves) continue;
+    if (metrics.misleadingBranchRatio < spec.minimumMisleadingBranchRatio) continue;
 
-    return {
+    const candidate: GeneratedCandidate = {
       seed: attemptSeed,
       attempt: attempt + 1,
       initialState: scrambled.state,
       inverseMoves: scrambled.inverseMoves,
-      metrics: analysis.metrics,
+      metrics,
       scoreComponents: analysis.scoreComponents,
     };
+    const distance = Math.abs(metrics.difficultyRating - spec.targetDifficulty);
+    if (distance < bestDistance) {
+      bestCandidate = candidate;
+      bestDistance = distance;
+      if (distance === 0) break;
+    }
   }
 
+  if (bestCandidate) return bestCandidate;
   throw new Error(
     `Unable to generate level ${spec.number} from seed ${seed} after ${spec.maxAttempts} attempts`,
   );

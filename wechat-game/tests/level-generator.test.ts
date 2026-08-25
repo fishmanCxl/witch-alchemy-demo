@@ -15,8 +15,14 @@ const SPEC: GenerationSpec = {
   colorCount: 4,
   emptyBottleCount: 2,
   reverseMoves: 9,
-  minimumDifficulty: 0,
-  maximumDifficulty: 100_000,
+  targetDifficulty: 0.5,
+  minimumOptimalMoves: 0,
+  maximumOptimalMoves: 100,
+  minimumSegments: 0,
+  minimumExploredStates: 0,
+  minimumOpeningMoves: 0,
+  maximumOpeningMoves: 100,
+  minimumMisleadingBranchRatio: 0,
   maxAttempts: 20,
 };
 
@@ -27,6 +33,18 @@ test('candidate generation is identical for one seed and diverse across seeds', 
 
   assert.deepEqual(repeated, first);
   assert.notDeepEqual(different.initialState, first.initialState);
+});
+
+test('accepted candidates are ranked by distance to target difficulty', () => {
+  const candidate = generateCandidate({
+    ...SPEC,
+    targetDifficulty: 1,
+    maxAttempts: 50,
+  }, 41);
+
+  assert.equal(candidate.attempt, 41);
+  assert.equal(candidate.metrics.difficultyRating, 0.356);
+  assert.equal(candidate.metrics.difficultyScore, 3_560);
 });
 
 test('recorded inverse moves replay through completion-and-vanish semantics', () => {
@@ -64,12 +82,30 @@ test('candidate generation fails after maxAttempts with a stable diagnostic', ()
   assert.throws(
     () => generateCandidate({
       ...SPEC,
-      minimumDifficulty: 1_000_000,
-      maximumDifficulty: 1_000_001,
+      minimumOptimalMoves: 1_000_000,
       maxAttempts: 2,
     }, 7),
     new Error('Unable to generate level 4 from seed 7 after 2 attempts'),
   );
+});
+
+test('candidate generation enforces every metric window independently', () => {
+  const impossibleSpecs: readonly Partial<GenerationSpec>[] = [
+    { minimumOptimalMoves: 1_000_000 },
+    { maximumOptimalMoves: 0 },
+    { minimumSegments: 1_000_000 },
+    { minimumExploredStates: 1_000_000 },
+    { minimumOpeningMoves: 1_000_000 },
+    { maximumOpeningMoves: 0 },
+    { minimumMisleadingBranchRatio: 1.1 },
+  ];
+
+  for (const impossible of impossibleSpecs) {
+    assert.throws(
+      () => generateCandidate({ ...SPEC, ...impossible, maxAttempts: 1 }, 41),
+      /Unable to generate level 4/,
+    );
+  }
 });
 
 test('generated output comparison normalizes line endings without hiding content changes', () => {

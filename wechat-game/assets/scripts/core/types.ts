@@ -6,7 +6,11 @@ export type PotionColor =
   | 'mint'
   | 'blue'
   | 'gold'
-  | 'lilac';
+  | 'lilac'
+  | 'scarlet'
+  | 'chartreuse'
+  | 'indigo'
+  | 'pearl';
 
 export type BottleStatus = 'active' | 'inactive' | 'reserved' | 'vanished';
 

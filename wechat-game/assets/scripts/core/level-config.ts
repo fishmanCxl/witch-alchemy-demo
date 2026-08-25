@@ -13,6 +13,8 @@ export interface LevelMetrics {
   readonly segmentCount: number;
   readonly exploredStates: number;
   readonly openingMoves: number;
+  readonly misleadingBranchRatio: number;
+  readonly difficultyRating: number;
   readonly difficultyScore: number;
 }
 
@@ -38,6 +40,10 @@ const POTION_COLORS = new Set<string>([
   'blue',
   'gold',
   'lilac',
+  'scarlet',
+  'chartreuse',
+  'indigo',
+  'pearl',
 ]);
 
 export function levelId(number: number): string {
@@ -52,6 +58,39 @@ export function levelNumber(id: string): number | null {
   if (!match) return null;
   const number = Number(match[1]);
   return number >= 1 ? number : null;
+}
+
+export function countColorSegments(state: GameState): number {
+  let total = 0;
+  for (const bottle of state.bottles) {
+    let previous: PotionColor | undefined;
+    for (const color of bottle.layers) {
+      if (color !== previous) total += 1;
+      previous = color;
+    }
+  }
+  return total;
+}
+
+const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));
+const round3 = (value: number): number => Math.round(value * 1_000) / 1_000;
+
+export function difficultyRating(
+  metrics: Omit<LevelMetrics, 'difficultyRating' | 'difficultyScore'>,
+): number {
+  const solution = clamp01((metrics.optimalMoves - 5) / 30);
+  const segments = clamp01(
+    (metrics.segmentCount - metrics.colorCount) / (metrics.colorCount * 2.5),
+  );
+  const search = clamp01(Math.log10(metrics.exploredStates + 1) / 6);
+  const openingConstraint = clamp01(1 - Math.abs(metrics.openingMoves - 8) / 20);
+  return round3(
+    0.36 * solution
+      + 0.22 * segments
+      + 0.18 * search
+      + 0.10 * openingConstraint
+      + 0.14 * metrics.misleadingBranchRatio,
+  );
 }
 
 function countLegalOpeningMoves(state: GameState): number {
@@ -80,6 +119,20 @@ export function validateLevelConfig(config: LevelConfig): readonly string[] {
   if (config.capacity !== 4) errors.push('capacity must be 4');
   if (config.slotCount !== 15) errors.push('slotCount must be 15');
   if (config.rewardSlotIndex !== 14) errors.push('rewardSlotIndex must be 14');
+  if (
+    !Number.isFinite(config.metrics?.misleadingBranchRatio)
+    || config.metrics.misleadingBranchRatio < 0
+    || config.metrics.misleadingBranchRatio > 1
+  ) {
+    errors.push('metrics.misleadingBranchRatio must be finite and from 0 to 1');
+  }
+  if (
+    !Number.isFinite(config.metrics?.difficultyRating)
+    || config.metrics.difficultyRating < 0
+    || config.metrics.difficultyRating > 1
+  ) {
+    errors.push('metrics.difficultyRating must be finite and from 0 to 1');
+  }
 
   const bottles = config.initialState?.bottles;
   if (!Array.isArray(bottles) || bottles.length !== 15) {
@@ -142,9 +195,11 @@ export const DEMO_LEVEL_CONFIG: LevelConfig = Object.freeze({
     colorCount: 8,
     optimalMoves: 23,
     segmentCount: 30,
-    exploredStates: 89_354,
+    exploredStates: 1_075,
     openingMoves: 20,
-    difficultyScore: 2_134,
+    misleadingBranchRatio: 0.7,
+    difficultyRating: 0.665,
+    difficultyScore: 6_650,
   }),
   initialState: createDemoState(),
 });
