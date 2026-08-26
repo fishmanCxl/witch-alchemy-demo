@@ -10,6 +10,8 @@ import {
   undoSession,
 } from '../assets/scripts/core/game-session.ts';
 import { createDemoState } from '../assets/scripts/core/demo-level.ts';
+import { getLevelConfig } from '../assets/scripts/core/level-catalog.ts';
+import { solveLevel } from '../tools/level-solver.ts';
 import { DEMO_LEVEL_CONFIG } from '../assets/scripts/core/level-config.ts';
 
 test('selecting a filled bottle prepares the witch and preserves the board', () => {
@@ -75,4 +77,31 @@ test('reward bottle activates the reserved fifteenth slot once', () => {
   const second = grantRewardBottle(first.session);
   assert.equal(second.session, first.session);
   assert.equal(second.cue, null);
+});
+test('level two waits for every color to vanish before completing', () => {
+  const level = getLevelConfig('level-002');
+  assert.ok(level);
+  assert.equal(level.completionRule.type, 'all-colors');
+  const solution = solveLevel(level.initialState, {
+    completionRule: level.completionRule,
+    maxExploredStates: 250_000,
+  });
+  assert.equal(solution.solved, true);
+
+  let session = createGameSession(level);
+  let sawFirstVanish = false;
+  for (const move of solution.moves) {
+    session = pressBottle(session, move.from).session;
+    session = pressBottle(session, move.to).session;
+    if (session.pendingCompletion.length === 0) continue;
+    session = completePendingBottles(session);
+    const vanished = session.game.bottles.filter((bottle) => bottle.status === 'vanished').length;
+    if (!sawFirstVanish && vanished > 0) {
+      sawFirstVanish = true;
+      assert.equal(session.levelComplete, vanished === level.metrics.colorCount);
+    }
+  }
+
+  assert.equal(sawFirstVanish, true);
+  assert.equal(session.levelComplete, true);
 });

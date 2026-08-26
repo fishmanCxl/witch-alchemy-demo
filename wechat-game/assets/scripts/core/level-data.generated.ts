@@ -5,7 +5,7 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
   {
     "id": "level-001",
     "number": 1,
-    "configVersion": "chapter-1.2026-08-23.1",
+    "configVersion": "chapter-1.2026-08-25.1",
     "presentationSeed": 1,
     "capacity": 4,
     "slotCount": 15,
@@ -19,6 +19,8 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
       "segmentCount": 2,
       "exploredStates": 1,
       "openingMoves": 6,
+      "misleadingBranchRatio": 0,
+      "difficultyRating": 0.187,
       "difficultyScore": 300
     },
     "initialState": {
@@ -97,26 +99,44 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
   {
     "id": "level-002",
     "number": 2,
-    "configVersion": "chapter-1.2026-08-23.1",
+    "configVersion": "chapter-1.2026-08-25.1",
     "presentationSeed": 2,
     "capacity": 4,
     "slotCount": 15,
     "rewardSlotIndex": 14,
     "completionRule": {
-      "type": "first-bottle-complete"
+      "type": "all-colors",
+      "targetCount": 3
     },
     "metrics": {
-      "colorCount": 2,
-      "optimalMoves": 1,
-      "segmentCount": 4,
-      "exploredStates": 1,
-      "openingMoves": 8,
-      "difficultyScore": 600
+      "colorCount": 3,
+      "optimalMoves": 9,
+      "segmentCount": 11,
+      "exploredStates": 21,
+      "openingMoves": 6,
+      "misleadingBranchRatio": 0.3333333333333333,
+      "difficultyRating": 0.445,
+      "difficultyScore": 4450
     },
     "initialState": {
       "bottles": [
         {
+          "layers": [],
+          "status": "active"
+        },
+        {
           "layers": [
+            "rose",
+            "violet",
+            "violet",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "violet",
             "amber",
             "rose"
           ],
@@ -124,22 +144,11 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
         },
         {
           "layers": [
-            "rose",
-            "rose",
-            "rose"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
+            "violet",
             "amber",
-            "amber",
+            "rose",
             "amber"
           ],
-          "status": "active"
-        },
-        {
-          "layers": [],
           "status": "active"
         },
         {
@@ -194,27 +203,40 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
   {
     "id": "level-003",
     "number": 3,
-    "configVersion": "chapter-1.2026-08-23.1",
+    "configVersion": "chapter-1.2026-08-25.1",
     "presentationSeed": 3,
     "capacity": 4,
     "slotCount": 15,
     "rewardSlotIndex": 14,
     "completionRule": {
       "type": "all-colors",
-      "targetCount": 2
+      "targetCount": 3
     },
     "metrics": {
-      "colorCount": 2,
-      "optimalMoves": 2,
-      "segmentCount": 4,
-      "exploredStates": 2,
-      "openingMoves": 12,
-      "difficultyScore": 900
+      "colorCount": 3,
+      "optimalMoves": 9,
+      "segmentCount": 11,
+      "exploredStates": 25,
+      "openingMoves": 6,
+      "misleadingBranchRatio": 0.3333333333333333,
+      "difficultyRating": 0.447,
+      "difficultyScore": 4470
     },
     "initialState": {
       "bottles": [
         {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
           "layers": [
+            "amber",
+            "rose",
+            "violet",
             "rose"
           ],
           "status": "active"
@@ -222,32 +244,24 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
         {
           "layers": [
             "rose",
+            "amber",
             "rose",
-            "rose"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
             "amber"
           ],
           "status": "active"
         },
         {
           "layers": [
+            "violet",
+            "violet",
             "amber",
-            "amber",
-            "amber"
+            "violet"
           ],
           "status": "active"
         },
         {
           "layers": [],
-          "status": "active"
-        },
-        {
-          "layers": [],
-          "status": "active"
+          "status": "inactive"
         },
         {
           "layers": [],
@@ -293,54 +307,52 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
   {
     "id": "level-004",
     "number": 4,
-    "configVersion": "chapter-1.2026-08-23.1",
+    "configVersion": "chapter-1.2026-08-25.1",
     "presentationSeed": 4,
     "capacity": 4,
     "slotCount": 15,
     "rewardSlotIndex": 14,
     "completionRule": {
       "type": "all-colors",
-      "targetCount": 3
+      "targetCount": 4
     },
     "metrics": {
-      "colorCount": 3,
-      "optimalMoves": 6,
-      "segmentCount": 8,
-      "exploredStates": 50,
-      "openingMoves": 6,
-      "difficultyScore": 1606
+      "colorCount": 4,
+      "optimalMoves": 10,
+      "segmentCount": 12,
+      "exploredStates": 219,
+      "openingMoves": 8,
+      "misleadingBranchRatio": 0.25,
+      "difficultyRating": 0.441,
+      "difficultyScore": 4410
     },
     "initialState": {
       "bottles": [
         {
           "layers": [
-            "rose",
-            "rose",
-            "rose",
-            "amber"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
             "violet",
-            "violet",
-            "amber",
-            "violet"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "amber",
-            "amber",
-            "violet",
+            "cyan",
+            "cyan",
             "rose"
           ],
           "status": "active"
         },
         {
-          "layers": [],
+          "layers": [
+            "violet",
+            "violet",
+            "cyan",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "amber",
+            "rose",
+            "violet"
+          ],
           "status": "active"
         },
         {
@@ -349,7 +361,16 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
         },
         {
           "layers": [],
-          "status": "inactive"
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "amber",
+            "rose",
+            "cyan"
+          ],
+          "status": "active"
         },
         {
           "layers": [],
@@ -395,30 +416,58 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
   {
     "id": "level-005",
     "number": 5,
-    "configVersion": "chapter-1.2026-08-23.1",
+    "configVersion": "chapter-1.2026-08-25.1",
     "presentationSeed": 5,
     "capacity": 4,
     "slotCount": 15,
     "rewardSlotIndex": 14,
     "completionRule": {
       "type": "all-colors",
-      "targetCount": 3
+      "targetCount": 4
     },
     "metrics": {
-      "colorCount": 3,
-      "optimalMoves": 7,
-      "segmentCount": 9,
-      "exploredStates": 104,
-      "openingMoves": 6,
-      "difficultyScore": 1658
+      "colorCount": 4,
+      "optimalMoves": 13,
+      "segmentCount": 15,
+      "exploredStates": 347,
+      "openingMoves": 8,
+      "misleadingBranchRatio": 0.5,
+      "difficultyRating": 0.562,
+      "difficultyScore": 5620
     },
     "initialState": {
       "bottles": [
         {
+          "layers": [],
+          "status": "active"
+        },
+        {
           "layers": [
-            "rose",
-            "rose",
             "violet",
+            "rose",
+            "amber",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "cyan",
+            "rose",
+            "amber",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "cyan",
+            "violet",
+            "rose",
             "amber"
           ],
           "status": "active"
@@ -426,32 +475,11 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
         {
           "layers": [
             "violet",
-            "amber",
-            "amber",
-            "violet"
+            "violet",
+            "rose",
+            "amber"
           ],
           "status": "active"
-        },
-        {
-          "layers": [],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "rose",
-            "rose",
-            "amber",
-            "violet"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [],
-          "status": "active"
-        },
-        {
-          "layers": [],
-          "status": "inactive"
         },
         {
           "layers": [],
@@ -497,7 +525,7 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
   {
     "id": "level-006",
     "number": 6,
-    "configVersion": "chapter-1.2026-08-23.1",
+    "configVersion": "chapter-1.2026-08-25.1",
     "presentationSeed": 6,
     "capacity": 4,
     "slotCount": 15,
@@ -508,40 +536,29 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
     },
     "metrics": {
       "colorCount": 4,
-      "optimalMoves": 8,
-      "segmentCount": 11,
-      "exploredStates": 142,
+      "optimalMoves": 12,
+      "segmentCount": 14,
+      "exploredStates": 338,
       "openingMoves": 8,
-      "difficultyScore": 1706
+      "misleadingBranchRatio": 0.5,
+      "difficultyRating": 0.55,
+      "difficultyScore": 5500
     },
     "initialState": {
       "bottles": [
         {
-          "layers": [],
-          "status": "active"
-        },
-        {
           "layers": [
-            "violet",
             "rose",
             "rose",
+            "amber",
             "violet"
           ],
           "status": "active"
         },
         {
           "layers": [
+            "violet",
             "amber",
-            "amber",
-            "amber",
-            "rose"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "cyan",
-            "cyan",
             "cyan",
             "violet"
           ],
@@ -552,11 +569,24 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
           "status": "active"
         },
         {
+          "layers": [],
+          "status": "active"
+        },
+        {
           "layers": [
-            "cyan",
+            "rose",
             "amber",
+            "amber",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "rose",
+            "cyan",
             "violet",
-            "rose"
+            "cyan"
           ],
           "status": "active"
         },
@@ -604,30 +634,54 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
   {
     "id": "level-007",
     "number": 7,
-    "configVersion": "chapter-1.2026-08-23.1",
+    "configVersion": "chapter-1.2026-08-25.1",
     "presentationSeed": 7,
     "capacity": 4,
     "slotCount": 15,
     "rewardSlotIndex": 14,
     "completionRule": {
       "type": "all-colors",
-      "targetCount": 4
+      "targetCount": 5
     },
     "metrics": {
-      "colorCount": 4,
-      "optimalMoves": 9,
-      "segmentCount": 12,
-      "exploredStates": 278,
-      "openingMoves": 8,
-      "difficultyScore": 1758
+      "colorCount": 5,
+      "optimalMoves": 15,
+      "segmentCount": 18,
+      "exploredStates": 1095,
+      "openingMoves": 10,
+      "misleadingBranchRatio": 0.2,
+      "difficultyRating": 0.549,
+      "difficultyScore": 5490
     },
     "initialState": {
       "bottles": [
         {
+          "layers": [],
+          "status": "active"
+        },
+        {
           "layers": [
+            "violet",
+            "violet",
+            "amber",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
             "rose",
-            "rose",
-            "rose",
+            "mint",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "cyan",
+            "cyan",
+            "violet",
             "amber"
           ],
           "status": "active"
@@ -638,10 +692,10 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
         },
         {
           "layers": [
-            "amber",
-            "amber",
             "cyan",
-            "violet"
+            "amber",
+            "mint",
+            "rose"
           ],
           "status": "active"
         },
@@ -649,27 +703,10 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
           "layers": [
             "cyan",
             "violet",
-            "violet",
-            "cyan"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "rose",
             "amber",
-            "violet",
-            "cyan"
+            "mint"
           ],
           "status": "active"
-        },
-        {
-          "layers": [],
-          "status": "active"
-        },
-        {
-          "layers": [],
-          "status": "inactive"
         },
         {
           "layers": [],
@@ -711,7 +748,7 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
   {
     "id": "level-008",
     "number": 8,
-    "configVersion": "chapter-1.2026-08-23.1",
+    "configVersion": "chapter-1.2026-08-25.1",
     "presentationSeed": 8,
     "capacity": 4,
     "slotCount": 15,
@@ -722,41 +759,30 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
     },
     "metrics": {
       "colorCount": 5,
-      "optimalMoves": 11,
-      "segmentCount": 14,
-      "exploredStates": 513,
+      "optimalMoves": 15,
+      "segmentCount": 18,
+      "exploredStates": 1069,
       "openingMoves": 10,
-      "difficultyScore": 1830
+      "misleadingBranchRatio": 0.2,
+      "difficultyRating": 0.549,
+      "difficultyScore": 5490
     },
     "initialState": {
       "bottles": [
         {
           "layers": [
+            "rose",
+            "rose",
+            "cyan",
+            "mint"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
             "cyan",
             "amber",
-            "mint",
-            "violet"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "violet",
-            "violet",
-            "violet",
-            "amber"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "cyan",
-            "cyan",
-            "cyan",
             "mint"
           ],
           "status": "active"
@@ -767,17 +793,30 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
         },
         {
           "layers": [
-            "rose",
-            "rose",
-            "mint",
+            "violet",
+            "violet",
+            "cyan",
             "amber"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "rose",
+            "cyan",
+            "mint"
           ],
           "status": "active"
         },
         {
           "layers": [
             "rose",
-            "rose",
+            "violet",
             "amber",
             "mint"
           ],
@@ -823,7 +862,7 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
   {
     "id": "level-009",
     "number": 9,
-    "configVersion": "chapter-1.2026-08-23.1",
+    "configVersion": "chapter-1.2026-08-25.1",
     "presentationSeed": 9,
     "capacity": 4,
     "slotCount": 15,
@@ -834,64 +873,66 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
     },
     "metrics": {
       "colorCount": 5,
-      "optimalMoves": 12,
-      "segmentCount": 15,
-      "exploredStates": 503,
+      "optimalMoves": 14,
+      "segmentCount": 17,
+      "exploredStates": 423,
       "openingMoves": 10,
-      "difficultyScore": 1846
+      "misleadingBranchRatio": 0.2,
+      "difficultyRating": 0.516,
+      "difficultyScore": 5160
     },
     "initialState": {
       "bottles": [
         {
+          "layers": [
+            "rose",
+            "rose",
+            "rose",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
           "layers": [],
           "status": "active"
         },
         {
           "layers": [
+            "cyan",
             "violet",
-            "violet",
-            "cyan",
-            "amber"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "cyan",
-            "cyan",
-            "mint",
-            "rose"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "rose",
-            "rose",
-            "mint",
-            "rose"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "cyan",
-            "mint",
-            "violet",
-            "mint"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "amber",
-            "amber",
             "amber",
             "violet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "cyan",
+            "amber",
+            "violet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "cyan",
+            "amber",
+            "violet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "rose",
+            "mint",
+            "mint",
+            "amber"
           ],
           "status": "active"
         },
@@ -935,22 +976,24 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
   {
     "id": "level-010",
     "number": 10,
-    "configVersion": "chapter-1.2026-08-23.1",
+    "configVersion": "chapter-1.2026-08-25.1",
     "presentationSeed": 10,
     "capacity": 4,
     "slotCount": 15,
     "rewardSlotIndex": 14,
     "completionRule": {
       "type": "all-colors",
-      "targetCount": 6
+      "targetCount": 5
     },
     "metrics": {
-      "colorCount": 6,
-      "optimalMoves": 12,
-      "segmentCount": 17,
-      "exploredStates": 1066,
-      "openingMoves": 12,
-      "difficultyScore": 1888
+      "colorCount": 5,
+      "optimalMoves": 15,
+      "segmentCount": 18,
+      "exploredStates": 698,
+      "openingMoves": 10,
+      "misleadingBranchRatio": 0.4,
+      "difficultyRating": 0.571,
+      "difficultyScore": 5710
     },
     "initialState": {
       "bottles": [
@@ -964,57 +1007,52 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
           "status": "active"
         },
         {
+          "layers": [],
+          "status": "active"
+        },
+        {
           "layers": [
-            "violet",
+            "amber",
             "mint",
-            "blue",
+            "violet",
             "mint"
           ],
           "status": "active"
         },
         {
           "layers": [
+            "cyan",
             "amber",
-            "amber",
-            "amber",
+            "mint",
             "violet"
           ],
           "status": "active"
         },
         {
-          "layers": [
-            "cyan",
-            "cyan",
-            "cyan",
-            "mint"
-          ],
+          "layers": [],
           "status": "active"
         },
         {
           "layers": [
-            "blue",
-            "blue",
+            "amber",
+            "violet",
             "mint",
-            "blue"
+            "violet"
           ],
-          "status": "active"
-        },
-        {
-          "layers": [],
-          "status": "active"
-        },
-        {
-          "layers": [],
           "status": "active"
         },
         {
           "layers": [
             "rose",
-            "violet",
+            "cyan",
             "amber",
-            "violet"
+            "cyan"
           ],
           "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
         },
         {
           "layers": [],
@@ -1052,65 +1090,84 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
   {
     "id": "level-011",
     "number": 11,
-    "configVersion": "chapter-1.2026-08-23.1",
+    "configVersion": "chapter-1.2026-08-25.1",
     "presentationSeed": 11,
     "capacity": 4,
     "slotCount": 15,
     "rewardSlotIndex": 14,
     "completionRule": {
       "type": "all-colors",
-      "targetCount": 7
+      "targetCount": 6
     },
     "metrics": {
-      "colorCount": 7,
+      "colorCount": 6,
       "optimalMoves": 17,
-      "segmentCount": 22,
-      "exploredStates": 3290,
-      "openingMoves": 14,
-      "difficultyScore": 2062
+      "segmentCount": 21,
+      "exploredStates": 1055,
+      "openingMoves": 12,
+      "misleadingBranchRatio": 0.5,
+      "difficultyRating": 0.605,
+      "difficultyScore": 6050
     },
     "initialState": {
       "bottles": [
         {
           "layers": [
             "rose",
-            "rose",
+            "cyan",
             "mint",
-            "blue"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "violet",
-            "violet",
-            "mint",
-            "gold"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "amber",
-            "amber",
-            "amber",
             "cyan"
           ],
           "status": "active"
         },
         {
           "layers": [
-            "cyan",
-            "gold",
-            "gold",
-            "blue"
+            "rose",
+            "violet",
+            "rose",
+            "amber"
           ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "amber",
+            "mint",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
           "status": "active"
         },
         {
           "layers": [
             "mint",
             "violet",
+            "violet",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "blue",
+            "mint",
+            "amber",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "blue",
+            "blue",
             "violet",
             "rose"
           ],
@@ -1118,29 +1175,7 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
         },
         {
           "layers": [],
-          "status": "active"
-        },
-        {
-          "layers": [],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "amber",
-            "mint",
-            "cyan",
-            "blue"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "rose",
-            "gold",
-            "blue",
-            "cyan"
-          ],
-          "status": "active"
+          "status": "inactive"
         },
         {
           "layers": [],
@@ -1187,9 +1222,11 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
       "colorCount": 8,
       "optimalMoves": 23,
       "segmentCount": 30,
-      "exploredStates": 89354,
+      "exploredStates": 1075,
       "openingMoves": 20,
-      "difficultyScore": 2134
+      "misleadingBranchRatio": 0.7,
+      "difficultyRating": 0.665,
+      "difficultyScore": 6650
     },
     "initialState": {
       "bottles": [
@@ -1302,49 +1339,46 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
   {
     "id": "level-013",
     "number": 13,
-    "configVersion": "chapter-1.2026-08-23.1",
+    "configVersion": "chapter-1.2026-08-25.1",
     "presentationSeed": 13,
     "capacity": 4,
     "slotCount": 15,
     "rewardSlotIndex": 14,
     "completionRule": {
       "type": "all-colors",
-      "targetCount": 8
+      "targetCount": 6
     },
     "metrics": {
-      "colorCount": 8,
-      "optimalMoves": 20,
-      "segmentCount": 26,
-      "exploredStates": 5889,
-      "openingMoves": 16,
-      "difficultyScore": 2178
+      "colorCount": 6,
+      "optimalMoves": 18,
+      "segmentCount": 22,
+      "exploredStates": 1659,
+      "openingMoves": 12,
+      "misleadingBranchRatio": 0.3333333333333333,
+      "difficultyRating": 0.599,
+      "difficultyScore": 5990
     },
     "initialState": {
       "bottles": [
         {
+          "layers": [],
+          "status": "active"
+        },
+        {
           "layers": [
+            "mint",
+            "cyan",
             "rose",
-            "rose",
-            "rose",
-            "violet"
+            "cyan"
           ],
           "status": "active"
         },
         {
           "layers": [
+            "amber",
+            "mint",
             "violet",
-            "lilac",
-            "blue",
-            "cyan"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "amber",
-            "amber",
-            "amber",
-            "cyan"
+            "rose"
           ],
           "status": "active"
         },
@@ -1355,8 +1389,8 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
         {
           "layers": [
             "mint",
-            "cyan",
-            "lilac",
+            "amber",
+            "rose",
             "cyan"
           ],
           "status": "active"
@@ -1365,41 +1399,36 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
           "layers": [
             "blue",
             "blue",
-            "violet",
-            "mint"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "gold",
-            "amber",
-            "lilac",
+            "blue",
             "violet"
           ],
           "status": "active"
         },
         {
-          "layers": [],
-          "status": "active"
-        },
-        {
           "layers": [
-            "gold",
-            "rose",
             "blue",
-            "mint"
+            "amber",
+            "rose",
+            "cyan"
           ],
           "status": "active"
         },
         {
           "layers": [
-            "gold",
-            "gold",
-            "lilac",
-            "mint"
+            "violet",
+            "mint",
+            "violet",
+            "amber"
           ],
           "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
         },
         {
           "layers": [],
@@ -1429,104 +1458,96 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
   {
     "id": "level-014",
     "number": 14,
-    "configVersion": "chapter-1.2026-08-23.1",
+    "configVersion": "chapter-1.2026-08-25.1",
     "presentationSeed": 14,
     "capacity": 4,
     "slotCount": 15,
     "rewardSlotIndex": 14,
     "completionRule": {
       "type": "all-colors",
-      "targetCount": 8
+      "targetCount": 6
     },
     "metrics": {
-      "colorCount": 8,
-      "optimalMoves": 21,
-      "segmentCount": 26,
-      "exploredStates": 6991,
-      "openingMoves": 16,
-      "difficultyScore": 2202
+      "colorCount": 6,
+      "optimalMoves": 18,
+      "segmentCount": 21,
+      "exploredStates": 2582,
+      "openingMoves": 12,
+      "misleadingBranchRatio": 0.3333333333333333,
+      "difficultyRating": 0.605,
+      "difficultyScore": 6050
     },
     "initialState": {
       "bottles": [
         {
           "layers": [
             "rose",
+            "blue",
             "cyan",
-            "rose",
-            "violet"
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "amber",
+            "violet",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "mint",
+            "violet",
+            "mint"
           ],
           "status": "active"
         },
         {
           "layers": [
             "violet",
-            "lilac",
-            "cyan",
-            "violet"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "amber",
-            "lilac",
-            "lilac",
-            "rose"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "mint",
-            "mint",
-            "mint",
-            "blue"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
             "blue",
-            "mint",
-            "cyan",
-            "violet"
+            "blue",
+            "cyan"
           ],
           "status": "active"
         },
         {
           "layers": [
-            "gold",
-            "gold",
             "amber",
+            "rose",
+            "cyan",
             "rose"
           ],
           "status": "active"
         },
         {
           "layers": [
-            "lilac",
             "amber",
-            "cyan",
-            "amber"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
             "blue",
-            "blue",
-            "gold",
-            "gold"
+            "mint",
+            "violet"
           ],
           "status": "active"
         },
         {
           "layers": [],
-          "status": "active"
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
         },
         {
           "layers": [],
@@ -1556,31 +1577,33 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
   {
     "id": "level-015",
     "number": 15,
-    "configVersion": "chapter-1.2026-08-23.1",
+    "configVersion": "chapter-1.2026-08-25.1",
     "presentationSeed": 15,
     "capacity": 4,
     "slotCount": 15,
     "rewardSlotIndex": 14,
     "completionRule": {
       "type": "all-colors",
-      "targetCount": 8
+      "targetCount": 6
     },
     "metrics": {
-      "colorCount": 8,
-      "optimalMoves": 23,
-      "segmentCount": 28,
-      "exploredStates": 9114,
-      "openingMoves": 16,
-      "difficultyScore": 2288
+      "colorCount": 6,
+      "optimalMoves": 18,
+      "segmentCount": 22,
+      "exploredStates": 1518,
+      "openingMoves": 12,
+      "misleadingBranchRatio": 0.5,
+      "difficultyRating": 0.621,
+      "difficultyScore": 6210
     },
     "initialState": {
       "bottles": [
         {
           "layers": [
             "rose",
-            "rose",
-            "violet",
-            "amber"
+            "mint",
+            "amber",
+            "mint"
           ],
           "status": "active"
         },
@@ -1592,15 +1615,156 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
           "layers": [
             "amber",
             "cyan",
+            "cyan",
+            "violet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "cyan",
+            "blue",
+            "amber",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "blue",
+            "mint",
+            "violet",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "blue",
+            "rose",
+            "violet",
+            "violet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "rose",
+            "mint",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "reserved"
+        }
+      ],
+      "rewardBottleUsed": false,
+      "moves": 0
+    }
+  },
+  {
+    "id": "level-016",
+    "number": 16,
+    "configVersion": "chapter-1.2026-08-25.1",
+    "presentationSeed": 16,
+    "capacity": 4,
+    "slotCount": 15,
+    "rewardSlotIndex": 14,
+    "completionRule": {
+      "type": "all-colors",
+      "targetCount": 7
+    },
+    "metrics": {
+      "colorCount": 7,
+      "optimalMoves": 18,
+      "segmentCount": 23,
+      "exploredStates": 2172,
+      "openingMoves": 14,
+      "misleadingBranchRatio": 0.2857142857142857,
+      "difficultyRating": 0.567,
+      "difficultyScore": 5670
+    },
+    "initialState": {
+      "bottles": [
+        {
+          "layers": [
             "gold",
+            "violet",
+            "violet",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "gold",
+            "violet",
+            "amber"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "mint",
+            "rose",
             "mint"
           ],
           "status": "active"
         },
         {
           "layers": [
-            "cyan",
             "blue",
+            "blue",
+            "mint",
+            "gold"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "cyan",
+            "amber",
             "cyan",
             "amber"
           ],
@@ -1609,35 +1773,110 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
         {
           "layers": [
             "rose",
+            "rose",
+            "cyan",
+            "amber"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "blue",
+            "blue",
+            "cyan",
+            "gold"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "reserved"
+        }
+      ],
+      "rewardBottleUsed": false,
+      "moves": 0
+    }
+  },
+  {
+    "id": "level-017",
+    "number": 17,
+    "configVersion": "chapter-1.2026-08-25.1",
+    "presentationSeed": 17,
+    "capacity": 4,
+    "slotCount": 15,
+    "rewardSlotIndex": 14,
+    "completionRule": {
+      "type": "all-colors",
+      "targetCount": 7
+    },
+    "metrics": {
+      "colorCount": 7,
+      "optimalMoves": 18,
+      "segmentCount": 23,
+      "exploredStates": 1389,
+      "openingMoves": 14,
+      "misleadingBranchRatio": 0.5714285714285714,
+      "difficultyRating": 0.601,
+      "difficultyScore": 6010
+    },
+    "initialState": {
+      "bottles": [
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
             "violet",
-            "mint",
-            "violet"
+            "violet",
+            "cyan",
+            "rose"
           ],
           "status": "active"
         },
         {
           "layers": [
-            "blue",
-            "blue",
-            "mint",
-            "amber"
-          ],
-          "status": "active"
-        },
-        {
-          "layers": [
-            "gold",
+            "amber",
             "rose",
-            "mint",
+            "gold",
             "violet"
           ],
           "status": "active"
         },
         {
           "layers": [
-            "lilac",
-            "lilac",
-            "gold",
+            "blue",
+            "cyan",
+            "blue",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "mint",
+            "cyan",
             "blue"
           ],
           "status": "active"
@@ -1649,9 +1888,1753 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
         {
           "layers": [
             "gold",
+            "mint",
+            "mint",
+            "gold"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "amber",
+            "amber",
+            "violet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "gold",
+            "rose",
+            "blue",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "reserved"
+        }
+      ],
+      "rewardBottleUsed": false,
+      "moves": 0
+    }
+  },
+  {
+    "id": "level-018",
+    "number": 18,
+    "configVersion": "chapter-1.2026-08-25.1",
+    "presentationSeed": 18,
+    "capacity": 4,
+    "slotCount": 15,
+    "rewardSlotIndex": 14,
+    "completionRule": {
+      "type": "all-colors",
+      "targetCount": 7
+    },
+    "metrics": {
+      "colorCount": 7,
+      "optimalMoves": 20,
+      "segmentCount": 25,
+      "exploredStates": 3403,
+      "openingMoves": 14,
+      "misleadingBranchRatio": 0.42857142857142855,
+      "difficultyRating": 0.636,
+      "difficultyScore": 6360
+    },
+    "initialState": {
+      "bottles": [
+        {
+          "layers": [
+            "rose",
+            "rose",
+            "amber",
+            "gold"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "blue",
+            "cyan",
+            "mint"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "amber",
+            "rose",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "blue",
+            "cyan",
+            "violet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "gold",
+            "gold",
+            "violet",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "gold",
+            "violet",
+            "mint",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "rose",
+            "mint",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "reserved"
+        }
+      ],
+      "rewardBottleUsed": false,
+      "moves": 0
+    }
+  },
+  {
+    "id": "level-019",
+    "number": 19,
+    "configVersion": "chapter-1.2026-08-25.1",
+    "presentationSeed": 19,
+    "capacity": 4,
+    "slotCount": 15,
+    "rewardSlotIndex": 14,
+    "completionRule": {
+      "type": "all-colors",
+      "targetCount": 7
+    },
+    "metrics": {
+      "colorCount": 7,
+      "optimalMoves": 20,
+      "segmentCount": 25,
+      "exploredStates": 4542,
+      "openingMoves": 14,
+      "misleadingBranchRatio": 0.5714285714285714,
+      "difficultyRating": 0.66,
+      "difficultyScore": 6600
+    },
+    "initialState": {
+      "bottles": [
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "rose",
+            "mint",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "rose",
+            "violet",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "gold",
+            "cyan",
+            "violet",
+            "amber"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "rose",
+            "blue",
+            "mint"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "gold",
+            "gold",
+            "gold",
+            "violet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "cyan",
+            "amber",
+            "rose",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "cyan",
+            "cyan",
+            "amber",
+            "mint"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "reserved"
+        }
+      ],
+      "rewardBottleUsed": false,
+      "moves": 0
+    }
+  },
+  {
+    "id": "level-020",
+    "number": 20,
+    "configVersion": "chapter-1.2026-08-25.1",
+    "presentationSeed": 20,
+    "capacity": 4,
+    "slotCount": 15,
+    "rewardSlotIndex": 14,
+    "completionRule": {
+      "type": "all-colors",
+      "targetCount": 7
+    },
+    "metrics": {
+      "colorCount": 7,
+      "optimalMoves": 21,
+      "segmentCount": 26,
+      "exploredStates": 4597,
+      "openingMoves": 14,
+      "misleadingBranchRatio": 0.2857142857142857,
+      "difficultyRating": 0.632,
+      "difficultyScore": 6320
+    },
+    "initialState": {
+      "bottles": [
+        {
+          "layers": [
+            "rose",
+            "cyan",
+            "violet",
+            "amber"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "rose",
+            "blue",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "cyan",
+            "violet",
+            "rose",
+            "amber"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "cyan",
+            "blue",
+            "gold"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "gold",
+            "gold",
+            "blue",
+            "amber"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "violet",
+            "gold",
+            "amber"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "mint",
+            "cyan",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "reserved"
+        }
+      ],
+      "rewardBottleUsed": false,
+      "moves": 0
+    }
+  },
+  {
+    "id": "level-021",
+    "number": 21,
+    "configVersion": "chapter-1.2026-08-25.1",
+    "presentationSeed": 21,
+    "capacity": 4,
+    "slotCount": 15,
+    "rewardSlotIndex": 14,
+    "completionRule": {
+      "type": "all-colors",
+      "targetCount": 8
+    },
+    "metrics": {
+      "colorCount": 8,
+      "optimalMoves": 22,
+      "segmentCount": 28,
+      "exploredStates": 6325,
+      "openingMoves": 16,
+      "misleadingBranchRatio": 0.375,
+      "difficultyRating": 0.651,
+      "difficultyScore": 6510
+    },
+    "initialState": {
+      "bottles": [
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "amber",
+            "violet",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "mint",
+            "rose",
+            "gold"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "cyan",
+            "rose",
+            "cyan",
+            "gold"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "cyan",
+            "rose",
+            "mint"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "blue",
+            "blue",
+            "cyan",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "lilac",
+            "lilac",
+            "blue",
+            "gold"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "lilac",
+            "lilac",
+            "mint",
+            "gold"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "amber",
+            "amber",
+            "violet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "reserved"
+        }
+      ],
+      "rewardBottleUsed": false,
+      "moves": 0
+    }
+  },
+  {
+    "id": "level-022",
+    "number": 22,
+    "configVersion": "chapter-1.2026-08-25.1",
+    "presentationSeed": 22,
+    "capacity": 4,
+    "slotCount": 15,
+    "rewardSlotIndex": 14,
+    "completionRule": {
+      "type": "all-colors",
+      "targetCount": 8
+    },
+    "metrics": {
+      "colorCount": 8,
+      "optimalMoves": 22,
+      "segmentCount": 28,
+      "exploredStates": 4941,
+      "openingMoves": 16,
+      "misleadingBranchRatio": 0.25,
+      "difficultyRating": 0.63,
+      "difficultyScore": 6300
+    },
+    "initialState": {
+      "bottles": [
+        {
+          "layers": [
+            "rose",
+            "gold",
+            "cyan",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "violet",
+            "rose",
+            "violet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "lilac",
+            "cyan",
+            "lilac",
+            "gold"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "cyan",
+            "amber",
+            "cyan",
+            "amber"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "mint",
+            "rose",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "gold",
+            "amber",
+            "gold",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "mint",
+            "violet",
+            "amber"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "lilac",
+            "lilac",
+            "rose",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "reserved"
+        }
+      ],
+      "rewardBottleUsed": false,
+      "moves": 0
+    }
+  },
+  {
+    "id": "level-023",
+    "number": 23,
+    "configVersion": "chapter-1.2026-08-25.1",
+    "presentationSeed": 23,
+    "capacity": 4,
+    "slotCount": 15,
+    "rewardSlotIndex": 14,
+    "completionRule": {
+      "type": "all-colors",
+      "targetCount": 9
+    },
+    "metrics": {
+      "colorCount": 9,
+      "optimalMoves": 26,
+      "segmentCount": 33,
+      "exploredStates": 10309,
+      "openingMoves": 18,
+      "misleadingBranchRatio": 0.5555555555555556,
+      "difficultyRating": 0.72,
+      "difficultyScore": 7200
+    },
+    "initialState": {
+      "bottles": [
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "gold",
+            "lilac",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "violet",
+            "rose",
+            "scarlet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "cyan",
+            "rose",
+            "blue",
+            "scarlet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "mint",
+            "cyan",
+            "gold"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "blue",
+            "rose",
+            "scarlet",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "gold",
+            "cyan",
+            "mint",
+            "scarlet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "lilac",
+            "lilac",
+            "violet",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "amber",
+            "mint",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "lilac",
+            "gold",
+            "violet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "reserved"
+        }
+      ],
+      "rewardBottleUsed": false,
+      "moves": 0
+    }
+  },
+  {
+    "id": "level-024",
+    "number": 24,
+    "configVersion": "chapter-1.2026-08-25.1",
+    "presentationSeed": 24,
+    "capacity": 4,
+    "slotCount": 15,
+    "rewardSlotIndex": 14,
+    "completionRule": {
+      "type": "all-colors",
+      "targetCount": 9
+    },
+    "metrics": {
+      "colorCount": 9,
+      "optimalMoves": 25,
+      "segmentCount": 32,
+      "exploredStates": 5723,
+      "openingMoves": 18,
+      "misleadingBranchRatio": 0.6666666666666666,
+      "difficultyRating": 0.716,
+      "difficultyScore": 7160
+    },
+    "initialState": {
+      "bottles": [
+        {
+          "layers": [
+            "rose",
+            "mint",
+            "amber",
+            "lilac"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "scarlet",
+            "cyan",
+            "scarlet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "amber",
+            "lilac",
+            "gold"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "violet",
+            "scarlet",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "blue",
+            "blue",
+            "mint",
+            "violet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "gold",
+            "gold",
+            "gold",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "lilac",
+            "cyan",
+            "scarlet",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "blue",
+            "rose",
+            "violet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "blue",
+            "rose",
+            "mint",
+            "lilac"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "reserved"
+        }
+      ],
+      "rewardBottleUsed": false,
+      "moves": 0
+    }
+  },
+  {
+    "id": "level-025",
+    "number": 25,
+    "configVersion": "chapter-1.2026-08-25.1",
+    "presentationSeed": 25,
+    "capacity": 4,
+    "slotCount": 15,
+    "rewardSlotIndex": 14,
+    "completionRule": {
+      "type": "all-colors",
+      "targetCount": 9
+    },
+    "metrics": {
+      "colorCount": 9,
+      "optimalMoves": 25,
+      "segmentCount": 32,
+      "exploredStates": 11466,
+      "openingMoves": 18,
+      "misleadingBranchRatio": 0.4444444444444444,
+      "difficultyRating": 0.694,
+      "difficultyScore": 6940
+    },
+    "initialState": {
+      "bottles": [
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "lilac",
+            "blue",
+            "mint"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "cyan",
+            "cyan",
+            "mint",
+            "violet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "mint",
+            "lilac",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "blue",
+            "cyan",
+            "rose",
+            "violet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "gold",
+            "blue",
+            "violet",
+            "amber"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "lilac",
+            "cyan",
+            "scarlet",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "scarlet",
+            "scarlet",
+            "violet",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "gold",
+            "gold",
+            "amber",
+            "scarlet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "gold",
+            "amber",
+            "lilac",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "reserved"
+        }
+      ],
+      "rewardBottleUsed": false,
+      "moves": 0
+    }
+  },
+  {
+    "id": "level-026",
+    "number": 26,
+    "configVersion": "chapter-1.2026-08-25.1",
+    "presentationSeed": 26,
+    "capacity": 4,
+    "slotCount": 15,
+    "rewardSlotIndex": 14,
+    "completionRule": {
+      "type": "all-colors",
+      "targetCount": 10
+    },
+    "metrics": {
+      "colorCount": 10,
+      "optimalMoves": 27,
+      "segmentCount": 34,
+      "exploredStates": 24636,
+      "openingMoves": 20,
+      "misleadingBranchRatio": 0.5,
+      "difficultyRating": 0.717,
+      "difficultyScore": 7170
+    },
+    "initialState": {
+      "bottles": [
+        {
+          "layers": [
+            "rose",
+            "chartreuse",
+            "mint",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "gold",
+            "gold",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "amber",
+            "amber",
+            "lilac"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "blue",
+            "amber",
+            "lilac",
+            "scarlet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "blue",
+            "chartreuse",
+            "mint",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "lilac",
+            "lilac",
+            "scarlet",
+            "mint"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "scarlet",
+            "scarlet",
+            "gold",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "chartreuse",
+            "rose",
+            "cyan",
+            "gold"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "blue",
+            "mint",
+            "chartreuse"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "violet",
+            "blue",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "reserved"
+        }
+      ],
+      "rewardBottleUsed": false,
+      "moves": 0
+    }
+  },
+  {
+    "id": "level-027",
+    "number": 27,
+    "configVersion": "chapter-1.2026-08-25.1",
+    "presentationSeed": 27,
+    "capacity": 4,
+    "slotCount": 15,
+    "rewardSlotIndex": 14,
+    "completionRule": {
+      "type": "all-colors",
+      "targetCount": 12
+    },
+    "metrics": {
+      "colorCount": 12,
+      "optimalMoves": 28,
+      "segmentCount": 38,
+      "exploredStates": 7653,
+      "openingMoves": 24,
+      "misleadingBranchRatio": 0.6666666666666666,
+      "difficultyRating": 0.697,
+      "difficultyScore": 6970
+    },
+    "initialState": {
+      "bottles": [
+        {
+          "layers": [
+            "rose",
+            "rose",
+            "gold",
+            "scarlet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "amber",
+            "chartreuse",
+            "indigo"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "lilac",
+            "lilac",
+            "chartreuse"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "cyan",
+            "cyan",
+            "indigo",
+            "mint"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "blue",
+            "pearl",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "gold",
+            "gold",
+            "gold",
+            "lilac"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "lilac",
+            "blue",
+            "blue",
+            "pearl"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "scarlet",
+            "scarlet",
+            "rose",
+            "pearl"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "chartreuse",
+            "violet",
+            "violet",
+            "amber"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "indigo",
+            "indigo",
+            "scarlet",
+            "pearl"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "chartreuse",
+            "rose",
+            "mint"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "cyan",
+            "cyan",
+            "violet",
+            "mint"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "reserved"
+        }
+      ],
+      "rewardBottleUsed": false,
+      "moves": 0
+    }
+  },
+  {
+    "id": "level-028",
+    "number": 28,
+    "configVersion": "chapter-1.2026-08-25.1",
+    "presentationSeed": 28,
+    "capacity": 4,
+    "slotCount": 15,
+    "rewardSlotIndex": 14,
+    "completionRule": {
+      "type": "all-colors",
+      "targetCount": 10
+    },
+    "metrics": {
+      "colorCount": 10,
+      "optimalMoves": 27,
+      "segmentCount": 35,
+      "exploredStates": 9727,
+      "openingMoves": 20,
+      "misleadingBranchRatio": 0.5,
+      "difficultyRating": 0.714,
+      "difficultyScore": 7140
+    },
+    "initialState": {
+      "bottles": [
+        {
+          "layers": [
+            "rose",
+            "rose",
+            "scarlet",
+            "mint"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "blue",
+            "mint",
+            "scarlet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "amber",
+            "scarlet",
+            "amber"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "cyan",
+            "violet",
+            "chartreuse",
+            "lilac"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "blue",
+            "amber",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "blue",
+            "blue",
+            "rose",
+            "chartreuse"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "gold",
+            "violet",
+            "lilac",
+            "chartreuse"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "scarlet",
+            "violet",
+            "cyan",
+            "lilac"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "gold",
+            "gold",
+            "gold",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "cyan",
+            "chartreuse",
+            "lilac"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "reserved"
+        }
+      ],
+      "rewardBottleUsed": false,
+      "moves": 0
+    }
+  },
+  {
+    "id": "level-029",
+    "number": 29,
+    "configVersion": "chapter-1.2026-08-25.1",
+    "presentationSeed": 29,
+    "capacity": 4,
+    "slotCount": 15,
+    "rewardSlotIndex": 14,
+    "completionRule": {
+      "type": "all-colors",
+      "targetCount": 9
+    },
+    "metrics": {
+      "colorCount": 9,
+      "optimalMoves": 26,
+      "segmentCount": 32,
+      "exploredStates": 15162,
+      "openingMoves": 18,
+      "misleadingBranchRatio": 0.4444444444444444,
+      "difficultyRating": 0.71,
+      "difficultyScore": 7100
+    },
+    "initialState": {
+      "bottles": [
+        {
+          "layers": [
+            "rose",
+            "amber",
+            "scarlet",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "cyan",
+            "blue",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "amber",
+            "mint",
+            "amber",
+            "scarlet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "lilac",
+            "cyan",
+            "rose",
+            "violet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "mint",
+            "blue",
+            "scarlet"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "gold",
+            "gold",
+            "gold",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "lilac",
+            "lilac",
+            "cyan",
+            "mint"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "amber",
+            "violet",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "gold",
+            "lilac",
+            "scarlet",
+            "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "inactive"
+        },
+        {
+          "layers": [],
+          "status": "reserved"
+        }
+      ],
+      "rewardBottleUsed": false,
+      "moves": 0
+    }
+  },
+  {
+    "id": "level-030",
+    "number": 30,
+    "configVersion": "chapter-1.2026-08-25.1",
+    "presentationSeed": 30,
+    "capacity": 4,
+    "slotCount": 15,
+    "rewardSlotIndex": 14,
+    "completionRule": {
+      "type": "all-colors",
+      "targetCount": 8
+    },
+    "metrics": {
+      "colorCount": 8,
+      "optimalMoves": 20,
+      "segmentCount": 26,
+      "exploredStates": 3987,
+      "openingMoves": 16,
+      "misleadingBranchRatio": 0.5,
+      "difficultyRating": 0.616,
+      "difficultyScore": 6160
+    },
+    "initialState": {
+      "bottles": [
+        {
+          "layers": [
+            "rose",
+            "rose",
+            "blue",
+            "mint"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "amber",
+            "mint",
+            "gold"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "cyan",
+            "cyan",
+            "blue",
+            "gold"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "mint",
+            "gold",
+            "mint",
+            "gold"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "blue",
+            "amber",
+            "amber",
+            "blue"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "lilac",
             "lilac",
             "lilac",
             "cyan"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "lilac",
+            "cyan",
+            "violet",
+            "rose"
+          ],
+          "status": "active"
+        },
+        {
+          "layers": [
+            "violet",
+            "violet",
+            "rose",
+            "amber"
           ],
           "status": "active"
         },

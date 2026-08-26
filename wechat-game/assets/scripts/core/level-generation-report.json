@@ -1,10 +1,12 @@
 {
-  "schemaVersion": 1,
-  "configVersion": "chapter-1.2026-08-23.1",
+  "schemaVersion": 2,
+  "configVersion": "chapter-1.2026-08-25.1",
   "levels": [
     {
       "id": "level-001",
       "source": "tutorial",
+      "targetDifficulty": 0.05,
+      "compatibilityExemption": null,
       "generatorSeed": null,
       "attempt": null,
       "reverseMoves": null,
@@ -14,6 +16,8 @@
         "segmentCount": 2,
         "exploredStates": 1,
         "openingMoves": 6,
+        "misleadingBranchRatio": 0,
+        "difficultyRating": 0.187,
         "difficultyScore": 300
       },
       "scoreComponents": {
@@ -27,115 +31,135 @@
     },
     {
       "id": "level-002",
-      "source": "tutorial",
-      "generatorSeed": null,
-      "attempt": null,
-      "reverseMoves": null,
+      "source": "generated",
+      "targetDifficulty": 0.6,
+      "compatibilityExemption": null,
+      "generatorSeed": 1375690790,
+      "attempt": 1893,
+      "reverseMoves": 16,
       "metrics": {
-        "colorCount": 2,
-        "optimalMoves": 1,
-        "segmentCount": 4,
-        "exploredStates": 1,
-        "openingMoves": 8,
-        "difficultyScore": 600
+        "colorCount": 3,
+        "optimalMoves": 9,
+        "segmentCount": 11,
+        "exploredStates": 21,
+        "openingMoves": 6,
+        "misleadingBranchRatio": 0.3333333333333333,
+        "difficultyRating": 0.445,
+        "difficultyScore": 4450
       },
       "scoreComponents": {
-        "color": 100,
-        "solution": 24,
-        "segments": 40,
-        "search": 0,
-        "openingConstraint": 960,
-        "wrongBranchPenalty": 18
+        "color": 200,
+        "solution": 216,
+        "segments": 110,
+        "search": 72,
+        "openingConstraint": 1080,
+        "wrongBranchPenalty": 12
       }
     },
     {
       "id": "level-003",
-      "source": "tutorial",
-      "generatorSeed": null,
-      "attempt": null,
-      "reverseMoves": null,
+      "source": "generated",
+      "targetDifficulty": 0.68,
+      "compatibilityExemption": null,
+      "generatorSeed": 896224720,
+      "attempt": 4493,
+      "reverseMoves": 16,
       "metrics": {
-        "colorCount": 2,
-        "optimalMoves": 2,
-        "segmentCount": 4,
-        "exploredStates": 2,
-        "openingMoves": 12,
-        "difficultyScore": 900
+        "colorCount": 3,
+        "optimalMoves": 9,
+        "segmentCount": 11,
+        "exploredStates": 25,
+        "openingMoves": 6,
+        "misleadingBranchRatio": 0.3333333333333333,
+        "difficultyRating": 0.447,
+        "difficultyScore": 4470
       },
       "scoreComponents": {
-        "color": 100,
-        "solution": 48,
-        "segments": 40,
-        "search": 18,
-        "openingConstraint": 720,
-        "wrongBranchPenalty": 30
+        "color": 200,
+        "solution": 216,
+        "segments": 110,
+        "search": 72,
+        "openingConstraint": 1080,
+        "wrongBranchPenalty": 12
       }
     },
     {
       "id": "level-004",
       "source": "generated",
-      "generatorSeed": 2027809456,
-      "attempt": 5,
-      "reverseMoves": 7,
+      "targetDifficulty": 0.73,
+      "compatibilityExemption": null,
+      "generatorSeed": 3062528841,
+      "attempt": 2680,
+      "reverseMoves": 16,
       "metrics": {
-        "colorCount": 3,
-        "optimalMoves": 6,
-        "segmentCount": 8,
-        "exploredStates": 50,
-        "openingMoves": 6,
-        "difficultyScore": 1606
+        "colorCount": 4,
+        "optimalMoves": 10,
+        "segmentCount": 12,
+        "exploredStates": 219,
+        "openingMoves": 8,
+        "misleadingBranchRatio": 0.25,
+        "difficultyRating": 0.441,
+        "difficultyScore": 4410
       },
       "scoreComponents": {
-        "color": 200,
-        "solution": 144,
-        "segments": 80,
-        "search": 90,
-        "openingConstraint": 1080,
-        "wrongBranchPenalty": 12
+        "color": 300,
+        "solution": 240,
+        "segments": 120,
+        "search": 126,
+        "openingConstraint": 960,
+        "wrongBranchPenalty": 18
       }
     },
     {
       "id": "level-005",
       "source": "generated",
-      "generatorSeed": 2175735982,
-      "attempt": 18,
-      "reverseMoves": 9,
+      "targetDifficulty": 0.78,
+      "compatibilityExemption": null,
+      "generatorSeed": 304094743,
+      "attempt": 260,
+      "reverseMoves": 16,
       "metrics": {
-        "colorCount": 3,
-        "optimalMoves": 7,
-        "segmentCount": 9,
-        "exploredStates": 104,
-        "openingMoves": 6,
-        "difficultyScore": 1658
+        "colorCount": 4,
+        "optimalMoves": 13,
+        "segmentCount": 15,
+        "exploredStates": 347,
+        "openingMoves": 8,
+        "misleadingBranchRatio": 0.5,
+        "difficultyRating": 0.562,
+        "difficultyScore": 5620
       },
       "scoreComponents": {
-        "color": 200,
-        "solution": 168,
-        "segments": 90,
-        "search": 108,
-        "openingConstraint": 1080,
-        "wrongBranchPenalty": 12
+        "color": 300,
+        "solution": 312,
+        "segments": 150,
+        "search": 144,
+        "openingConstraint": 960,
+        "wrongBranchPenalty": 18
       }
     },
     {
       "id": "level-006",
       "source": "generated",
-      "generatorSeed": 1549113674,
-      "attempt": 21,
-      "reverseMoves": 10,
+      "targetDifficulty": 0.8,
+      "compatibilityExemption": null,
+      "generatorSeed": 2317798968,
+      "attempt": 2992,
+      "reverseMoves": 16,
       "metrics": {
         "colorCount": 4,
-        "optimalMoves": 8,
-        "segmentCount": 11,
-        "exploredStates": 142,
+        "optimalMoves": 12,
+        "segmentCount": 14,
+        "exploredStates": 338,
         "openingMoves": 8,
-        "difficultyScore": 1706
+        "misleadingBranchRatio": 0.5,
+        "difficultyRating": 0.55,
+        "difficultyScore": 5500
       },
       "scoreComponents": {
         "color": 300,
-        "solution": 192,
-        "segments": 110,
-        "search": 126,
+        "solution": 288,
+        "segments": 140,
+        "search": 144,
         "openingConstraint": 960,
         "wrongBranchPenalty": 18
       }
@@ -143,45 +167,53 @@
     {
       "id": "level-007",
       "source": "generated",
-      "generatorSeed": 683146978,
-      "attempt": 32,
-      "reverseMoves": 11,
+      "targetDifficulty": 0.82,
+      "compatibilityExemption": null,
+      "generatorSeed": 839298222,
+      "attempt": 278,
+      "reverseMoves": 19,
       "metrics": {
-        "colorCount": 4,
-        "optimalMoves": 9,
-        "segmentCount": 12,
-        "exploredStates": 278,
-        "openingMoves": 8,
-        "difficultyScore": 1758
+        "colorCount": 5,
+        "optimalMoves": 15,
+        "segmentCount": 18,
+        "exploredStates": 1095,
+        "openingMoves": 10,
+        "misleadingBranchRatio": 0.2,
+        "difficultyRating": 0.549,
+        "difficultyScore": 5490
       },
       "scoreComponents": {
-        "color": 300,
-        "solution": 216,
-        "segments": 120,
-        "search": 144,
-        "openingConstraint": 960,
-        "wrongBranchPenalty": 18
+        "color": 400,
+        "solution": 360,
+        "segments": 180,
+        "search": 180,
+        "openingConstraint": 840,
+        "wrongBranchPenalty": 24
       }
     },
     {
       "id": "level-008",
       "source": "generated",
-      "generatorSeed": 1514187467,
-      "attempt": 76,
-      "reverseMoves": 13,
+      "targetDifficulty": 0.84,
+      "compatibilityExemption": null,
+      "generatorSeed": 170699165,
+      "attempt": 1700,
+      "reverseMoves": 19,
       "metrics": {
         "colorCount": 5,
-        "optimalMoves": 11,
-        "segmentCount": 14,
-        "exploredStates": 513,
+        "optimalMoves": 15,
+        "segmentCount": 18,
+        "exploredStates": 1069,
         "openingMoves": 10,
-        "difficultyScore": 1830
+        "misleadingBranchRatio": 0.2,
+        "difficultyRating": 0.549,
+        "difficultyScore": 5490
       },
       "scoreComponents": {
         "color": 400,
-        "solution": 264,
-        "segments": 140,
-        "search": 162,
+        "solution": 360,
+        "segments": 180,
+        "search": 180,
         "openingConstraint": 840,
         "wrongBranchPenalty": 24
       }
@@ -189,21 +221,25 @@
     {
       "id": "level-009",
       "source": "generated",
-      "generatorSeed": 1161831760,
-      "attempt": 16,
-      "reverseMoves": 15,
+      "targetDifficulty": 0.86,
+      "compatibilityExemption": null,
+      "generatorSeed": 1808086060,
+      "attempt": 1089,
+      "reverseMoves": 19,
       "metrics": {
         "colorCount": 5,
-        "optimalMoves": 12,
-        "segmentCount": 15,
-        "exploredStates": 503,
+        "optimalMoves": 14,
+        "segmentCount": 17,
+        "exploredStates": 423,
         "openingMoves": 10,
-        "difficultyScore": 1846
+        "misleadingBranchRatio": 0.2,
+        "difficultyRating": 0.516,
+        "difficultyScore": 5160
       },
       "scoreComponents": {
         "color": 400,
-        "solution": 288,
-        "segments": 150,
+        "solution": 336,
+        "segments": 170,
         "search": 144,
         "openingConstraint": 840,
         "wrongBranchPenalty": 24
@@ -212,52 +248,62 @@
     {
       "id": "level-010",
       "source": "generated",
-      "generatorSeed": 3359148187,
-      "attempt": 122,
-      "reverseMoves": 17,
+      "targetDifficulty": 0.88,
+      "compatibilityExemption": null,
+      "generatorSeed": 3302303115,
+      "attempt": 6853,
+      "reverseMoves": 19,
+      "metrics": {
+        "colorCount": 5,
+        "optimalMoves": 15,
+        "segmentCount": 18,
+        "exploredStates": 698,
+        "openingMoves": 10,
+        "misleadingBranchRatio": 0.4,
+        "difficultyRating": 0.571,
+        "difficultyScore": 5710
+      },
+      "scoreComponents": {
+        "color": 400,
+        "solution": 360,
+        "segments": 180,
+        "search": 162,
+        "openingConstraint": 840,
+        "wrongBranchPenalty": 24
+      }
+    },
+    {
+      "id": "level-011",
+      "source": "generated",
+      "targetDifficulty": 0.889,
+      "compatibilityExemption": null,
+      "generatorSeed": 1104277701,
+      "attempt": 595,
+      "reverseMoves": 26,
       "metrics": {
         "colorCount": 6,
-        "optimalMoves": 12,
-        "segmentCount": 17,
-        "exploredStates": 1066,
+        "optimalMoves": 17,
+        "segmentCount": 21,
+        "exploredStates": 1055,
         "openingMoves": 12,
-        "difficultyScore": 1888
+        "misleadingBranchRatio": 0.5,
+        "difficultyRating": 0.605,
+        "difficultyScore": 6050
       },
       "scoreComponents": {
         "color": 500,
-        "solution": 288,
-        "segments": 170,
+        "solution": 408,
+        "segments": 210,
         "search": 180,
         "openingConstraint": 720,
         "wrongBranchPenalty": 30
       }
     },
     {
-      "id": "level-011",
-      "source": "generated",
-      "generatorSeed": 2732520879,
-      "attempt": 125,
-      "reverseMoves": 19,
-      "metrics": {
-        "colorCount": 7,
-        "optimalMoves": 17,
-        "segmentCount": 22,
-        "exploredStates": 3290,
-        "openingMoves": 14,
-        "difficultyScore": 2062
-      },
-      "scoreComponents": {
-        "color": 600,
-        "solution": 408,
-        "segments": 220,
-        "search": 198,
-        "openingConstraint": 600,
-        "wrongBranchPenalty": 36
-      }
-    },
-    {
       "id": "level-012",
       "source": "legacy",
+      "targetDifficulty": 0.898,
+      "compatibilityExemption": "legacy-level-12",
       "generatorSeed": null,
       "attempt": null,
       "reverseMoves": null,
@@ -265,15 +311,17 @@
         "colorCount": 8,
         "optimalMoves": 23,
         "segmentCount": 30,
-        "exploredStates": 89354,
+        "exploredStates": 1075,
         "openingMoves": 20,
-        "difficultyScore": 2134
+        "misleadingBranchRatio": 0.7,
+        "difficultyRating": 0.665,
+        "difficultyScore": 6650
       },
       "scoreComponents": {
         "color": 700,
         "solution": 552,
         "segments": 300,
-        "search": 288,
+        "search": 180,
         "openingConstraint": 240,
         "wrongBranchPenalty": 54
       }
@@ -281,68 +329,485 @@
     {
       "id": "level-013",
       "source": "generated",
-      "generatorSeed": 3098222358,
-      "attempt": 41,
+      "targetDifficulty": 0.907,
+      "compatibilityExemption": null,
+      "generatorSeed": 2399450749,
+      "attempt": 7906,
       "reverseMoves": 22,
       "metrics": {
-        "colorCount": 8,
-        "optimalMoves": 20,
-        "segmentCount": 26,
-        "exploredStates": 5889,
-        "openingMoves": 16,
-        "difficultyScore": 2178
+        "colorCount": 6,
+        "optimalMoves": 18,
+        "segmentCount": 22,
+        "exploredStates": 1659,
+        "openingMoves": 12,
+        "misleadingBranchRatio": 0.3333333333333333,
+        "difficultyRating": 0.599,
+        "difficultyScore": 5990
       },
       "scoreComponents": {
-        "color": 700,
-        "solution": 480,
-        "segments": 260,
-        "search": 216,
-        "openingConstraint": 480,
-        "wrongBranchPenalty": 42
+        "color": 500,
+        "solution": 432,
+        "segments": 220,
+        "search": 180,
+        "openingConstraint": 720,
+        "wrongBranchPenalty": 30
       }
     },
     {
       "id": "level-014",
       "source": "generated",
-      "generatorSeed": 2902034865,
-      "attempt": 227,
-      "reverseMoves": 23,
+      "targetDifficulty": 0.916,
+      "compatibilityExemption": null,
+      "generatorSeed": 78510010,
+      "attempt": 4305,
+      "reverseMoves": 22,
       "metrics": {
-        "colorCount": 8,
+        "colorCount": 6,
+        "optimalMoves": 18,
+        "segmentCount": 21,
+        "exploredStates": 2582,
+        "openingMoves": 12,
+        "misleadingBranchRatio": 0.3333333333333333,
+        "difficultyRating": 0.605,
+        "difficultyScore": 6050
+      },
+      "scoreComponents": {
+        "color": 500,
+        "solution": 432,
+        "segments": 210,
+        "search": 198,
+        "openingConstraint": 720,
+        "wrongBranchPenalty": 30
+      }
+    },
+    {
+      "id": "level-015",
+      "source": "generated",
+      "targetDifficulty": 0.925,
+      "compatibilityExemption": null,
+      "generatorSeed": 528575620,
+      "attempt": 5564,
+      "reverseMoves": 22,
+      "metrics": {
+        "colorCount": 6,
+        "optimalMoves": 18,
+        "segmentCount": 22,
+        "exploredStates": 1518,
+        "openingMoves": 12,
+        "misleadingBranchRatio": 0.5,
+        "difficultyRating": 0.621,
+        "difficultyScore": 6210
+      },
+      "scoreComponents": {
+        "color": 500,
+        "solution": 432,
+        "segments": 220,
+        "search": 180,
+        "openingConstraint": 720,
+        "wrongBranchPenalty": 30
+      }
+    },
+    {
+      "id": "level-016",
+      "source": "generated",
+      "targetDifficulty": 0.934,
+      "compatibilityExemption": null,
+      "generatorSeed": 1770035253,
+      "attempt": 534,
+      "reverseMoves": 25,
+      "metrics": {
+        "colorCount": 7,
+        "optimalMoves": 18,
+        "segmentCount": 23,
+        "exploredStates": 2172,
+        "openingMoves": 14,
+        "misleadingBranchRatio": 0.2857142857142857,
+        "difficultyRating": 0.567,
+        "difficultyScore": 5670
+      },
+      "scoreComponents": {
+        "color": 600,
+        "solution": 432,
+        "segments": 230,
+        "search": 198,
+        "openingConstraint": 600,
+        "wrongBranchPenalty": 36
+      }
+    },
+    {
+      "id": "level-017",
+      "source": "generated",
+      "targetDifficulty": 0.943,
+      "compatibilityExemption": null,
+      "generatorSeed": 2467679946,
+      "attempt": 2018,
+      "reverseMoves": 25,
+      "metrics": {
+        "colorCount": 7,
+        "optimalMoves": 18,
+        "segmentCount": 23,
+        "exploredStates": 1389,
+        "openingMoves": 14,
+        "misleadingBranchRatio": 0.5714285714285714,
+        "difficultyRating": 0.601,
+        "difficultyScore": 6010
+      },
+      "scoreComponents": {
+        "color": 600,
+        "solution": 432,
+        "segments": 230,
+        "search": 180,
+        "openingConstraint": 600,
+        "wrongBranchPenalty": 36
+      }
+    },
+    {
+      "id": "level-018",
+      "source": "generated",
+      "targetDifficulty": 0.952,
+      "compatibilityExemption": null,
+      "generatorSeed": 4121551420,
+      "attempt": 1873,
+      "reverseMoves": 25,
+      "metrics": {
+        "colorCount": 7,
+        "optimalMoves": 20,
+        "segmentCount": 25,
+        "exploredStates": 3403,
+        "openingMoves": 14,
+        "misleadingBranchRatio": 0.42857142857142855,
+        "difficultyRating": 0.636,
+        "difficultyScore": 6360
+      },
+      "scoreComponents": {
+        "color": 600,
+        "solution": 480,
+        "segments": 250,
+        "search": 198,
+        "openingConstraint": 600,
+        "wrongBranchPenalty": 36
+      }
+    },
+    {
+      "id": "level-019",
+      "source": "generated",
+      "targetDifficulty": 0.961,
+      "compatibilityExemption": null,
+      "generatorSeed": 3114357402,
+      "attempt": 7272,
+      "reverseMoves": 25,
+      "metrics": {
+        "colorCount": 7,
+        "optimalMoves": 20,
+        "segmentCount": 25,
+        "exploredStates": 4542,
+        "openingMoves": 14,
+        "misleadingBranchRatio": 0.5714285714285714,
+        "difficultyRating": 0.66,
+        "difficultyScore": 6600
+      },
+      "scoreComponents": {
+        "color": 600,
+        "solution": 480,
+        "segments": 250,
+        "search": 216,
+        "openingConstraint": 600,
+        "wrongBranchPenalty": 36
+      }
+    },
+    {
+      "id": "level-020",
+      "source": "generated",
+      "targetDifficulty": 0.97,
+      "compatibilityExemption": null,
+      "generatorSeed": 1287834425,
+      "attempt": 6705,
+      "reverseMoves": 25,
+      "metrics": {
+        "colorCount": 7,
         "optimalMoves": 21,
         "segmentCount": 26,
-        "exploredStates": 6991,
+        "exploredStates": 4597,
+        "openingMoves": 14,
+        "misleadingBranchRatio": 0.2857142857142857,
+        "difficultyRating": 0.632,
+        "difficultyScore": 6320
+      },
+      "scoreComponents": {
+        "color": 600,
+        "solution": 504,
+        "segments": 260,
+        "search": 216,
+        "openingConstraint": 600,
+        "wrongBranchPenalty": 36
+      }
+    },
+    {
+      "id": "level-021",
+      "source": "generated",
+      "targetDifficulty": 0.976,
+      "compatibilityExemption": null,
+      "generatorSeed": 1549952320,
+      "attempt": 8996,
+      "reverseMoves": 27,
+      "metrics": {
+        "colorCount": 8,
+        "optimalMoves": 22,
+        "segmentCount": 28,
+        "exploredStates": 6325,
         "openingMoves": 16,
-        "difficultyScore": 2202
+        "misleadingBranchRatio": 0.375,
+        "difficultyRating": 0.651,
+        "difficultyScore": 6510
       },
       "scoreComponents": {
         "color": 700,
-        "solution": 504,
-        "segments": 260,
+        "solution": 528,
+        "segments": 280,
         "search": 216,
         "openingConstraint": 480,
         "wrongBranchPenalty": 42
       }
     },
     {
-      "id": "level-015",
+      "id": "level-022",
       "source": "generated",
-      "generatorSeed": 1297621705,
-      "attempt": 1770,
-      "reverseMoves": 24,
+      "targetDifficulty": 0.982,
+      "compatibilityExemption": null,
+      "generatorSeed": 3761376918,
+      "attempt": 5761,
+      "reverseMoves": 27,
       "metrics": {
         "colorCount": 8,
-        "optimalMoves": 23,
+        "optimalMoves": 22,
         "segmentCount": 28,
-        "exploredStates": 9114,
+        "exploredStates": 4941,
         "openingMoves": 16,
-        "difficultyScore": 2288
+        "misleadingBranchRatio": 0.25,
+        "difficultyRating": 0.63,
+        "difficultyScore": 6300
       },
       "scoreComponents": {
         "color": 700,
-        "solution": 552,
+        "solution": 528,
         "segments": 280,
+        "search": 216,
+        "openingConstraint": 480,
+        "wrongBranchPenalty": 42
+      }
+    },
+    {
+      "id": "level-023",
+      "source": "generated",
+      "targetDifficulty": 0.988,
+      "compatibilityExemption": null,
+      "generatorSeed": 1636828985,
+      "attempt": 2587,
+      "reverseMoves": 28,
+      "metrics": {
+        "colorCount": 9,
+        "optimalMoves": 26,
+        "segmentCount": 33,
+        "exploredStates": 10309,
+        "openingMoves": 18,
+        "misleadingBranchRatio": 0.5555555555555556,
+        "difficultyRating": 0.72,
+        "difficultyScore": 7200
+      },
+      "scoreComponents": {
+        "color": 800,
+        "solution": 624,
+        "segments": 330,
         "search": 234,
+        "openingConstraint": 360,
+        "wrongBranchPenalty": 48
+      }
+    },
+    {
+      "id": "level-024",
+      "source": "generated",
+      "targetDifficulty": 0.994,
+      "compatibilityExemption": null,
+      "generatorSeed": 1317544762,
+      "attempt": 3459,
+      "reverseMoves": 28,
+      "metrics": {
+        "colorCount": 9,
+        "optimalMoves": 25,
+        "segmentCount": 32,
+        "exploredStates": 5723,
+        "openingMoves": 18,
+        "misleadingBranchRatio": 0.6666666666666666,
+        "difficultyRating": 0.716,
+        "difficultyScore": 7160
+      },
+      "scoreComponents": {
+        "color": 800,
+        "solution": 600,
+        "segments": 320,
+        "search": 216,
+        "openingConstraint": 360,
+        "wrongBranchPenalty": 48
+      }
+    },
+    {
+      "id": "level-025",
+      "source": "generated",
+      "targetDifficulty": 1,
+      "compatibilityExemption": null,
+      "generatorSeed": 783984713,
+      "attempt": 1841,
+      "reverseMoves": 28,
+      "metrics": {
+        "colorCount": 9,
+        "optimalMoves": 25,
+        "segmentCount": 32,
+        "exploredStates": 11466,
+        "openingMoves": 18,
+        "misleadingBranchRatio": 0.4444444444444444,
+        "difficultyRating": 0.694,
+        "difficultyScore": 6940
+      },
+      "scoreComponents": {
+        "color": 800,
+        "solution": 600,
+        "segments": 320,
+        "search": 234,
+        "openingConstraint": 360,
+        "wrongBranchPenalty": 48
+      }
+    },
+    {
+      "id": "level-026",
+      "source": "generated",
+      "targetDifficulty": 1,
+      "compatibilityExemption": null,
+      "generatorSeed": 3697481307,
+      "attempt": 13856,
+      "reverseMoves": 28,
+      "metrics": {
+        "colorCount": 10,
+        "optimalMoves": 27,
+        "segmentCount": 34,
+        "exploredStates": 24636,
+        "openingMoves": 20,
+        "misleadingBranchRatio": 0.5,
+        "difficultyRating": 0.717,
+        "difficultyScore": 7170
+      },
+      "scoreComponents": {
+        "color": 900,
+        "solution": 648,
+        "segments": 340,
+        "search": 252,
+        "openingConstraint": 240,
+        "wrongBranchPenalty": 54
+      }
+    },
+    {
+      "id": "level-027",
+      "source": "generated",
+      "targetDifficulty": 1,
+      "compatibilityExemption": null,
+      "generatorSeed": 2746283532,
+      "attempt": 4162,
+      "reverseMoves": 28,
+      "metrics": {
+        "colorCount": 12,
+        "optimalMoves": 28,
+        "segmentCount": 38,
+        "exploredStates": 7653,
+        "openingMoves": 24,
+        "misleadingBranchRatio": 0.6666666666666666,
+        "difficultyRating": 0.697,
+        "difficultyScore": 6970
+      },
+      "scoreComponents": {
+        "color": 1100,
+        "solution": 672,
+        "segments": 380,
+        "search": 216,
+        "openingConstraint": 0,
+        "wrongBranchPenalty": 66
+      }
+    },
+    {
+      "id": "level-028",
+      "source": "generated",
+      "targetDifficulty": 0.967,
+      "compatibilityExemption": null,
+      "generatorSeed": 4181585282,
+      "attempt": 9895,
+      "reverseMoves": 27,
+      "metrics": {
+        "colorCount": 10,
+        "optimalMoves": 27,
+        "segmentCount": 35,
+        "exploredStates": 9727,
+        "openingMoves": 20,
+        "misleadingBranchRatio": 0.5,
+        "difficultyRating": 0.714,
+        "difficultyScore": 7140
+      },
+      "scoreComponents": {
+        "color": 900,
+        "solution": 648,
+        "segments": 350,
+        "search": 234,
+        "openingConstraint": 240,
+        "wrongBranchPenalty": 54
+      }
+    },
+    {
+      "id": "level-029",
+      "source": "generated",
+      "targetDifficulty": 0.933,
+      "compatibilityExemption": null,
+      "generatorSeed": 325745630,
+      "attempt": 3546,
+      "reverseMoves": 27,
+      "metrics": {
+        "colorCount": 9,
+        "optimalMoves": 26,
+        "segmentCount": 32,
+        "exploredStates": 15162,
+        "openingMoves": 18,
+        "misleadingBranchRatio": 0.4444444444444444,
+        "difficultyRating": 0.71,
+        "difficultyScore": 7100
+      },
+      "scoreComponents": {
+        "color": 800,
+        "solution": 624,
+        "segments": 320,
+        "search": 234,
+        "openingConstraint": 360,
+        "wrongBranchPenalty": 48
+      }
+    },
+    {
+      "id": "level-030",
+      "source": "generated",
+      "targetDifficulty": 0.9,
+      "compatibilityExemption": null,
+      "generatorSeed": 2887331677,
+      "attempt": 8736,
+      "reverseMoves": 26,
+      "metrics": {
+        "colorCount": 8,
+        "optimalMoves": 20,
+        "segmentCount": 26,
+        "exploredStates": 3987,
+        "openingMoves": 16,
+        "misleadingBranchRatio": 0.5,
+        "difficultyRating": 0.616,
+        "difficultyScore": 6160
+      },
+      "scoreComponents": {
+        "color": 700,
+        "solution": 480,
+        "segments": 260,
+        "search": 198,
         "openingConstraint": 480,
         "wrongBranchPenalty": 42
       }

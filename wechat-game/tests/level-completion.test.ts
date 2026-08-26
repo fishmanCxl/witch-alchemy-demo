@@ -11,6 +11,7 @@ import {
   undoSession,
 } from '../assets/scripts/core/game-session.ts';
 import { getLevelConfig } from '../assets/scripts/core/level-catalog.ts';
+import { solveLevel } from '../tools/level-solver.ts';
 
 function pourFromTo(
   session: ReturnType<typeof createGameSession>,
@@ -31,28 +32,37 @@ test('level 1 completes after its first valid pour result is produced', () => {
   assert.deepEqual(completed.pendingCompletion, [1]);
 });
 
-test('level 2 completes only after its first finished bottle vanishes', () => {
-  const level = getLevelConfig('level-002')!;
-  const poured = pourFromTo(createGameSession(level), 0, 1);
+for (const levelId of ['level-002', 'level-003'] as const) {
+  test(`${levelId} completes only after every configured color vanishes`, () => {
+    const level = getLevelConfig(levelId)!;
+    if (level.completionRule.type !== 'all-colors') {
+      assert.fail(`${levelId} must use the all-colors completion rule`);
+    }
+    const solution = solveLevel(level.initialState, {
+      completionRule: level.completionRule,
+      maxExploredStates: 250_000,
+    });
+    assert.equal(solution.solved, true);
 
-  assert.equal(poured.levelComplete, false);
-  assert.deepEqual(poured.pendingCompletion, [1]);
-  const vanished = completePendingBottles(poured);
-  assert.equal(vanished.game.bottles[1].status, 'vanished');
-  assert.equal(vanished.levelComplete, true);
-});
+    let session = createGameSession(level);
+    let sawPartialVanish = false;
+    for (const move of solution.moves) {
+      session = pourFromTo(session, move.from, move.to);
+      if (session.pendingCompletion.length === 0) continue;
+      session = completePendingBottles(session);
+      const vanished = session.game.bottles.filter((bottle) => bottle.status === 'vanished').length;
+      const complete = vanished === level.completionRule.targetCount;
+      assert.equal(session.levelComplete, complete);
+      assert.equal(isSessionComplete(session), complete);
+      if (vanished > 0 && !complete) sawPartialVanish = true;
+    }
 
-test('ordinary levels complete only after every configured target color vanishes', () => {
-  const level = getLevelConfig('level-003')!;
-  const roseComplete = completePendingBottles(pourFromTo(createGameSession(level), 0, 1));
-  assert.equal(roseComplete.levelComplete, false);
-
-  const amberPoured = pourFromTo(roseComplete, 2, 3);
-  assert.equal(amberPoured.levelComplete, false);
-  const completed = completePendingBottles(amberPoured);
-  assert.equal(completed.levelComplete, true);
-  assert.equal(completed.game.bottles.filter((bottle) => bottle.status === 'vanished').length, 2);
-});
+    assert.equal(sawPartialVanish, true);
+    assert.equal(session.levelComplete, true);
+    assert.equal(session.game.bottles.filter((bottle) => bottle.status === 'vanished').length,
+      level.completionRule.targetCount);
+  });
+}
 
 test('completed sessions reject bottle, undo, restart, and reward input', () => {
   const level = getLevelConfig('level-001')!;

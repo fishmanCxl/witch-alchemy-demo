@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import { validateLevelConfig, type LevelConfig } from '../assets/scripts/core/level-config.ts';
 import { isCompleteBottle } from '../assets/scripts/core/water-sort.ts';
@@ -111,4 +112,184 @@ test('candidate generation enforces every metric window independently', () => {
 test('generated output comparison normalizes line endings without hiding content changes', () => {
   assert.equal(generatedOutputMatches('alpha\r\nbeta\r\n', 'alpha\nbeta\n'), true);
   assert.equal(generatedOutputMatches('alpha\r\nwrong\r\n', 'alpha\nbeta\n'), false);
+});
+test('chapter one generation curve and range table match the published design', async () => {
+  const {
+    chapterOneDifficultyTarget,
+    generationSpecForLevel,
+  } = await import('../tools/generate-levels.ts');
+  const targets = [
+    0.05, 0.6, 0.68, 0.73, 0.78, 0.8, 0.82, 0.84, 0.86, 0.88,
+    0.889, 0.898, 0.907, 0.916, 0.925, 0.934, 0.943, 0.952, 0.961, 0.97,
+    0.976, 0.982, 0.988, 0.994, 1, 1, 1, 0.967, 0.933, 0.9,
+  ];
+
+  assert.deepEqual(
+    Array.from({ length: 30 }, (_, index) => chapterOneDifficultyTarget(index + 1)),
+    targets,
+  );
+  assert.equal(generationSpecForLevel(3).reverseMoves, 16);
+  assert.equal(generationSpecForLevel(4).reverseMoves, 16);
+  assert.equal(generationSpecForLevel(6).reverseMoves, 16);
+  assert.equal(generationSpecForLevel(7).reverseMoves, 19);
+  assert.equal(generationSpecForLevel(8).reverseMoves, 19);
+  assert.equal(generationSpecForLevel(9).reverseMoves, 19);
+  assert.equal(generationSpecForLevel(13).reverseMoves, 22);
+  assert.equal(generationSpecForLevel(15).reverseMoves, 22);
+  assert.equal(generationSpecForLevel(16).reverseMoves, 25);
+  assert.equal(generationSpecForLevel(19).reverseMoves, 25);
+  assert.equal(generationSpecForLevel(22).reverseMoves, 27);
+  assert.equal(generationSpecForLevel(26).maximumOpeningMoves, 20);
+  assert.equal(generationSpecForLevel(27).maximumOpeningMoves, 24);
+  assert.deepEqual(generationSpecForLevel(2), {
+    number: 2,
+    colorCount: 3,
+    emptyBottleCount: 2,
+    reverseMoves: 16,
+    targetDifficulty: 0.6,
+    minimumOptimalMoves: 7,
+    maximumOptimalMoves: 10,
+    minimumSegments: 8,
+    minimumExploredStates: 20,
+    minimumOpeningMoves: 2,
+    maximumOpeningMoves: 12,
+    minimumMisleadingBranchRatio: 0.1,
+    maxAttempts: 5_000,
+  });
+  assert.deepEqual(generationSpecForLevel(5), {
+    number: 5,
+    colorCount: 4,
+    emptyBottleCount: 2,
+    reverseMoves: 16,
+    targetDifficulty: 0.78,
+    minimumOptimalMoves: 10,
+    maximumOptimalMoves: 16,
+    minimumSegments: 12,
+    minimumExploredStates: 100,
+    minimumOpeningMoves: 2,
+    maximumOpeningMoves: 14,
+    minimumMisleadingBranchRatio: 0.15,
+    maxAttempts: 5_000,
+  });
+  assert.deepEqual(generationSpecForLevel(10), {
+    number: 10,
+    colorCount: 5,
+    emptyBottleCount: 2,
+    reverseMoves: 19,
+    targetDifficulty: 0.88,
+    minimumOptimalMoves: 14,
+    maximumOptimalMoves: 24,
+    minimumSegments: 18,
+    minimumExploredStates: 500,
+    minimumOpeningMoves: 2,
+    maximumOpeningMoves: 16,
+    minimumMisleadingBranchRatio: 0.2,
+    maxAttempts: 8_000,
+  });
+  assert.deepEqual(generationSpecForLevel(20), {
+    number: 20,
+    colorCount: 7,
+    emptyBottleCount: 2,
+    reverseMoves: 25,
+    targetDifficulty: 0.97,
+    minimumOptimalMoves: 18,
+    maximumOptimalMoves: 30,
+    minimumSegments: 25,
+    minimumExploredStates: 2_000,
+    minimumOpeningMoves: 2,
+    maximumOpeningMoves: 18,
+    minimumMisleadingBranchRatio: 0.25,
+    maxAttempts: 12_000,
+  });
+  assert.deepEqual(generationSpecForLevel(25), {
+    number: 25,
+    colorCount: 9,
+    emptyBottleCount: 2,
+    reverseMoves: 28,
+    targetDifficulty: 1,
+    minimumOptimalMoves: 22,
+    maximumOptimalMoves: 40,
+    minimumSegments: 32,
+    minimumExploredStates: 5_000,
+    minimumOpeningMoves: 2,
+    maximumOpeningMoves: 18,
+    minimumMisleadingBranchRatio: 0.3,
+    maxAttempts: 20_000,
+  });
+  assert.deepEqual(generationSpecForLevel(28), {
+    number: 28,
+    colorCount: 10,
+    emptyBottleCount: 2,
+    reverseMoves: 27,
+    targetDifficulty: 0.967,
+    minimumOptimalMoves: 16,
+    maximumOptimalMoves: 30,
+    minimumSegments: 24,
+    minimumExploredStates: 1_000,
+    minimumOpeningMoves: 2,
+    maximumOpeningMoves: 20,
+    minimumMisleadingBranchRatio: 0.2,
+    maxAttempts: 10_000,
+  });
+});
+
+test('generation report v2 records the exact curve and metric envelopes', () => {
+  const report = JSON.parse(readFileSync(
+    new URL('../assets/scripts/core/level-generation-report.json', import.meta.url),
+    'utf8',
+  ));
+  const targets = [
+    0.05, 0.6, 0.68, 0.73, 0.78, 0.8, 0.82, 0.84, 0.86, 0.88,
+    0.889, 0.898, 0.907, 0.916, 0.925, 0.934, 0.943, 0.952, 0.961, 0.97,
+    0.976, 0.982, 0.988, 0.994, 1, 1, 1, 0.967, 0.933, 0.9,
+  ];
+  const colors = [
+    1, 3, 3, 4, 4, 4, 5, 5, 5, 5,
+    6, 8, 6, 6, 6, 7, 7, 7, 7, 7,
+    8, 8, 9, 9, 9, 10, 12, 10, 9, 8,
+  ];
+  const ranges = [
+    [2, 4, 7, 10, 8, 20, 2, 12, 0.1],
+    [5, 9, 10, 16, 12, 100, 2, 14, 0.15],
+    [10, 19, 14, 24, 18, 500, 2, 16, 0.2],
+    [20, 24, 18, 30, 26, 2_000, 2, 18, 0.25],
+    [25, 27, 22, 40, 34, 5_000, 2, 18, 0.3],
+    [28, 30, 16, 30, 24, 1_000, 2, 18, 0.2],
+  ];
+
+  assert.equal(report.schemaVersion, 2);
+  assert.equal(report.configVersion, 'chapter-1.2026-08-25.1');
+  assert.equal(report.levels.length, 30);
+  assert.deepEqual(report.levels.map((level: { targetDifficulty: number }) => (
+    level.targetDifficulty
+  )), targets);
+  assert.deepEqual(report.levels.map((level: { metrics: { colorCount: number } }) => (
+    level.metrics.colorCount
+  )), colors);
+  assert.equal(report.levels[0].source, 'tutorial');
+  assert.equal(report.levels[11].source, 'legacy');
+  assert.equal(report.levels[11].compatibilityExemption, 'legacy-level-12');
+
+  for (const level of report.levels) {
+    if (level.id === 'level-001') {
+      assert.equal(level.compatibilityExemption, null);
+      continue;
+    }
+    if (level.id === 'level-012') continue;
+    const number = Number(level.id.slice(-3));
+    const range = ranges.find(([start, end]) => number >= start && number <= end);
+    assert.ok(range, level.id);
+    const [, , minMoves, maxMoves, minSegments, minStates, minOpen, maxOpen, minRatio] = range;
+    const expectedMinSegments = number === 20 ? 25 : number === 25 ? 32 : minSegments;
+    const expectedMaxOpen = number === 27 ? 24 : number === 26 || number === 28 ? 20 : maxOpen;
+    assert.equal(level.source, 'generated');
+    assert.equal(level.compatibilityExemption, null);
+    assert.ok(level.metrics.optimalMoves >= minMoves, level.id);
+    assert.ok(level.metrics.optimalMoves <= maxMoves, level.id);
+    assert.ok(level.metrics.segmentCount >= expectedMinSegments, level.id);
+    assert.ok(level.metrics.exploredStates >= minStates, level.id);
+    assert.ok(level.metrics.openingMoves >= minOpen, level.id);
+    assert.ok(level.metrics.openingMoves <= expectedMaxOpen, level.id);
+    assert.ok(level.metrics.misleadingBranchRatio >= minRatio, level.id);
+  }
 });
