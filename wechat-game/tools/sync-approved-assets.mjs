@@ -21,13 +21,13 @@ function collectFiles(directory) {
   });
 }
 
-const files = collectFiles(targetRoot);
+const files = ['chibi', 'audio'].flatMap((directory) => collectFiles(join(sourceRoot, directory)));
 const report = {
   source: 'prototype/public/assets/game',
   generatedAt: new Date().toISOString(),
   files: files.length,
   bytes: files.reduce((total, path) => total + statSync(path).size, 0),
-  paths: files.map((path) => relative(targetRoot, path).replaceAll('\\', '/')).sort(),
+  paths: files.map((path) => relative(sourceRoot, path).replaceAll('\\', '/')).sort(),
 };
 writeFileSync(join(targetRoot, 'sync-report.json'), `${JSON.stringify(report, null, 2)}\n`);
 console.log(`synchronized ${report.files} approved files (${report.bytes} bytes)`);

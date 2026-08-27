@@ -109,6 +109,35 @@ test('approved chibi and audio manifests are synchronized into Cocos resources',
   assert.equal(audio.entries.length, 11);
 });
 
+test('collection and title artwork is synchronized as loadable SpriteFrames', () => {
+  const collectionAssets = [
+    'ui/icon-alchemy-book.png',
+    'collection/star-dew-potion.png',
+    'titles/title-badge-novice.png',
+    'titles/title-badge-junior.png',
+    'effects/particle-scarlet-flame.png',
+    'effects/particle-chartreuse-rune.png',
+    'effects/particle-indigo-comet.png',
+    'effects/particle-pearl-diamond.png',
+  ];
+
+  for (const relative of collectionAssets) {
+    assert.equal(
+      existsSync(new URL(`../assets/resources/game/chibi/${relative}`, import.meta.url)),
+      true,
+      relative,
+    );
+  }
+
+  for (const relative of collectionAssets) {
+    const metaPath = new URL(`../assets/resources/game/chibi/${relative}.meta`, import.meta.url);
+    assert.equal(existsSync(metaPath), true, `${relative}.meta`);
+    const meta = JSON.parse(readFileSync(metaPath, 'utf8'));
+    assert.equal(meta.userData.type, 'sprite-frame', relative);
+    assert.equal(meta.subMetas.f9941.importer, 'sprite-frame', relative);
+  }
+});
+
 test('pure core stays independent from Cocos and WeChat runtime APIs', () => {
   const coreRoot = new URL('../assets/scripts/core/', import.meta.url);
   for (const file of readdirSync(coreRoot).filter((name) => name.endsWith('.ts'))) {
