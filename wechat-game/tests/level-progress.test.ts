@@ -4,11 +4,33 @@ import assert from 'node:assert/strict';
 import {
   completeLevel,
   createDefaultProgress,
+  decodePlayerProgress,
   isLevelUnlocked,
   mergePlayerProgress,
   selectCurrentLevel,
   type PlayerProgress,
 } from '../assets/scripts/core/level-progress.ts';
+
+function levelId(number: number): string {
+  return `level-${String(number).padStart(3, '0')}`;
+}
+
+function progressAt(level: string): PlayerProgress {
+  return {
+    ...createDefaultProgress(),
+    currentLevel: level,
+    highestUnlockedLevel: level,
+  };
+}
+
+const oldFifteenLevelProgress: PlayerProgress = {
+  ...createDefaultProgress(),
+  revision: 15,
+  currentLevel: 'level-015',
+  highestUnlockedLevel: 'level-015',
+  completedLevels: Array.from({ length: 14 }, (_, index) => levelId(index + 1)),
+  configVersion: 'chapter-1.2026-08-23.1',
+};
 
 test('new players start at level 1 with only level 1 unlocked', () => {
   const progress = createDefaultProgress();
@@ -20,7 +42,7 @@ test('new players start at level 1 with only level 1 unlocked', () => {
     highestUnlockedLevel: 'level-001',
     completedLevels: [],
     bestMoves: {},
-    configVersion: 'chapter-1.2026-08-23.1',
+    configVersion: 'chapter-1.2026-08-25.1',
   });
   assert.equal(isLevelUnlocked(progress, 'level-001'), true);
   assert.equal(isLevelUnlocked(progress, 'level-002'), false);
@@ -30,7 +52,7 @@ test('new players start at level 1 with only level 1 unlocked', () => {
 test('completion unlocks only the next published level and rejects locked or unknown levels', () => {
   const initial = createDefaultProgress();
   assert.equal(completeLevel(initial, 'level-002', 4), null);
-  assert.equal(completeLevel(initial, 'level-016', 4), null);
+  assert.equal(completeLevel(initial, 'level-031', 4), null);
 
   const afterFirst = completeLevel(initial, 'level-001', 5)!;
   assert.equal(afterFirst.revision, 1);
@@ -94,21 +116,38 @@ test('merging progress unions completion, minimizes best moves, and keeps legal 
     highestUnlockedLevel: 'level-006',
     completedLevels: ['level-001', 'level-002', 'level-003'],
     bestMoves: { 'level-001': 8, 'level-002': 9, 'level-003': 10 },
-    configVersion: 'chapter-1.2026-08-23.1',
+    configVersion: 'chapter-1.2026-08-25.1',
   });
 });
 
-test('completing level 15 caps progression at the final published level', () => {
-  const progress: PlayerProgress = {
-    ...createDefaultProgress(),
-    revision: 20,
-    currentLevel: 'level-015',
-    highestUnlockedLevel: 'level-015',
-  };
-  const completed = completeLevel(progress, 'level-015', 42)!;
+test('level 30 caps progression without unlocking an unpublished chapter', () => {
+  const progress = progressAt('level-030');
+  const completed = completeLevel(progress, 'level-030', 42)!;
 
-  assert.equal(completed.currentLevel, 'level-015');
-  assert.equal(completed.highestUnlockedLevel, 'level-015');
-  assert.deepEqual(completed.completedLevels, ['level-015']);
+  assert.equal(completed.currentLevel, 'level-030');
+  assert.equal(completed.highestUnlockedLevel, 'level-030');
+  assert.deepEqual(completed.completedLevels, ['level-030']);
+  assert.equal(isLevelUnlocked(completed, 'level-031'), false);
+});
+
+test('old v2 progress is normalized to the new config without losing completions', () => {
+  const decoded = decodePlayerProgress(JSON.stringify(oldFifteenLevelProgress));
+
+  assert.deepEqual(decoded?.completedLevels, oldFifteenLevelProgress.completedLevels);
+  assert.equal(decoded?.configVersion, 'chapter-1.2026-08-25.1');
+});
+
+test('a high legacy unlock does not invent missing earlier completions', () => {
+  const sparseLegacy: PlayerProgress = {
+    ...oldFifteenLevelProgress,
+    currentLevel: 'level-030',
+    highestUnlockedLevel: 'level-030',
+    completedLevels: ['level-002', 'level-016', 'level-030'],
+  };
+
+  assert.deepEqual(
+    decodePlayerProgress(JSON.stringify(sparseLegacy))?.completedLevels,
+    ['level-002', 'level-016', 'level-030'],
+  );
 });
 

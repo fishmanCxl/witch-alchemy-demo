@@ -1,6 +1,6 @@
 import { getLevelConfig } from './level-catalog.ts';
 
-export type GameScene = 'home' | 'levelSelect' | 'level' | 'levelComplete';
+export type GameScene = 'home' | 'levelSelect' | 'collection' | 'level' | 'levelComplete';
 
 export interface SceneFlowState {
   readonly scene: GameScene;
@@ -8,6 +8,7 @@ export interface SceneFlowState {
   readonly nextLevelId: string | null;
   readonly soundEnabled: boolean;
   readonly settingsOpen: boolean;
+  readonly collectionReturnScene: 'home' | 'levelSelect';
 }
 
 export function createSceneFlow(): SceneFlowState {
@@ -17,11 +18,33 @@ export function createSceneFlow(): SceneFlowState {
     nextLevelId: null,
     soundEnabled: true,
     settingsOpen: false,
+    collectionReturnScene: 'home',
   };
 }
 
 export function openLevelSelect(state: SceneFlowState): SceneFlowState {
   return { ...state, scene: 'levelSelect', nextLevelId: null, settingsOpen: false };
+}
+
+export function openCollection(state: SceneFlowState): SceneFlowState {
+  if (state.scene !== 'home' && state.scene !== 'levelSelect') return state;
+  return {
+    ...state,
+    scene: 'collection',
+    nextLevelId: null,
+    settingsOpen: false,
+    collectionReturnScene: state.scene,
+  };
+}
+
+export function closeCollection(state: SceneFlowState): SceneFlowState {
+  if (state.scene !== 'collection') return state;
+  return {
+    ...state,
+    scene: state.collectionReturnScene,
+    nextLevelId: null,
+    settingsOpen: false,
+  };
 }
 
 export function enterSelectedLevel(

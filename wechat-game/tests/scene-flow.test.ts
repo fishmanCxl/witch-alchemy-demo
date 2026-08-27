@@ -2,9 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  closeCollection,
   continueFromLevelComplete,
   createSceneFlow,
   enterSelectedLevel,
+  openCollection,
   openLevelSelect,
   returnHome,
   showLevelComplete,
@@ -19,6 +21,7 @@ test('scene flow starts on home without an implicit selected level', () => {
     nextLevelId: null,
     soundEnabled: true,
     settingsOpen: false,
+    collectionReturnScene: 'home',
   });
 });
 
@@ -43,19 +46,53 @@ test('selector rejects locked and unpublished level ids without changing state',
   const selector = openLevelSelect(createSceneFlow());
 
   assert.equal(enterSelectedLevel(selector, 'level-004', false), selector);
-  assert.equal(enterSelectedLevel(selector, 'level-016', true), selector);
+  assert.equal(enterSelectedLevel(selector, 'level-031', true), selector);
   assert.equal(enterSelectedLevel(selector, 'not-a-level', true), selector);
 });
 
-test('level 15 completion returns to selector when the chapter has no next level', () => {
-  const playing = enterSelectedLevel(openLevelSelect(createSceneFlow()), 'level-015', true);
+test('level 30 completion returns to selector when the chapter has no next level', () => {
+  const playing = enterSelectedLevel(openLevelSelect(createSceneFlow()), 'level-030', true);
   const completed = showLevelComplete(playing, null);
   const selector = continueFromLevelComplete(completed);
 
   assert.equal(completed.scene, 'levelComplete');
   assert.equal(completed.nextLevelId, null);
   assert.equal(selector.scene, 'levelSelect');
-  assert.equal(selector.selectedLevelId, 'level-015');
+  assert.equal(selector.selectedLevelId, 'level-030');
+});
+
+test('collection returns to the scene that opened it', () => {
+  const fromHome = openCollection(createSceneFlow());
+  assert.equal(closeCollection(fromHome).scene, 'home');
+
+  const fromSelect = openCollection(openLevelSelect(createSceneFlow()));
+  assert.equal(closeCollection(fromSelect).scene, 'levelSelect');
+});
+
+test('collection navigation closes settings and clears pending next levels', () => {
+  const opened = openCollection({
+    ...toggleSettings(createSceneFlow()),
+    nextLevelId: 'level-002',
+  });
+  const closed = closeCollection({
+    ...toggleSettings(opened),
+    nextLevelId: 'level-003',
+  });
+
+  assert.equal(opened.settingsOpen, false);
+  assert.equal(opened.nextLevelId, null);
+  assert.equal(closed.settingsOpen, false);
+  assert.equal(closed.nextLevelId, null);
+});
+
+test('level and completion scenes cannot open collection', () => {
+  const level = enterSelectedLevel(openLevelSelect(createSceneFlow()), 'level-001', true);
+  const complete = showLevelComplete(level, 'level-002');
+  const collection = openCollection(createSceneFlow());
+
+  assert.equal(openCollection(level), level);
+  assert.equal(openCollection(complete), complete);
+  assert.equal(openCollection(collection), collection);
 });
 
 test('settings and sound state are preserved and settings close across navigation', () => {

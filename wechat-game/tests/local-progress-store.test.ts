@@ -73,6 +73,57 @@ test('corrupt or config-mismatched snapshots fall back only to that level initia
   assert.equal(store.loadSession(level5).levelId, level5.id);
 });
 
+test('an existing level 12 v2 snapshot remains restorable after the catalog expands', () => {
+  const storage = new MemoryStorage();
+  const store = new LocalProgressStore(storage);
+  const level12 = getLevelConfig('level-012')!;
+  const selected = selectFirstFilled(level12.id);
+  const existingSnapshot = createLocalSnapshot({
+    levelId: level12.id,
+    configVersion: '2026.08.23.1',
+    revision: selected.game.moves,
+    state: selected.game,
+    history: selected.history,
+    selected: selected.selected,
+    updatedAt: 100,
+  });
+  storage.setItem('witch-water-sort:session:level-012:v2', JSON.stringify(existingSnapshot));
+
+  const restored = store.loadSession(level12);
+
+  assert.equal(restored.selected, selected.selected);
+  assert.deepEqual(restored.game, selected.game);
+});
+
+test('a changed level snapshot resets only itself and leaves long-term progress intact', () => {
+  const storage = new MemoryStorage();
+  const store = new LocalProgressStore(storage);
+  const level16 = getLevelConfig('level-016')!;
+  const selected16 = selectFirstFilled(level16.id);
+  const progress = {
+    ...store.loadProgress(),
+    revision: 18,
+    currentLevel: level16.id,
+    highestUnlockedLevel: level16.id,
+    completedLevels: ['level-002', 'level-015'],
+  } as const;
+  const stale = createLocalSnapshot({
+    levelId: level16.id,
+    configVersion: 'chapter-1.2026-08-23.1',
+    revision: 4,
+    state: selected16.game,
+    history: [],
+    selected: selected16.selected,
+    updatedAt: 100,
+  });
+  store.saveProgress(progress);
+  storage.setItem('witch-water-sort:session:level-016:v2', JSON.stringify(stale));
+
+  assert.deepEqual(store.loadSession(level16).game, level16.initialState);
+  assert.equal(store.loadSession(level16).selected, null);
+  assert.deepEqual(store.loadProgress(), progress);
+});
+
 test('pending and completed sessions never overwrite the last stable snapshot', () => {
   const storage = new MemoryStorage();
   const store = new LocalProgressStore(storage);
