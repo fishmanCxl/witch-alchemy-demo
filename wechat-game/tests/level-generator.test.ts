@@ -233,7 +233,7 @@ test('chapter one generation curve and range table match the published design', 
   });
 });
 
-test('generation report v2 records the exact curve and metric envelopes', () => {
+test('generation report records the exact target peak and every published metric envelope', () => {
   const report = JSON.parse(readFileSync(
     new URL('../assets/scripts/core/level-generation-report.json', import.meta.url),
     'utf8',
