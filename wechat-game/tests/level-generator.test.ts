@@ -260,9 +260,12 @@ test('generation report v2 records the exact curve and metric envelopes', () => 
   assert.equal(report.schemaVersion, 2);
   assert.equal(report.configVersion, 'chapter-1.2026-08-25.1');
   assert.equal(report.levels.length, 30);
-  assert.deepEqual(report.levels.map((level: { targetDifficulty: number }) => (
+  const reportedTargets = report.levels.map((level: { targetDifficulty: number }) => (
     level.targetDifficulty
-  )), targets);
+  ));
+  assert.deepEqual(reportedTargets, targets);
+  assert.deepEqual(reportedTargets.slice(24, 27), [1, 1, 1]);
+  assert.deepEqual(reportedTargets.slice(27, 30), [0.967, 0.933, 0.9]);
   assert.deepEqual(report.levels.map((level: { metrics: { colorCount: number } }) => (
     level.metrics.colorCount
   )), colors);
@@ -292,4 +295,73 @@ test('generation report v2 records the exact curve and metric envelopes', () => 
     assert.ok(level.metrics.openingMoves <= expectedMaxOpen, level.id);
     assert.ok(level.metrics.misleadingBranchRatio >= minRatio, level.id);
   }
+
+  const easingRatings = report.levels.slice(27, 30).map((level: {
+    metrics: { difficultyRating: number };
+  }) => level.metrics.difficultyRating);
+  assert.ok(easingRatings[0] > easingRatings[1]);
+  assert.ok(easingRatings[1] > easingRatings[2]);
+});
+
+test('reverse-move plans distinguish formula values from evidence-backed overrides', async () => {
+  const { reverseMovesPlanForLevel } = await import('../tools/generate-levels.ts');
+  assert.equal(typeof reverseMovesPlanForLevel, 'function');
+  const overrideLevels = [7, 8, 9, 10, 16, 17, 18, 19, 22];
+  assert.deepEqual(
+    overrideLevels.map((number) => {
+      const plan = reverseMovesPlanForLevel(number);
+      return [number, plan.formula, plan.selected, typeof plan.overrideReason];
+    }),
+    [
+      [7, 24, 19, 'string'],
+      [8, 24, 19, 'string'],
+      [9, 25, 19, 'string'],
+      [10, 25, 19, 'string'],
+      [16, 27, 25, 'string'],
+      [17, 27, 25, 'string'],
+      [18, 27, 25, 'string'],
+      [19, 27, 25, 'string'],
+      [22, 28, 27, 'string'],
+    ],
+  );
+  assert.deepEqual(reverseMovesPlanForLevel(11), {
+    formula: 26,
+    selected: 26,
+    overrideReason: null,
+  });
+});
+
+test('published generation diagnostics report only windows missed by an analyzed candidate', async () => {
+  const { generateCandidateWithDiagnostics } = await import('../tools/generate-levels.ts');
+  assert.equal(typeof generateCandidateWithDiagnostics, 'function');
+
+  assert.throws(
+    () => generateCandidateWithDiagnostics({
+      ...SPEC,
+      minimumOptimalMoves: 1_000_000,
+      maxAttempts: 2,
+    }, 9),
+    new Error(
+      'Level 4, seed 9, attempts 2: analyzed candidate missed optimalMoves>=1000000; '
+      + 'nearest metrics optimalMoves=7, segmentCount=10, exploredStates=18, openingMoves=8, '
+      + 'misleadingBranchRatio=0.5',
+    ),
+  );
+});
+
+test('published generation diagnostics identify construction exhaustion without inventing metrics', async () => {
+  const { generateCandidateWithDiagnostics } = await import('../tools/generate-levels.ts');
+  assert.equal(typeof generateCandidateWithDiagnostics, 'function');
+
+  assert.throws(
+    () => generateCandidateWithDiagnostics({
+      ...SPEC,
+      reverseMoves: 1_000,
+      maxAttempts: 1,
+    }, 9),
+    new Error(
+      'Level 4, seed 9, attempts 1: reverse-walk/candidate construction exhausted before an '
+      + 'analyzable candidate; nearest metrics unavailable',
+    ),
+  );
 });

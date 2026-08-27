@@ -32,7 +32,7 @@ test('only level one is tutorial and level two starts at seven to ten optimal mo
   assert.ok((getLevelConfig('level-002')?.metrics.optimalMoves ?? 99) <= 10);
 });
 
-test('difficulty reaches a level 25 to 27 peak before easing through level 30', () => {
+test('levels 25 to 27 satisfy the peak envelope and ratings ease from level 28 to 30', () => {
   const ratings = FIRST_CHAPTER_LEVELS.map((level) => level.metrics.difficultyRating);
   const peak = ratings.slice(24, 27);
   const easing = ratings.slice(27, 30);
@@ -42,8 +42,19 @@ test('difficulty reaches a level 25 to 27 peak before easing through level 30', 
 
   assert.ok(average(peak) > average(ratings.slice(19, 24)));
   assert.ok(average(peak) > average(easing));
-  assert.ok(easing[0] >= easing[1]);
-  assert.ok(easing[1] >= easing[2]);
+  for (const number of [25, 26, 27]) {
+    const level = getLevelConfig(levelId(number));
+    assert.ok(level, levelId(number));
+    assert.ok(level.metrics.optimalMoves >= 22, level.id);
+    assert.ok(level.metrics.optimalMoves <= 40, level.id);
+    assert.ok(level.metrics.segmentCount >= (number === 25 ? 32 : 34), level.id);
+    assert.ok(level.metrics.exploredStates >= 5_000, level.id);
+    assert.ok(level.metrics.openingMoves >= 2, level.id);
+    assert.ok(level.metrics.openingMoves <= (number === 26 ? 20 : number === 27 ? 24 : 18), level.id);
+    assert.ok(level.metrics.misleadingBranchRatio >= 0.3, level.id);
+  }
+  assert.ok(easing[0] > easing[1]);
+  assert.ok(easing[1] > easing[2]);
   assert.deepEqual(getLevelConfig('level-012')?.initialState, createDemoState());
 });
 

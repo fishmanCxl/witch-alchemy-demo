@@ -56,6 +56,46 @@ const COLOR_COUNTS = [
   8, 8, 9, 9, 9, 10, 12, 10, 9, 8,
 ] as const;
 
+interface ReverseMovesOverride {
+  readonly selected: number;
+  readonly reason: string;
+}
+
+const REVERSE_MOVES_OVERRIDES: Readonly<Partial<Record<number, ReverseMovesOverride>>> = {
+  2: { selected: 16, reason: 'low-color reverse walk exhausted at the formula value' },
+  3: { selected: 16, reason: 'low-color reverse walk exhausted at the formula value' },
+  4: { selected: 16, reason: 'low-color reverse walk exhausted at the formula value' },
+  5: { selected: 16, reason: 'low-color reverse walk exhausted at the formula value' },
+  6: { selected: 16, reason: 'low-color reverse walk exhausted at the formula value' },
+  7: { selected: 19, reason: 'formula 24: Unable to generate level 7 from seed 41 after 5000 attempts' },
+  8: { selected: 19, reason: 'formula 24: Unable to generate level 8 from seed 2026 after 5000 attempts' },
+  9: { selected: 19, reason: 'formula 25: Unable to generate level 9 from seed 1004 after 5000 attempts' },
+  10: { selected: 19, reason: 'formula 25: Unable to generate level 10 from seed 7 after 8000 attempts' },
+  13: { selected: 22, reason: 'formula 26 exhausted across the audited seed search' },
+  14: { selected: 22, reason: 'formula 26 exhausted across the audited seed search' },
+  15: { selected: 22, reason: 'formula 26 exhausted across the audited seed search' },
+  16: { selected: 25, reason: 'formula 27: Unable to generate level 16 from seed 15024 after 8000 attempts' },
+  17: { selected: 25, reason: 'formula 27: Unable to generate level 17 from seed 825 after 8000 attempts' },
+  18: { selected: 25, reason: 'formula 27: Unable to generate level 18 from seed 1004 after 8000 attempts' },
+  19: { selected: 25, reason: 'formula 27: Unable to generate level 19 from seed 99 after 8000 attempts' },
+  20: { selected: 25, reason: 'approved level-20 search uses reverse 25 with its segment override' },
+  22: { selected: 27, reason: 'formula 28: Unable to generate level 22 from seed 22 after 12000 attempts' },
+};
+
+export function reverseMovesPlanForLevel(number: number): {
+  readonly formula: number;
+  readonly selected: number;
+  readonly overrideReason: string | null;
+} {
+  const formula = Math.round(6 + chapterOneDifficultyTarget(number) * 22);
+  const override = REVERSE_MOVES_OVERRIDES[number];
+  return {
+    formula,
+    selected: override?.selected ?? formula,
+    overrideReason: override?.reason ?? null,
+  };
+}
+
 export function chapterOneDifficultyTarget(level: number): number {
   if (!Number.isInteger(level) || level < 1 || level > 30) {
     throw new RangeError('chapter one level must be an integer from 1 to 30');
@@ -82,17 +122,7 @@ export function generationSpecForLevel(number: number): GenerationSpec {
     number,
     colorCount: COLOR_COUNTS[number - 1],
     emptyBottleCount: 2,
-    reverseMoves: number <= 6
-      ? 16
-      : number <= 10
-        ? 19
-        : number >= 13 && number <= 15
-          ? 22
-          : number >= 16 && number <= 20
-            ? 25
-            : number === 22
-              ? 27
-              : Math.round(6 + targetDifficulty * 22),
+    reverseMoves: reverseMovesPlanForLevel(number).selected,
     targetDifficulty,
   } as const;
   if (number <= 4) {
@@ -223,26 +253,84 @@ function authoredTutorial(
   };
 }
 
+function missedMetricWindows(spec: GenerationSpec, metrics: LevelMetrics): readonly string[] {
+  const missed: string[] = [];
+  if (metrics.optimalMoves < spec.minimumOptimalMoves) {
+    missed.push(`optimalMoves>=${spec.minimumOptimalMoves}`);
+  }
+  if (metrics.optimalMoves > spec.maximumOptimalMoves) {
+    missed.push(`optimalMoves<=${spec.maximumOptimalMoves}`);
+  }
+  if (metrics.segmentCount < spec.minimumSegments) {
+    missed.push(`segmentCount>=${spec.minimumSegments}`);
+  }
+  if (metrics.exploredStates < spec.minimumExploredStates) {
+    missed.push(`exploredStates>=${spec.minimumExploredStates}`);
+  }
+  if (metrics.openingMoves < spec.minimumOpeningMoves) {
+    missed.push(`openingMoves>=${spec.minimumOpeningMoves}`);
+  }
+  if (metrics.openingMoves > spec.maximumOpeningMoves) {
+    missed.push(`openingMoves<=${spec.maximumOpeningMoves}`);
+  }
+  if (metrics.misleadingBranchRatio < spec.minimumMisleadingBranchRatio) {
+    missed.push(`misleadingBranchRatio>=${spec.minimumMisleadingBranchRatio}`);
+  }
+  return missed;
+}
+
+export function generateCandidateWithDiagnostics(
+  spec: GenerationSpec,
+  seed: number,
+): GeneratedCandidate {
+  try {
+    return generateCandidate(spec, seed);
+  } catch (error) {
+    const expectedExhaustion = error instanceof Error
+      && error.message === (
+        `Unable to generate level ${spec.number} from seed ${seed} after ${spec.maxAttempts} attempts`
+      );
+    if (!expectedExhaustion) throw error;
+
+    let nearest: GeneratedCandidate;
+    try {
+      nearest = generateCandidate({
+        ...spec,
+        minimumOptimalMoves: 0,
+        maximumOptimalMoves: Number.MAX_SAFE_INTEGER,
+        minimumSegments: 0,
+        minimumExploredStates: 0,
+        minimumOpeningMoves: 0,
+        maximumOpeningMoves: Number.MAX_SAFE_INTEGER,
+        minimumMisleadingBranchRatio: 0,
+      }, seed);
+    } catch {
+      throw new Error(
+        `Level ${spec.number}, seed ${seed}, attempts ${spec.maxAttempts}: `
+        + 'reverse-walk/candidate construction exhausted before an analyzable candidate; '
+        + 'nearest metrics unavailable',
+        { cause: error },
+      );
+    }
+
+    const missed = missedMetricWindows(spec, nearest.metrics);
+    const metrics = nearest.metrics;
+    throw new Error(
+      `Level ${spec.number}, seed ${seed}, attempts ${spec.maxAttempts}: analyzed candidate missed `
+      + `${missed.join(', ')}; nearest metrics optimalMoves=${metrics.optimalMoves}, `
+      + `segmentCount=${metrics.segmentCount}, exploredStates=${metrics.exploredStates}, `
+      + `openingMoves=${metrics.openingMoves}, `
+      + `misleadingBranchRatio=${metrics.misleadingBranchRatio}`,
+      { cause: error },
+    );
+  }
+}
+
 function generatedLevel(
   spec: GenerationSpec,
   seed: number,
 ): { readonly config: LevelConfig; readonly report: ReportLevel } {
-  let candidate: GeneratedCandidate;
-  try {
-    candidate = generateCandidate(spec, seed);
-  } catch (error) {
-    const unmet = [
-      `optimalMoves=${spec.minimumOptimalMoves}..${spec.maximumOptimalMoves}`,
-      `segmentCount>=${spec.minimumSegments}`,
-      `exploredStates>=${spec.minimumExploredStates}`,
-      `openingMoves=${spec.minimumOpeningMoves}..${spec.maximumOpeningMoves}`,
-      `misleadingBranchRatio>=${spec.minimumMisleadingBranchRatio}`,
-    ].join(', ');
-    throw new Error(
-      `Level ${spec.number}, seed ${seed}, attempts ${spec.maxAttempts}: no candidate satisfied ${unmet}`,
-      { cause: error },
-    );
-  }
+  const candidate = generateCandidateWithDiagnostics(spec, seed);
   const config: LevelConfig = {
     id: levelId(spec.number),
     number: spec.number,
