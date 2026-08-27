@@ -249,14 +249,29 @@ test('production presentation derives level copy, targets, seeds, and reward ids
   assert.match(bootstrap, /persistCompletion/);
 });
 
+test('production derives collection, title, and milestone presentation from saved progress', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+
+  assert.match(bootstrap, /private renderCollection\(/);
+  assert.match(bootstrap, /deriveCollectionProgress\(this\.progress, 1\)/);
+  assert.match(bootstrap, /deriveHighestTitle\(this\.progress\)/);
+  assert.match(bootstrap, /openCollection\(this\.flow\)/);
+  assert.match(bootstrap, /collectionPuzzlePiece\(/);
+  assert.match(bootstrap, /collectionHasNewPiece/);
+  assert.match(bootstrap, /game\/chibi\/collection\/star-dew-potion\/spriteFrame/);
+  assert.doesNotMatch(bootstrap, /revealedPieces\s*=\s*this\./);
+});
+
 test('completion persistence orders local progress before snapshot clearing and result rendering', () => {
   const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
   const save = bootstrap.indexOf('this.store.saveProgress(nextProgress)');
+  const reward = bootstrap.indexOf('this.completionReward = deriveCompletionReward');
   const clear = bootstrap.indexOf('this.store.clearSession(this.session.levelId)');
   const show = bootstrap.indexOf('showLevelComplete(this.flow');
 
   assert.ok(save >= 0);
-  assert.ok(clear > save);
+  assert.ok(reward > save);
+  assert.ok(clear > reward);
   assert.ok(show > clear);
   assert.match(bootstrap, /进度保存失败，请重试/);
 });

@@ -82,6 +82,8 @@ test('selector fits thirty square buttons in one five by six page', () => {
   const cells = Array.from({ length: 30 }, (_, index) => levelSelectButton(index));
   assert.equal(LEVEL_SELECT_LAYOUT.columns, 5);
   assert.equal(LEVEL_SELECT_LAYOUT.rows, 6);
+  assert.equal(LEVEL_SELECT_LAYOUT.subtitleY, 310);
+  assert.deepEqual(LEVEL_SELECT_LAYOUT.collectionButton, { x: 0, y: 255, width: 176, height: 44 });
   assert.equal(cells.length, 30);
   assert.throws(() => levelSelectButton(30), RangeError);
   for (const cell of cells) {
@@ -114,6 +116,8 @@ test('collection artwork is divided into six gapless two by three masks', () => 
 
 test('home layout preserves the accepted prototype hierarchy without a progress card', () => {
   assert.deepEqual(HOME_LAYOUT.header, { x: -86, y: 326, width: 176, align: 'left' });
+  assert.deepEqual(HOME_LAYOUT.titleBadge, { x: -92, y: 245, width: 168, height: 84 });
+  assert.deepEqual(HOME_LAYOUT.collectionButton, { x: 112, y: 248, width: 64, height: 64 });
   assert.deepEqual(HOME_LAYOUT.witch, { x: 0, y: 51, width: 246, height: 304 });
   assert.deepEqual(HOME_LAYOUT.continueButton, { x: 0, y: -348, width: 286, height: 72 });
   assert.equal(HOME_LAYOUT.showsProgressCard, false);

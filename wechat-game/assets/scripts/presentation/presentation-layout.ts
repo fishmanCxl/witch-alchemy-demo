@@ -80,6 +80,8 @@ export function launchProgressFill(progress: number): Readonly<{ x: number; widt
 
 export const HOME_LAYOUT = Object.freeze({
   header: Object.freeze({ x: -86, y: 326, width: 176, align: 'left' as const }),
+  titleBadge: Object.freeze({ x: -92, y: 245, width: 168, height: 84 }),
+  collectionButton: Object.freeze({ x: 112, y: 248, width: 64, height: 64 }),
   witch: Object.freeze({ x: 0, y: 51, width: 246, height: 304 }),
   continueButton: Object.freeze({ x: 0, y: -348, width: 286, height: 72 }),
   selectButton: Object.freeze({ x: 0, y: -266, width: 224, height: 56 }),

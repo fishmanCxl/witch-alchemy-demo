@@ -13,8 +13,13 @@ import {
   completeLevel, createDefaultProgress, isLevelUnlocked, selectCurrentLevel, type PlayerProgress,
 } from '../core/level-progress.ts';
 import {
-  createSceneFlow, enterSelectedLevel, openLevelSelect, returnHome, showLevelComplete,
-  toggleSettings, toggleSound, type SceneFlowState,
+  deriveCollectionProgress, deriveCompletionReward, deriveHighestTitle, type CollectionProgress,
+  type CompletionReward, type HighestTitle,
+} from '../core/collection-progress.ts';
+import { getChapter } from '../core/chapter-catalog.ts';
+import {
+  closeCollection, createSceneFlow, enterSelectedLevel, openCollection, openLevelSelect, returnHome,
+  showLevelComplete, toggleSettings, toggleSound, type SceneFlowState,
 } from '../core/scene-flow.ts';
 import type { PotionColor } from '../core/types.ts';
 import { LocalProgressStore } from '../platform/LocalProgressStore.ts';
@@ -29,11 +34,12 @@ import {
   updateLaunchProgress, type LaunchLoadingState,
 } from './launch-loading.ts';
 import {
-  ART_FONT_RESOURCE, HEALTHY_GAME_ADVICE_LINES, HOME_LAYOUT, LAUNCH_LAYOUT, LEVEL_COMPLETE_LAYOUT,
-  LEVEL_LAYOUT, LEVEL_SELECT_LAYOUT, RESTART_LABEL,
+  ART_FONT_RESOURCE, COLLECTION_LAYOUT, HEALTHY_GAME_ADVICE_LINES, HOME_LAYOUT, LAUNCH_LAYOUT,
+  LEVEL_COMPLETE_LAYOUT, LEVEL_LAYOUT, LEVEL_SELECT_LAYOUT, RESTART_LABEL,
   SETTINGS_LAYOUT, bottleFeedbackVisual, bottlePlacement, buttonBaseLayout, buttonSpritePath,
-  launchProgressFill, levelButtonVisual, levelInteractionRefreshMode, levelSelectButton, potionParticleState,
-  potionParticleVisuals, potionProgressLabel, selectedBottleAuraVisual, shouldRenderBottle,
+  collectionPuzzlePiece, launchProgressFill, levelButtonVisual, levelInteractionRefreshMode,
+  levelSelectButton, potionParticleState, potionParticleVisuals, potionProgressLabel,
+  selectedBottleAuraVisual, shouldRenderBottle,
   type ButtonBaseLayout, type ButtonVariant, type LevelButtonState, type PotionParticleState,
   type PotionParticleVisual,
 } from './presentation-layout.ts';
@@ -44,6 +50,7 @@ const { ccclass } = _decorator;
 const POTION_COLORS: Record<PotionColor, string> = {
   rose: '#F05B9A', violet: '#9353E6', amber: '#F29A38', cyan: '#2CC4D2',
   mint: '#63D6A5', blue: '#4C70E8', gold: '#F2CC4D', lilac: '#B77ADF',
+  scarlet: '#E34A54', chartreuse: '#A8D84A', indigo: '#4A3EB5', pearl: '#F4E9D2',
 };
 const REWARDED_AD_UNIT_ID = '';
 
@@ -76,6 +83,8 @@ export class ProductionBootstrap extends Component {
   private progressSync: ProgressSyncCoordinator | null = null;
   private rewardBusy = false;
   private completionSaveFailed = false;
+  private completionReward: CompletionReward | null = null;
+  private collectionHasNewPiece = false;
   private levelStartedAt = Date.now();
   private undoCount = 0;
   private launchState: LaunchLoadingState = createLaunchLoadingState(Date.now());
@@ -288,6 +297,7 @@ export class ProductionBootstrap extends Component {
     this.node.addChild(this.surface);
     if (this.flow.scene === 'home') this.renderHome(this.surface, this.renderToken);
     else if (this.flow.scene === 'levelSelect') this.renderLevelSelect(this.surface, this.renderToken);
+    else if (this.flow.scene === 'collection') this.renderCollection(this.surface, this.renderToken);
     else if (this.flow.scene === 'levelComplete') this.renderLevelComplete(this.surface, this.renderToken);
     else this.renderLevel(this.surface, this.renderToken);
     this.renderSettingsButton(this.surface, this.renderToken);
@@ -303,13 +313,13 @@ export class ProductionBootstrap extends Component {
   private renderHome(root: Node, token: number): void {
     this.addSprite(root, 'game/chibi/background/alchemy-room/spriteFrame', 393, 852, 0, 0, token);
     this.addPanel(root, 393, 852, 0, 0, color('#170D29', 34));
-    const completed = this.session.game.bottles.filter((bottle) => bottle.status === 'vanished').length;
+    const title = deriveHighestTitle(this.progress);
+    const collection = deriveCollectionProgress(this.progress, 1);
     this.addLabel(root, '暮影炼金室', 12, HOME_LAYOUT.header.x, 350, color('#DDBED2'), HOME_LAYOUT.header.width, Label.HorizontalAlign.LEFT);
     this.addLabel(root, `第 ${this.currentLevel.number} 关`, 34, HOME_LAYOUT.header.x, 316,
       color('#FFF4DF'), HOME_LAYOUT.header.width, Label.HorizontalAlign.LEFT);
-    this.addPanel(root, 82, 28, -133, 278, color('#23102B', 194), color('#D6AFC3', 76), 14);
-    this.addLabel(root, potionProgressLabel(completed, this.targetPotionCount(this.currentLevel)), 12,
-      -133, 278, color('#F3DFCF'), 78);
+    this.renderTitleBadge(root, title, HOME_LAYOUT.titleBadge, token);
+    this.renderCollectionEntry(root, collection, HOME_LAYOUT.collectionButton, token);
     this.addWitch(root, 'idle', HOME_LAYOUT.witch.x, HOME_LAYOUT.witch.y, HOME_LAYOUT.witch.width, HOME_LAYOUT.witch.height);
     this.addRasterButton(root, '选择关卡', 'gold', HOME_LAYOUT.selectButton.width,
       HOME_LAYOUT.selectButton.height, HOME_LAYOUT.selectButton.x, HOME_LAYOUT.selectButton.y, () => {
@@ -328,8 +338,13 @@ export class ProductionBootstrap extends Component {
   private renderLevelSelect(root: Node, token: number): void {
     this.addSprite(root, 'game/chibi/background/alchemy-room/spriteFrame', 393, 852, 0, 0, token);
     this.addPanel(root, 393, 852, 0, 0, color('#130A20', 96));
-    this.addLabel(root, '第一章 · 选择关卡', 28, LEVEL_SELECT_LAYOUT.header.x,
+    const chapter = getChapter(1)!;
+    const collection = deriveCollectionProgress(this.progress, 1);
+    this.addLabel(root, chapter.stageTitle + ' · ' + chapter.themeTitle, 26, LEVEL_SELECT_LAYOUT.header.x,
       LEVEL_SELECT_LAYOUT.header.y, color('#FFF4DF'), LEVEL_SELECT_LAYOUT.header.width);
+    this.addLabel(root, '第一章 · 1–30 关', 12, 0, LEVEL_SELECT_LAYOUT.subtitleY,
+      color('#DCC7E8'), 220);
+    this.renderCollectionEntry(root, collection, LEVEL_SELECT_LAYOUT.collectionButton, token);
 
     FIRST_CHAPTER_LEVELS.forEach((level, index) => {
       const state = this.levelButtonState(level);
@@ -341,6 +356,112 @@ export class ProductionBootstrap extends Component {
     this.addRasterButton(root, '返回主页', 'purple', LEVEL_SELECT_LAYOUT.backButton.width,
       LEVEL_SELECT_LAYOUT.backButton.height, LEVEL_SELECT_LAYOUT.backButton.x,
       LEVEL_SELECT_LAYOUT.backButton.y, () => this.returnToHome(), false, 'icon-settings-home', 16);
+  }
+
+  private renderCollection(root: Node, token: number): void {
+    const collection = deriveCollectionProgress(this.progress, 1);
+    const title = deriveHighestTitle(this.progress);
+    this.addSprite(root, 'game/chibi/background/alchemy-room/spriteFrame', 393, 852, 0, 0, token);
+    this.addPanel(root, 393, 852, 0, 0, color('#10071C', 144));
+    this.addLabel(root, '炼金图鉴', 30, COLLECTION_LAYOUT.title.x, COLLECTION_LAYOUT.title.y,
+      color('#FFF2CF'), COLLECTION_LAYOUT.title.width);
+    this.renderTitleBadge(root, title, COLLECTION_LAYOUT.titleBadge, token);
+    this.renderCollectionPuzzle(root, collection, token);
+    this.addLabel(root, '已收集 ' + collection.revealedPieces + '/' + collection.totalPieces, 17,
+      0, COLLECTION_LAYOUT.progressY, color('#FFF0C2'), 240);
+    this.addLabel(root, '星露药水', 21, 0, -142, color('#D7C4FF'), COLLECTION_LAYOUT.description.width);
+    this.addLabel(root, '收集夜空星辉的稀有药水', 12, 0, -174,
+      color('#E6D5E9'), COLLECTION_LAYOUT.description.width);
+    const milestone = collection.nextMilestone === null
+      ? '完整药水已收入炼金图鉴'
+      : '再完成 ' + (collection.nextMilestone - collection.completedLevels) + ' 关揭示下一块';
+    this.addLabel(root, milestone, 11, 0, -204, color('#C6AECF'), COLLECTION_LAYOUT.description.width);
+    this.addRasterButton(root, '返回', 'purple', COLLECTION_LAYOUT.backButton.width,
+      COLLECTION_LAYOUT.backButton.height, COLLECTION_LAYOUT.backButton.x,
+      COLLECTION_LAYOUT.backButton.y, () => this.closeCollectionView(), false, undefined, 17);
+  }
+
+  private renderTitleBadge(
+    root: Node,
+    title: HighestTitle,
+    layout: Readonly<{ x: number; y: number; width: number; height: number }>,
+    token: number,
+  ): void {
+    const variant = title.chapterId === 1 ? 'novice' : 'junior';
+    this.addSprite(root, 'game/chibi/titles/title-badge-' + variant + '/spriteFrame',
+      layout.width, layout.height, layout.x, layout.y, token);
+    this.addLabel(root, title.title, Math.max(14, Math.round(layout.height * 0.2)),
+      layout.x, layout.y - layout.height * 0.08, color('#FFF0C2'), layout.width * 0.72);
+  }
+
+  private renderCollectionEntry(
+    root: Node,
+    collection: CollectionProgress,
+    layout: Readonly<{ x: number; y: number; width: number; height: number }>,
+    token: number,
+  ): void {
+    const button = new Node('CollectionEntry');
+    button.setPosition(layout.x, layout.y);
+    button.addComponent(UITransform).setContentSize(layout.width, layout.height);
+    root.addChild(button);
+    const square = layout.width === layout.height;
+    const stage = Object.freeze({ x: 0, y: 0, width: layout.width, height: layout.height });
+    this.decorateRasterButton(button, 'purple', false, () => this.openCollectionView(),
+      buttonBaseLayout(stage, square ? 'contain' : 'sliced'));
+    const iconX = square ? 0 : -55;
+    const iconY = square ? 7 : 0;
+    if (this.collectionHasNewPiece) {
+      this.addSprite(button, 'game/chibi/effects/completion-burst/spriteFrame',
+        square ? 60 : 44, square ? 60 : 44, iconX, iconY, token);
+    }
+    this.addSprite(button, 'game/chibi/ui/icon-alchemy-book/spriteFrame',
+      square ? 42 : 36, square ? 42 : 36, iconX, iconY, token);
+    this.addLabel(button, collection.revealedPieces + '/' + collection.totalPieces, square ? 10 : 15,
+      square ? 0 : 24, square ? -23 : 0, color('#FFF4DF'), square ? 56 : 88);
+  }
+
+  private renderCollectionPuzzle(root: Node, collection: CollectionProgress, token: number): void {
+    for (let index = 0; index < collection.totalPieces; index += 1) {
+      const piece = collectionPuzzlePiece(index);
+      const pieceNode = new Node('CollectionPuzzlePiece-' + (index + 1));
+      pieceNode.setPosition(piece.x, piece.y);
+      pieceNode.addComponent(UITransform).setContentSize(piece.width, piece.height);
+      root.addChild(pieceNode);
+      const mask = pieceNode.addComponent(Mask);
+      mask.type = Mask.Type.GRAPHICS_STENCIL;
+      const graphics = mask.subComp as Graphics;
+      graphics.clear();
+      graphics.rect(-piece.width / 2, -piece.height / 2, piece.width, piece.height);
+      graphics.fill();
+      const art = this.addSprite(pieceNode,
+        'game/chibi/collection/star-dew-potion/spriteFrame',
+        COLLECTION_LAYOUT.puzzle.width, COLLECTION_LAYOUT.puzzle.height,
+        piece.artOffsetX, piece.artOffsetY, token);
+      if (index >= collection.revealedPieces) {
+        art.addComponent(UIOpacity).opacity = 46;
+        this.addPanel(pieceNode, piece.width, piece.height, 0, 0, color('#2A1830', 154));
+      }
+    }
+    this.addPanel(root, COLLECTION_LAYOUT.puzzle.width + 4, COLLECTION_LAYOUT.puzzle.height + 4,
+      COLLECTION_LAYOUT.puzzle.x, COLLECTION_LAYOUT.puzzle.y, color('#14091F', 0), color('#D9B56D'), 5);
+  }
+
+  private openCollectionView(): void {
+    this.resumeAudio();
+    const nextFlow = openCollection(this.flow);
+    if (nextFlow === this.flow) return;
+    this.store.saveSession(this.session);
+    this.flow = nextFlow;
+    this.collectionHasNewPiece = false;
+    this.render();
+  }
+
+  private closeCollectionView(): void {
+    this.resumeAudio();
+    const nextFlow = closeCollection(this.flow);
+    if (nextFlow === this.flow) return;
+    this.flow = nextFlow;
+    this.render();
   }
 
   private renderLevelComplete(root: Node, token: number): void {
@@ -357,6 +478,9 @@ export class ProductionBootstrap extends Component {
     this.addLabel(root, `本局 ${this.session.game.moves} 步 · 最佳 ${best} 步`, 15,
       LEVEL_COMPLETE_LAYOUT.stats.x, LEVEL_COMPLETE_LAYOUT.stats.y,
       color('#EFD9C9'), LEVEL_COMPLETE_LAYOUT.stats.width);
+    this.completionRewardLines().forEach((line, index) => {
+      this.addLabel(root, line, 14, 0, 26 - index * 28, color('#FFE5A3'), 280);
+    });
 
     this.addRasterButton(root, next ? `下一关 · 第 ${next.number} 关` : '返回选关', 'gold',
       LEVEL_COMPLETE_LAYOUT.primaryButton.width, LEVEL_COMPLETE_LAYOUT.primaryButton.height,
@@ -370,6 +494,19 @@ export class ProductionBootstrap extends Component {
         if (next) this.openSelector();
         else this.returnToHome();
       }, false, undefined, 16);
+  }
+
+  private completionRewardLines(): readonly string[] {
+    const reward = this.completionReward;
+    if (!reward) return [];
+    if (reward.collectionCompleted) {
+      const lines = ['星露药水已收入图鉴'];
+      if (reward.titleChanged) lines.push('晋升 · ' + deriveHighestTitle(this.progress).title);
+      return lines;
+    }
+    return reward.puzzlePiece === null
+      ? []
+      : ['获得星露药水拼图 · ' + reward.puzzlePiece + '/6'];
   }
 
   private levelButtonState(level: LevelConfig): LevelButtonState {
@@ -408,12 +545,14 @@ export class ProductionBootstrap extends Component {
   }
 
   private openSelector(): void {
+    this.completionReward = null;
     this.store.saveSession(this.session);
     this.flow = openLevelSelect(this.flow);
     this.render();
   }
 
   private returnToHome(): void {
+    this.completionReward = null;
     this.store.saveSession(this.session);
     const current = getLevelConfig(this.progress.currentLevel) ?? FIRST_CHAPTER_LEVELS[0];
     if (current.id !== this.currentLevel.id) {
@@ -427,6 +566,7 @@ export class ProductionBootstrap extends Component {
   private switchLevel(levelId: string): void {
     const level = getLevelConfig(levelId);
     if (!level || !isLevelUnlocked(this.progress, levelId)) return;
+    this.completionReward = null;
     this.store.saveSession(this.session);
     const selected = selectCurrentLevel(this.progress, levelId);
     if (!selected) return;
@@ -645,7 +785,8 @@ export class ProductionBootstrap extends Component {
 
   private particleSuffix(layer: PotionColor): string {
     return { rose: 'heart', violet: 'star', amber: 'spark', cyan: 'bubble',
-      mint: 'leaf', blue: 'snow', gold: 'dust', lilac: 'moon' }[layer];
+      mint: 'leaf', blue: 'snow', gold: 'dust', lilac: 'moon',
+      scarlet: 'flame', chartreuse: 'rune', indigo: 'comet', pearl: 'diamond' }[layer];
   }
 
   private handleBottle(index: number): void {
@@ -732,6 +873,7 @@ export class ProductionBootstrap extends Component {
   }
 
   private persistCompletion(): void {
+    const previousProgress = this.progress;
     const nextProgress = completeLevel(
       this.progress,
       this.session.levelId,
@@ -746,6 +888,12 @@ export class ProductionBootstrap extends Component {
 
     try {
       this.store.saveProgress(nextProgress);
+      this.completionReward = deriveCompletionReward(
+        previousProgress,
+        nextProgress,
+        this.session.levelId,
+      );
+      if (this.completionReward.puzzlePiece !== null) this.collectionHasNewPiece = true;
       this.store.clearSession(this.session.levelId);
       this.progress = nextProgress;
       this.completionSaveFailed = false;
