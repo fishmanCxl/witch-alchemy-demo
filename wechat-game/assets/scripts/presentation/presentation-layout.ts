@@ -98,12 +98,23 @@ export const LEVEL_LAYOUT = Object.freeze({
 });
 
 export const LEVEL_SELECT_LAYOUT = Object.freeze({
-  header: Object.freeze({ x: 0, y: 330, width: 321, height: 58 }),
+  header: Object.freeze({ x: 0, y: 344, width: 321, height: 44 }),
+  subtitleY: 310,
+  collectionButton: Object.freeze({ x: 0, y: 255, width: 176, height: 44 }),
   columns: 5,
-  rows: 3,
-  buttonSize: 56,
+  rows: 6,
+  buttonSize: 48,
   columnCenters: Object.freeze([-136, -68, 0, 68, 136] as const),
-  rowCenters: Object.freeze([138, 58, -22] as const),
+  rowCenters: Object.freeze([180, 120, 60, 0, -60, -120] as const),
+  backButton: Object.freeze({ x: 0, y: -342, width: 224, height: 72 }),
+});
+
+export const COLLECTION_LAYOUT = Object.freeze({
+  title: Object.freeze({ x: 0, y: 334, width: 300, height: 48 }),
+  titleBadge: Object.freeze({ x: 0, y: 260, width: 250, height: 92 }),
+  puzzle: Object.freeze({ x: 0, y: 58, width: 252, height: 252, columns: 2, rows: 3 }),
+  progressY: -96,
+  description: Object.freeze({ x: 0, y: -174, width: 300, height: 92 }),
   backButton: Object.freeze({ x: 0, y: -342, width: 224, height: 72 }),
 });
 
@@ -124,14 +135,51 @@ export const SETTINGS_LAYOUT = Object.freeze({
 });
 
 export function levelSelectButton(index: number): RectLayout {
-  if (!Number.isInteger(index) || index < 0 || index >= 15) {
-    throw new RangeError('level selector index must be from 0 to 14');
+  const total = LEVEL_SELECT_LAYOUT.columns * LEVEL_SELECT_LAYOUT.rows;
+  if (!Number.isInteger(index) || index < 0 || index >= total) {
+    throw new RangeError(`level selector index must be from 0 to ${total - 1}`);
   }
   return Object.freeze({
     x: LEVEL_SELECT_LAYOUT.columnCenters[index % LEVEL_SELECT_LAYOUT.columns],
     y: LEVEL_SELECT_LAYOUT.rowCenters[Math.floor(index / LEVEL_SELECT_LAYOUT.columns)],
     width: LEVEL_SELECT_LAYOUT.buttonSize,
     height: LEVEL_SELECT_LAYOUT.buttonSize,
+  });
+}
+
+export interface CollectionPuzzlePiece {
+  readonly column: number;
+  readonly row: number;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly artOffsetX: number;
+  readonly artOffsetY: number;
+}
+
+export function collectionPuzzlePiece(index: number): CollectionPuzzlePiece {
+  const { puzzle } = COLLECTION_LAYOUT;
+  const total = puzzle.columns * puzzle.rows;
+  if (!Number.isInteger(index) || index < 0 || index >= total) {
+    throw new RangeError(`collection puzzle index must be from 0 to ${total - 1}`);
+  }
+
+  const column = index % puzzle.columns;
+  const row = Math.floor(index / puzzle.columns);
+  const width = puzzle.width / puzzle.columns;
+  const height = puzzle.height / puzzle.rows;
+  const x = puzzle.x - puzzle.width / 2 + width * (column + 0.5);
+  const y = puzzle.y + puzzle.height / 2 - height * (row + 0.5);
+  return Object.freeze({
+    column,
+    row,
+    x,
+    y,
+    width,
+    height,
+    artOffsetX: puzzle.x - x,
+    artOffsetY: puzzle.y - y,
   });
 }
 

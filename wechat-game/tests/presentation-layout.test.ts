@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   ART_FONT_RESOURCE,
+  COLLECTION_LAYOUT,
   HEALTHY_GAME_ADVICE_LINES,
   HOME_LAYOUT,
   LAUNCH_LAYOUT,
@@ -17,6 +18,7 @@ import {
   buttonSpritePath,
   levelButtonVisual,
   levelSelectButton,
+  collectionPuzzlePiece,
   launchProgressFill,
   potionParticleVisuals,
   potionProgressLabel,
@@ -76,18 +78,38 @@ test('selector maps completed, current, unlocked, and locked states to approved 
   });
 });
 
-test('level selector fits fifteen square buttons inside the 393 by 852 safe frame', () => {
-  const cells = Array.from({ length: 15 }, (_, index) => levelSelectButton(index));
+test('selector fits thirty square buttons in one five by six page', () => {
+  const cells = Array.from({ length: 30 }, (_, index) => levelSelectButton(index));
   assert.equal(LEVEL_SELECT_LAYOUT.columns, 5);
-  assert.equal(LEVEL_SELECT_LAYOUT.rows, 3);
-  assert.equal(cells.length, 15);
+  assert.equal(LEVEL_SELECT_LAYOUT.rows, 6);
+  assert.equal(cells.length, 30);
+  assert.throws(() => levelSelectButton(30), RangeError);
   for (const cell of cells) {
-    assert.equal(cell.width, cell.height);
-    assert.ok(cell.x - cell.width / 2 >= -393 / 2);
-    assert.ok(cell.x + cell.width / 2 <= 393 / 2);
-    assert.ok(cell.y - cell.height / 2 >= -852 / 2);
-    assert.ok(cell.y + cell.height / 2 <= 852 / 2);
+    assert.equal(cell.width, 48);
+    assert.equal(cell.height, 48);
+    assert.ok(Math.abs(cell.x) + 24 <= 393 / 2);
+    assert.ok(Math.abs(cell.y) + 24 <= 852 / 2);
   }
+});
+
+test('collection artwork is divided into six gapless two by three masks', () => {
+  const pieces = Array.from({ length: 6 }, (_, index) => collectionPuzzlePiece(index));
+  assert.equal(COLLECTION_LAYOUT.puzzle.columns, 2);
+  assert.equal(COLLECTION_LAYOUT.puzzle.rows, 3);
+  assert.deepEqual(pieces.map((piece) => [piece.column, piece.row]), [
+    [0, 0], [1, 0], [0, 1], [1, 1], [0, 2], [1, 2],
+  ]);
+  assert.equal(pieces.reduce((sum, piece) => sum + piece.width * piece.height, 0),
+    COLLECTION_LAYOUT.puzzle.width * COLLECTION_LAYOUT.puzzle.height);
+  assert.deepEqual(pieces.map((piece) => [piece.width, piece.height]), [
+    [126, 84], [126, 84], [126, 84], [126, 84], [126, 84], [126, 84],
+  ]);
+  assert.deepEqual(pieces.map((piece) => [piece.x, piece.y, piece.artOffsetX, piece.artOffsetY]), [
+    [-63, 142, 63, -84], [63, 142, -63, -84],
+    [-63, 58, 63, 0], [63, 58, -63, 0],
+    [-63, -26, 63, 84], [63, -26, -63, 84],
+  ]);
+  assert.throws(() => collectionPuzzlePiece(6), RangeError);
 });
 
 test('home layout preserves the accepted prototype hierarchy without a progress card', () => {
