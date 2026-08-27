@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   completeLevel,
   createDefaultProgress,
+  encodePlayerProgress,
   decodePlayerProgress,
   isLevelUnlocked,
   mergePlayerProgress,
@@ -149,5 +150,55 @@ test('a high legacy unlock does not invent missing earlier completions', () => {
     decodePlayerProgress(JSON.stringify(sparseLegacy))?.completedLevels,
     ['level-002', 'level-016', 'level-030'],
   );
+});
+
+test('progress encoding strips derived and unknown top-level fields', () => {
+  const polluted = {
+    schemaVersion: 2,
+    revision: 4,
+    currentLevel: 'level-003',
+    highestUnlockedLevel: 'level-004',
+    completedLevels: ['level-001', 'level-003'],
+    bestMoves: { 'level-001': 5, 'level-003': 9 },
+    configVersion: 'chapter-1.2026-08-23.1',
+    collection: { revealedPieces: 2 },
+    title: '不应持久化',
+    arbitraryUnknown: ['also', 'strip'],
+  } as unknown as PlayerProgress;
+
+  assert.deepEqual(JSON.parse(encodePlayerProgress(polluted)), {
+    schemaVersion: 2,
+    revision: 4,
+    currentLevel: 'level-003',
+    highestUnlockedLevel: 'level-004',
+    completedLevels: ['level-001', 'level-003'],
+    bestMoves: { 'level-001': 5, 'level-003': 9 },
+    configVersion: 'chapter-1.2026-08-25.1',
+  });
+});
+
+test('progress decoding strips derived and unknown top-level fields', () => {
+  const decoded = decodePlayerProgress(JSON.stringify({
+    schemaVersion: 2,
+    revision: 6,
+    currentLevel: 'level-003',
+    highestUnlockedLevel: 'level-004',
+    completedLevels: ['level-003', 'level-001'],
+    bestMoves: { 'level-003': 9, 'level-001': 5 },
+    configVersion: 'chapter-1.2026-08-23.1',
+    collection: { revealedPieces: 2 },
+    title: '不应恢复',
+    arbitraryUnknown: { nested: true },
+  }));
+
+  assert.deepEqual(decoded, {
+    schemaVersion: 2,
+    revision: 6,
+    currentLevel: 'level-003',
+    highestUnlockedLevel: 'level-004',
+    completedLevels: ['level-001', 'level-003'],
+    bestMoves: { 'level-001': 5, 'level-003': 9 },
+    configVersion: 'chapter-1.2026-08-25.1',
+  });
 });
 

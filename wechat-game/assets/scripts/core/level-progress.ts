@@ -27,6 +27,18 @@ export function createDefaultProgress(): PlayerProgress {
   };
 }
 
+export function encodePlayerProgress(progress: PlayerProgress): string {
+  return JSON.stringify({
+    schemaVersion: 2,
+    revision: progress.revision,
+    currentLevel: progress.currentLevel,
+    highestUnlockedLevel: progress.highestUnlockedLevel,
+    completedLevels: progress.completedLevels,
+    bestMoves: progress.bestMoves,
+    configVersion: FIRST_CHAPTER_CONFIG_VERSION,
+  });
+}
+
 function publishedNumber(id: string): number | null {
   return getLevelConfig(id)?.number ?? null;
 }
@@ -168,14 +180,17 @@ export function decodePlayerProgress(serialized: string | null | undefined): Pla
     ))) return null;
     if (typeof value.configVersion !== 'string' || value.configVersion.length === 0) return null;
 
-    const progress = value as unknown as PlayerProgress;
-    if (!isLevelUnlocked(progress, progress.currentLevel)) return null;
-    return {
-      ...progress,
-      completedLevels: sortedPublishedIds(progress.completedLevels),
-      bestMoves: mergedBestMoves(progress.bestMoves, {}),
+    const progress: PlayerProgress = {
+      schemaVersion: 2,
+      revision: Number(value.revision),
+      currentLevel: value.currentLevel,
+      highestUnlockedLevel: value.highestUnlockedLevel,
+      completedLevels: sortedPublishedIds(value.completedLevels as string[]),
+      bestMoves: mergedBestMoves(value.bestMoves as Record<string, number>, {}),
       configVersion: FIRST_CHAPTER_CONFIG_VERSION,
     };
+    if (!isLevelUnlocked(progress, progress.currentLevel)) return null;
+    return progress;
   } catch {
     return null;
   }

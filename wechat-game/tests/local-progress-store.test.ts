@@ -162,6 +162,40 @@ test('global progress and sound preference round-trip independently', () => {
   assert.equal(store.loadSoundEnabled(), false);
 });
 
+test('progress persistence strips derived and unknown fields from storage and reload', () => {
+  const storage = new MemoryStorage();
+  const store = new LocalProgressStore(storage);
+  const polluted = {
+    schemaVersion: 2,
+    revision: 9,
+    currentLevel: 'level-003',
+    highestUnlockedLevel: 'level-004',
+    completedLevels: ['level-001', 'level-003'],
+    bestMoves: { 'level-001': 5, 'level-003': 9 },
+    configVersion: 'chapter-1.2026-08-23.1',
+    collection: { revealedPieces: 2 },
+    title: '不应持久化',
+    arbitraryUnknown: true,
+  } as const;
+
+  store.saveProgress(polluted);
+
+  const stored = JSON.parse(storage.getItem('witch-water-sort:progress:v2')!);
+  const loaded = store.loadProgress();
+  const expected = {
+    schemaVersion: 2,
+    revision: 9,
+    currentLevel: 'level-003',
+    highestUnlockedLevel: 'level-004',
+    completedLevels: ['level-001', 'level-003'],
+    bestMoves: { 'level-001': 5, 'level-003': 9 },
+    configVersion: 'chapter-1.2026-08-25.1',
+  };
+
+  assert.deepEqual(stored, expected);
+  assert.deepEqual(loaded, expected);
+});
+
 test('valid legacy level-12 data migrates once without inventing earlier completions', () => {
   const storage = new MemoryStorage();
   const store = new LocalProgressStore(storage);

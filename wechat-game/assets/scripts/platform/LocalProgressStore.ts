@@ -1,8 +1,9 @@
 import { createGameSession, type GameSession } from '../core/game-session.ts';
-import { FIRST_CHAPTER_CONFIG_VERSION, getLevelConfig } from '../core/level-catalog.ts';
+import { getLevelConfig } from '../core/level-catalog.ts';
 import {
   createDefaultProgress,
   decodePlayerProgress,
+  encodePlayerProgress,
   type PlayerProgress,
 } from '../core/level-progress.ts';
 import {
@@ -50,11 +51,7 @@ export class LocalProgressStore {
   }
 
   saveProgress(progress: PlayerProgress): void {
-    this.storage.setItem(PROGRESS_KEY, JSON.stringify({
-      ...progress,
-      schemaVersion: 2,
-      configVersion: FIRST_CHAPTER_CONFIG_VERSION,
-    }));
+    this.storage.setItem(PROGRESS_KEY, encodePlayerProgress(progress));
   }
 
   loadSession(level: LevelConfig): GameSession {
