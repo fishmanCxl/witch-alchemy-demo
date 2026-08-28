@@ -13,6 +13,11 @@
 - Witch animation uses seven production states: idle 18, prepare 12, raise 12, cast 20, celebrate 14, return 18, and invalid feedback 12. Every runtime frame is 512×512, independently normalized to a 370±3px character height, and uses the fixed foot anchor `(256,470)`; cast/celebrate magic remains a separate synchronized overlay.
 - Potion readability uses both high-separation hues and a unique particle language per potion color.
 - Bottle placement uses deterministic controlled randomness inside the fixed 5 × 3 safety grid: x offset within ±5px, y offset within ±10px, and rotation within ±2 degrees. A level never rerolls positions while active.
+- Chapter one publishes exactly levels 1–30; level 1 is the only tutorial, level 2 immediately uses the full all-colors rules, and level 12 keeps its legacy board byte-for-byte.
+- Level generation and exact solving happen only in the offline deterministic toolchain. Runtime presentation consumes committed static level data and never generates or solves a board.
+- The chapter-one selector fits all 30 levels on one fixed 5×6 page with no scrolling, pagination, or chapter arrows.
+- The Star Dew collection is one 2×3 puzzle derived from completed levels, revealing one piece per five distinct completions. Collection progress is not a gameplay item and is not stored separately.
+- The displayed witch title is always the highest title derived from completed chapters; players cannot equip, switch, or persist a chosen title.
 - When a selected bottle cannot pour into another active filled bottle, invalid feedback remains visible on the pair while selection and the cyan highlight transfer immediately to the newly tapped bottle.
 - Bottom controls and game messages use image-backed Q-style UI assets with normal, pressed, disabled, enter, replace, and exit states.
 - The React/Vite mobile prototype is the visual and interaction-validation target only. The production WeChat Mini Game target is Cocos Creator 3.x with TypeScript, reusing the pure game engine and level data rather than the React presentation layer.

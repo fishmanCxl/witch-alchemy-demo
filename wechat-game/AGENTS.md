@@ -18,8 +18,10 @@
 - Witch runtime states and frame counts are idle 18, prepare 12, raise 12, cast 20, celebrate 14, return 18, and oops 12.
 - Wide raster buttons must match the approved prototype with nine-slice rendering: preserve the 72px source corners at one-third display scale and stretch only the center. Bottom control bases remain square and centered inside their wider 110×72 hit targets; never SIMPLE-stretch square button artwork into a rectangle.
 - Ordinary play and local save work offline. Reward claims require a successful online cloud response.
-- Chapter one publishes exactly levels 1–15 from checked static data. Runtime code must never generate or solve levels; use `tools/generate-levels.ts` and commit its deterministic output/report.
-- Levels 1–3 are authored tutorials, level 12 keeps the legacy board byte-for-byte, and generated difficulty scores are nondecreasing around that anchor.
+- Chapter one publishes exactly levels 1–30 from checked static data. Runtime code must never generate or solve levels; use `tools/generate-levels.ts` and commit its deterministic output/report.
+- Level 1 is the only authored tutorial; levels 2–30 use the full all-colors rules, level 12 keeps the legacy board byte-for-byte, and generated difficulty rises sharply from level 2 before the approved late-chapter peak and easing.
+- The chapter-one selector shows all 30 levels in one fixed 5×6 page with no scrolling, pagination, or chapter arrows.
+- The six-piece chapter collection and automatic highest title are derived only from `PlayerProgress.completedLevels`: reveal one 2×3 puzzle piece per five distinct completions, never persist collection/title fields, and never offer title equipment or switching.
 - Global v2 progress and per-level v2 board snapshots remain separate. A stale/corrupt board resets only that level; it must not erase unlocks or best moves.
 - Local completion progress must be saved before clearing the per-level snapshot or rendering results. Cloud sync/telemetry is opportunistic and cannot roll back a successful local completion.
 - No environment IDs, secrets, ad unit IDs, or admin credentials are committed.
