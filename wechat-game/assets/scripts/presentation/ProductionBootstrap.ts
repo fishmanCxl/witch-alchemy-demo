@@ -1,6 +1,6 @@
 import {
   _decorator, BlockInputEvents, Button, Color, Component, Font, Graphics, Label, LabelOutline, Mask,
-  Node, ResolutionPolicy, resources, Sprite, SpriteFrame, sys, Tween, UIOpacity, UITransform, Vec3, view, tween,
+  Node, ResolutionPolicy, resources, ScrollView, Sprite, SpriteFrame, sys, Tween, UIOpacity, UITransform, Vec3, view, tween,
 } from 'cc';
 
 import {
@@ -17,8 +17,10 @@ import {
   type CompletionReward, type HighestTitle,
 } from '../core/collection-progress.ts';
 import { getChapter } from '../core/chapter-catalog.ts';
+import { POTION_COLLECTIONS, type PotionCollectionConfig } from '../core/potion-collection-catalog.ts';
 import {
-  closeCollection, createSceneFlow, enterSelectedLevel, openCollection, openLevelSelect, returnHome,
+  closeCollection, closeCollectionDetail, createSceneFlow, enterSelectedLevel, openCollection, openCollectionDetail,
+  openLevelSelect, returnHome,
   showLevelComplete, toggleSettings, toggleSound, type SceneFlowState,
 } from '../core/scene-flow.ts';
 import type { PotionColor } from '../core/types.ts';
@@ -34,12 +36,12 @@ import {
   updateLaunchProgress, type LaunchLoadingState,
 } from './launch-loading.ts';
 import {
-  ART_FONT_RESOURCE, COLLECTION_LAYOUT, HEALTHY_GAME_ADVICE_LINES, HOME_LAYOUT, LAUNCH_LAYOUT,
+  ART_FONT_RESOURCE, COLLECTION_LAYOUT, COLLECTION_OVERVIEW_LAYOUT, HEALTHY_GAME_ADVICE_LINES, HOME_LAYOUT, LAUNCH_LAYOUT,
   LEVEL_COMPLETE_LAYOUT, LEVEL_LAYOUT, LEVEL_SELECT_LAYOUT, RESTART_LABEL,
   SETTINGS_LAYOUT, bottleFeedbackVisual, bottlePlacement, buttonBaseLayout, buttonSpritePath,
-  collectionPuzzlePiece, launchProgressFill, levelButtonVisual, levelInteractionRefreshMode,
+  collectionCardLayout, collectionPuzzlePiece, launchProgressFill, levelButtonVisual, levelInteractionRefreshMode,
   levelSelectButton, potionParticleState, potionParticleVisuals, potionProgressLabel,
-  selectedBottleAuraVisual, shouldRenderBottle,
+  mysteryPotionVisual, selectedBottleAuraVisual, shouldRenderBottle,
   type ButtonBaseLayout, type ButtonVariant, type LevelButtonState, type PotionParticleState,
   type PotionParticleVisual,
 } from './presentation-layout.ts';
@@ -314,12 +316,21 @@ export class ProductionBootstrap extends Component {
     this.addSprite(root, 'game/chibi/background/alchemy-room/spriteFrame', 393, 852, 0, 0, token);
     this.addPanel(root, 393, 852, 0, 0, color('#170D29', 34));
     const title = deriveHighestTitle(this.progress);
-    const collection = deriveCollectionProgress(this.progress, 1);
     this.addLabel(root, '暮影炼金室', 12, HOME_LAYOUT.header.x, 350, color('#DDBED2'), HOME_LAYOUT.header.width, Label.HorizontalAlign.LEFT);
     this.addLabel(root, `第 ${this.currentLevel.number} 关`, 34, HOME_LAYOUT.header.x, 316,
       color('#FFF4DF'), HOME_LAYOUT.header.width, Label.HorizontalAlign.LEFT);
-    this.renderTitleBadge(root, title, HOME_LAYOUT.titleBadge, token);
-    this.renderCollectionEntry(root, collection, HOME_LAYOUT.collectionButton, token);
+    const titleBadge = this.renderTitleBadge(root, title, HOME_LAYOUT.titleBadge, token);
+    tween(titleBadge).repeatForever(
+      tween<Node>()
+        .to(HOME_LAYOUT.titleFloat.duration, {
+          position: new Vec3(HOME_LAYOUT.titleBadge.x,
+            HOME_LAYOUT.titleBadge.y + HOME_LAYOUT.titleFloat.distance, 0),
+        }, { easing: 'sineInOut' })
+        .to(HOME_LAYOUT.titleFloat.duration, {
+          position: new Vec3(HOME_LAYOUT.titleBadge.x, HOME_LAYOUT.titleBadge.y, 0),
+        }, { easing: 'sineInOut' }),
+    ).start();
+    this.renderCollectionEntry(root, HOME_LAYOUT.collectionButton, token);
     this.addWitch(root, 'idle', HOME_LAYOUT.witch.x, HOME_LAYOUT.witch.y, HOME_LAYOUT.witch.width, HOME_LAYOUT.witch.height);
     this.addRasterButton(root, '选择关卡', 'gold', HOME_LAYOUT.selectButton.width,
       HOME_LAYOUT.selectButton.height, HOME_LAYOUT.selectButton.x, HOME_LAYOUT.selectButton.y, () => {
@@ -339,12 +350,11 @@ export class ProductionBootstrap extends Component {
     this.addSprite(root, 'game/chibi/background/alchemy-room/spriteFrame', 393, 852, 0, 0, token);
     this.addPanel(root, 393, 852, 0, 0, color('#130A20', 96));
     const chapter = getChapter(1)!;
-    const collection = deriveCollectionProgress(this.progress, 1);
     this.addLabel(root, chapter.stageTitle + ' · ' + chapter.themeTitle, 26, LEVEL_SELECT_LAYOUT.header.x,
       LEVEL_SELECT_LAYOUT.header.y, color('#FFF4DF'), LEVEL_SELECT_LAYOUT.header.width);
     this.addLabel(root, '第一章 · 1–30 关', 12, 0, LEVEL_SELECT_LAYOUT.subtitleY,
       color('#DCC7E8'), 220);
-    this.renderCollectionEntry(root, collection, LEVEL_SELECT_LAYOUT.collectionButton, token);
+    this.renderCollectionEntry(root, LEVEL_SELECT_LAYOUT.collectionButton, token);
 
     FIRST_CHAPTER_LEVELS.forEach((level, index) => {
       const state = this.levelButtonState(level);
@@ -359,10 +369,206 @@ export class ProductionBootstrap extends Component {
   }
 
   private renderCollection(root: Node, token: number): void {
-    const collection = deriveCollectionProgress(this.progress, 1);
-    const title = deriveHighestTitle(this.progress);
     this.addSprite(root, 'game/chibi/background/alchemy-room/spriteFrame', 393, 852, 0, 0, token);
     this.addPanel(root, 393, 852, 0, 0, color('#10071C', 144));
+    if (this.flow.selectedCollectionChapterId === null) this.renderCollectionOverview(root, token);
+    else this.renderCollectionDetail(root, this.flow.selectedCollectionChapterId, token);
+  }
+
+  private renderCollectionOverview(root: Node, token: number): void {
+    const layout = COLLECTION_OVERVIEW_LAYOUT;
+    this.addLabel(root, '收藏品', 30, layout.title.x, layout.title.y, color('#FFF2CF'), layout.title.width);
+    const tip = this.addLabel(root, '', 12, 0, layout.lockedTipY, color('#FFE3A0'), 300);
+    tip.addComponent(UIOpacity).opacity = 0;
+
+    const viewport = new Node('CollectionScrollView');
+    viewport.setPosition(layout.viewport.x, layout.viewport.y);
+    viewport.addComponent(UITransform).setContentSize(layout.viewport.width, layout.viewport.height);
+    root.addChild(viewport);
+    viewport.addComponent(Mask).type = Mask.Type.RECT;
+    const content = new Node('CollectionContent');
+    content.setPosition(0, -(layout.contentHeight - layout.viewport.height) / 2);
+    content.addComponent(UITransform).setContentSize(layout.viewport.width, layout.contentHeight);
+    viewport.addChild(content);
+    const scroll = viewport.addComponent(ScrollView);
+    scroll.content = content;
+    scroll.horizontal = false;
+    scroll.vertical = true;
+    scroll.inertia = true;
+    scroll.elastic = true;
+
+    POTION_COLLECTIONS.forEach((collection, index) =>
+      this.renderCollectionCard(content, collection, index, tip, token));
+    this.addRasterButton(root, '返回', 'purple', layout.backButton.width, layout.backButton.height,
+      layout.backButton.x, layout.backButton.y, () => this.closeCollectionView(), false, undefined, 15);
+  }
+
+  private renderCollectionCard(
+    root: Node,
+    collection: PotionCollectionConfig,
+    index: number,
+    lockedTip: Node,
+    token: number,
+  ): void {
+    const layout = collectionCardLayout(index);
+    const card = this.addPanel(root, layout.width, layout.height, layout.x, layout.y,
+      color('#21102F', 246), color('#A37A52'), 18);
+    this.addLabel(card, `第 ${collection.chapterId} 章`, 11, 0, 72, color('#C9A978'), 126);
+    card.addComponent(Button);
+
+    if (collection.artworkKey) {
+      const progress = deriveCollectionProgress(this.progress, collection.chapterId);
+      this.addSprite(card, `game/chibi/collection/${collection.artworkKey}/spriteFrame`,
+        88, 88, 0, 25, token);
+      this.addLabel(card, collection.name, 18, 0, -39, color('#E8D6FF'), 136);
+      this.addLabel(card, `${progress.revealedPieces}/${progress.totalPieces}`, 12, 0, -66,
+        color('#FFE8AA'), 120);
+      card.on(Button.EventType.CLICK, () => {
+        this.resumeAudio();
+        const nextFlow = openCollectionDetail(this.flow, collection.chapterId);
+        if (nextFlow === this.flow) return;
+        this.flow = nextFlow;
+        this.render();
+      });
+      return;
+    }
+
+    this.renderMysteryPotion(card, collection.silhouetteIndex ?? 0, 0, 24);
+    this.renderCollectionLock(card, 31, 35);
+    this.addLabel(card, '???', 18, 0, -41, color('#B8A3C8'), 120);
+    this.addLabel(card, `第 ${collection.chapterId} 章`, 11, 0, -67, color('#8E789C'), 120);
+    card.on(Button.EventType.CLICK, () => {
+      this.resumeAudio();
+      Tween.stopAllByTarget(card);
+      tween(card)
+        .to(0.04, { position: new Vec3(layout.x - 6, layout.y, 0) })
+        .to(0.04, { position: new Vec3(layout.x + 6, layout.y, 0) })
+        .to(0.04, { position: new Vec3(layout.x - 4, layout.y, 0) })
+        .to(0.04, { position: new Vec3(layout.x + 4, layout.y, 0) })
+        .to(0.04, { position: new Vec3(layout.x, layout.y, 0) })
+        .start();
+      const label = lockedTip.getComponent(Label);
+      const opacity = lockedTip.getComponent(UIOpacity);
+      if (!label || !opacity) return;
+      label.string = `第 ${collection.chapterId} 章开放后解锁`;
+      Tween.stopAllByTarget(opacity);
+      opacity.opacity = 255;
+      tween(opacity).delay(1).to(0.4, { opacity: 0 }).start();
+    });
+  }
+
+  private renderCollectionLock(root: Node, x: number, y: number): void {
+    const node = new Node('CollectionLock');
+    node.setPosition(x, y);
+    node.addComponent(UITransform).setContentSize(36, 42);
+    root.addChild(node);
+    const graphics = node.addComponent(Graphics);
+    graphics.strokeColor = color('#F4CF78');
+    graphics.lineWidth = 5;
+    graphics.arc(0, 7, 10, 0, Math.PI, false);
+    graphics.stroke();
+    graphics.fillColor = color('#D49A42');
+    graphics.strokeColor = color('#6C3A54');
+    graphics.lineWidth = 2;
+    graphics.roundRect(-14, -15, 28, 24, 6);
+    graphics.fill();
+    graphics.stroke();
+    graphics.fillColor = color('#4D244C');
+    graphics.circle(0, -4, 3);
+    graphics.fill();
+    graphics.rect(-1.5, -10, 3, 7);
+    graphics.fill();
+  }
+
+  private renderMysteryPotion(root: Node, index: number, x: number, y: number): void {
+    const visual = mysteryPotionVisual(index);
+    const node = new Node(`MysteryPotion-${index + 1}`);
+    node.setPosition(x, y);
+    node.addComponent(UITransform).setContentSize(visual.width, visual.height);
+    root.addChild(node);
+    const graphics = node.addComponent(Graphics);
+    graphics.fillColor = color('#25132F');
+    graphics.strokeColor = color('#8F65B1');
+    graphics.lineWidth = 3;
+
+    if (visual.body === 'round') graphics.circle(0, -7, visual.width * 0.36);
+    else if (visual.body === 'heart') {
+      graphics.moveTo(0, -34);
+      graphics.bezierCurveTo(-38, -12, -34, 24, -15, 27);
+      graphics.bezierCurveTo(-7, 28, -2, 22, 0, 17);
+      graphics.bezierCurveTo(2, 22, 7, 28, 15, 27);
+      graphics.bezierCurveTo(34, 24, 38, -12, 0, -34);
+      graphics.close();
+    } else if (visual.body === 'crystal') {
+      graphics.moveTo(0, -38);
+      graphics.lineTo(-30, -14);
+      graphics.lineTo(-22, 28);
+      graphics.lineTo(0, 38);
+      graphics.lineTo(22, 28);
+      graphics.lineTo(30, -14);
+      graphics.close();
+    } else if (visual.body === 'winged') {
+      graphics.moveTo(-21, 12);
+      graphics.lineTo(-45, 27);
+      graphics.lineTo(-36, 1);
+      graphics.lineTo(-45, -18);
+      graphics.lineTo(-18, -9);
+      graphics.close();
+      graphics.moveTo(21, 12);
+      graphics.lineTo(45, 27);
+      graphics.lineTo(36, 1);
+      graphics.lineTo(45, -18);
+      graphics.lineTo(18, -9);
+      graphics.close();
+      graphics.circle(0, -8, 25);
+    } else if (visual.body === 'star') {
+      for (let point = 0; point < 10; point += 1) {
+        const angle = Math.PI / 2 + point * Math.PI / 5;
+        const radius = point % 2 === 0 ? 36 : 19;
+        const px = Math.cos(angle) * radius;
+        const py = Math.sin(angle) * radius - 5;
+        if (point === 0) graphics.moveTo(px, py);
+        else graphics.lineTo(px, py);
+      }
+      graphics.close();
+    } else if (visual.body === 'cauldron') {
+      graphics.roundRect(-42, -30, 84, 52, 18);
+      graphics.roundRect(-36, 18, 72, 9, 4);
+      graphics.roundRect(-32, -38, 10, 12, 3);
+      graphics.roundRect(22, -38, 10, 12, 3);
+    } else if (visual.body === 'square') graphics.roundRect(-31, -34, 62, 64, 12);
+    else if (visual.body === 'gourd') {
+      graphics.circle(0, -17, 25);
+      graphics.circle(0, 20, 17);
+    } else {
+      graphics.moveTo(12, 34);
+      graphics.bezierCurveTo(-20, 34, -34, 0, -20, -28);
+      graphics.bezierCurveTo(-5, -44, 20, -36, 28, -18);
+      graphics.bezierCurveTo(6, -24, -4, -8, -2, 6);
+      graphics.bezierCurveTo(0, 18, 8, 28, 12, 34);
+      graphics.close();
+    }
+    graphics.fill();
+    graphics.stroke();
+
+    if (visual.body !== 'cauldron') {
+      graphics.roundRect(-10, visual.height / 2 - 25, 20, 21, 5);
+      graphics.fill();
+      graphics.stroke();
+      graphics.fillColor = color('#B28A5E');
+      graphics.roundRect(-13, visual.height / 2 - 9, 26, 8, 3);
+      graphics.fill();
+    }
+    graphics.fillColor = color('#CDA25B');
+    graphics.circle(-visual.width * 0.34, 20, 3);
+    graphics.fill();
+    graphics.circle(visual.width * 0.34, -5, 2);
+    graphics.fill();
+  }
+
+  private renderCollectionDetail(root: Node, chapterId: number, token: number): void {
+    const collection = deriveCollectionProgress(this.progress, chapterId);
+    const title = deriveHighestTitle(this.progress);
     this.addLabel(root, '炼金图鉴', 30, COLLECTION_LAYOUT.title.x, COLLECTION_LAYOUT.title.y,
       color('#FFF2CF'), COLLECTION_LAYOUT.title.width);
     this.renderTitleBadge(root, title, COLLECTION_LAYOUT.titleBadge, token);
@@ -376,9 +582,9 @@ export class ProductionBootstrap extends Component {
       ? '完整药水已收入炼金图鉴'
       : '再完成 ' + (collection.nextMilestone - collection.completedLevels) + ' 关揭示下一块';
     this.addLabel(root, milestone, 11, 0, -204, color('#C6AECF'), COLLECTION_LAYOUT.description.width);
-    this.addRasterButton(root, '返回', 'purple', COLLECTION_LAYOUT.backButton.width,
+    this.addRasterButton(root, '返回收藏品', 'purple', COLLECTION_LAYOUT.backButton.width,
       COLLECTION_LAYOUT.backButton.height, COLLECTION_LAYOUT.backButton.x,
-      COLLECTION_LAYOUT.backButton.y, () => this.closeCollectionView(), false, undefined, 17);
+      COLLECTION_LAYOUT.backButton.y, () => this.closeCollectionDetailView(), false, undefined, 17);
   }
 
   private renderTitleBadge(
@@ -386,17 +592,21 @@ export class ProductionBootstrap extends Component {
     title: HighestTitle,
     layout: Readonly<{ x: number; y: number; width: number; height: number }>,
     token: number,
-  ): void {
+  ): Node {
     const variant = title.chapterId === 1 ? 'novice' : 'junior';
-    this.addSprite(root, 'game/chibi/titles/title-badge-' + variant + '/spriteFrame',
-      layout.width, layout.height, layout.x, layout.y, token);
-    this.addLabel(root, title.title, Math.max(14, Math.round(layout.height * 0.2)),
-      layout.x, layout.y - layout.height * 0.08, color('#FFF0C2'), layout.width * 0.72);
+    const badge = new Node('TitleBadge');
+    badge.setPosition(layout.x, layout.y);
+    badge.addComponent(UITransform).setContentSize(layout.width, layout.height);
+    root.addChild(badge);
+    this.addSprite(badge, 'game/chibi/titles/title-badge-' + variant + '/spriteFrame',
+      layout.width, layout.height, 0, 0, token);
+    this.addLabel(badge, title.title, Math.max(14, Math.round(layout.height * 0.2)),
+      0, -layout.height * 0.08, color('#FFF0C2'), layout.width * 0.72);
+    return badge;
   }
 
   private renderCollectionEntry(
     root: Node,
-    collection: CollectionProgress,
     layout: Readonly<{ x: number; y: number; width: number; height: number }>,
     token: number,
   ): void {
@@ -416,7 +626,7 @@ export class ProductionBootstrap extends Component {
     }
     this.addSprite(button, 'game/chibi/ui/icon-alchemy-book/spriteFrame',
       square ? 42 : 36, square ? 42 : 36, iconX, iconY, token);
-    this.addLabel(button, collection.revealedPieces + '/' + collection.totalPieces, square ? 10 : 15,
+    this.addLabel(button, '收藏品', square ? 9 : 15,
       square ? 0 : 24, square ? -23 : 0, color('#FFF4DF'), square ? 56 : 88);
   }
 
@@ -459,6 +669,14 @@ export class ProductionBootstrap extends Component {
   private closeCollectionView(): void {
     this.resumeAudio();
     const nextFlow = closeCollection(this.flow);
+    if (nextFlow === this.flow) return;
+    this.flow = nextFlow;
+    this.render();
+  }
+
+  private closeCollectionDetailView(): void {
+    this.resumeAudio();
+    const nextFlow = closeCollectionDetail(this.flow);
     if (nextFlow === this.flow) return;
     this.flow = nextFlow;
     this.render();
@@ -965,9 +1183,10 @@ export class ProductionBootstrap extends Component {
   }
 
   private renderSettingsButton(root: Node, token: number): void {
+    const layout = this.flow.scene === 'home' ? HOME_LAYOUT.settingsButton : SETTINGS_LAYOUT.trigger;
     const button = new Node('SettingsButton');
-    button.setPosition(SETTINGS_LAYOUT.trigger.x, SETTINGS_LAYOUT.trigger.y);
-    button.addComponent(UITransform).setContentSize(SETTINGS_LAYOUT.trigger.width, SETTINGS_LAYOUT.trigger.height);
+    button.setPosition(layout.x, layout.y);
+    button.addComponent(UITransform).setContentSize(layout.width, layout.height);
     root.addChild(button);
     this.addSprite(button, 'game/chibi/ui/icon-settings-gear/spriteFrame', 48, 48, 0, 0, token);
     button.addComponent(Button);

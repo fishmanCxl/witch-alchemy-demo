@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   ART_FONT_RESOURCE,
   COLLECTION_LAYOUT,
+  COLLECTION_OVERVIEW_LAYOUT,
   HEALTHY_GAME_ADVICE_LINES,
   HOME_LAYOUT,
   LAUNCH_LAYOUT,
@@ -19,7 +20,9 @@ import {
   levelButtonVisual,
   levelSelectButton,
   collectionPuzzlePiece,
+  collectionCardLayout,
   launchProgressFill,
+  mysteryPotionVisual,
   potionParticleVisuals,
   potionProgressLabel,
   shouldRenderBottle,
@@ -114,14 +117,56 @@ test('collection artwork is divided into six gapless two by three masks', () => 
   assert.throws(() => collectionPuzzlePiece(6), RangeError);
 });
 
+test('collection overview fits ten cards in a two-column scroll content', () => {
+  assert.deepEqual(COLLECTION_OVERVIEW_LAYOUT.viewport, {
+    x: 0, y: -4, width: 360, height: 636,
+  });
+  assert.deepEqual(COLLECTION_OVERVIEW_LAYOUT.card, { width: 158, height: 180 });
+  assert.equal(COLLECTION_OVERVIEW_LAYOUT.columns, 2);
+  assert.equal(COLLECTION_OVERVIEW_LAYOUT.contentHeight, 1008);
+
+  const cards = Array.from({ length: 10 }, (_, index) => collectionCardLayout(index));
+  assert.deepEqual(cards.map((card) => [card.column, card.row]), [
+    [0, 0], [1, 0], [0, 1], [1, 1], [0, 2],
+    [1, 2], [0, 3], [1, 3], [0, 4], [1, 4],
+  ]);
+  assert.deepEqual(cards.map((card) => [card.x, card.y]), [
+    [-87, 396], [87, 396], [-87, 198], [87, 198], [-87, 0],
+    [87, 0], [-87, -198], [87, -198], [-87, -396], [87, -396],
+  ]);
+  assert.throws(() => collectionCardLayout(10), RangeError);
+});
+
+test('locked collection cards use nine distinct code-native potion silhouettes', () => {
+  const visuals = Array.from({ length: 9 }, (_, index) => mysteryPotionVisual(index));
+  assert.deepEqual(visuals.map((visual) => visual.body), [
+    'round', 'heart', 'crystal', 'winged', 'star', 'cauldron', 'square', 'gourd', 'moon',
+  ]);
+  assert.equal(new Set(visuals.map((visual) => visual.body)).size, 9);
+  for (const visual of visuals) {
+    assert.ok(visual.width <= 92);
+    assert.ok(visual.height <= 92);
+  }
+  assert.throws(() => mysteryPotionVisual(9), RangeError);
+});
+
 test('home layout preserves the accepted prototype hierarchy without a progress card', () => {
   assert.deepEqual(HOME_LAYOUT.header, { x: -86, y: 326, width: 176, align: 'left' });
-  assert.deepEqual(HOME_LAYOUT.titleBadge, { x: -92, y: 245, width: 168, height: 84 });
-  assert.deepEqual(HOME_LAYOUT.collectionButton, { x: 112, y: 248, width: 64, height: 64 });
-  assert.deepEqual(HOME_LAYOUT.witch, { x: 0, y: 51, width: 246, height: 304 });
+  assert.deepEqual(HOME_LAYOUT.titleBadge, { x: 0, y: 137, width: 168, height: 84 });
+  assert.deepEqual(HOME_LAYOUT.titleFloat, { distance: 6, duration: 1.6 });
+  assert.deepEqual(HOME_LAYOUT.settingsButton, { x: 150, y: 270, width: 48, height: 48 });
+  assert.deepEqual(HOME_LAYOUT.collectionButton, { x: 150, y: 198, width: 64, height: 64 });
+  assert.deepEqual(HOME_LAYOUT.witch, { x: 0, y: 0, width: 246, height: 304 });
   assert.deepEqual(HOME_LAYOUT.continueButton, { x: 0, y: -348, width: 286, height: 72 });
   assert.equal(HOME_LAYOUT.showsProgressCard, false);
   assert.deepEqual(HOME_LAYOUT.selectButton, { x: 0, y: -266, width: 224, height: 56 });
+
+  assert.equal(HOME_LAYOUT.settingsButton.x, HOME_LAYOUT.collectionButton.x);
+  assert.ok(HOME_LAYOUT.settingsButton.y > HOME_LAYOUT.collectionButton.y);
+  const titleBottom = HOME_LAYOUT.titleBadge.y - HOME_LAYOUT.titleBadge.height / 2;
+  const witchFit = squareBottomFit(HOME_LAYOUT.witch);
+  const witchTop = HOME_LAYOUT.witch.y + witchFit.y + witchFit.height / 2;
+  assert.ok(titleBottom > witchTop);
 });
 
 test('level layout keeps the witch, board, message, and controls in the accepted 393 by 852 frame', () => {

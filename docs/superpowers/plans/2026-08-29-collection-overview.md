@@ -6,7 +6,7 @@
 
 **Architecture:** 保留现有 `collection` 顶层场景，用 `SceneFlowState.selectedCollectionChapterId` 区分总览与详情。核心层提供不可变收藏展示目录和纯场景流，展示层用原生 Cocos `ScrollView` 挂载固定 10 张卡片；收藏和称号继续完全从 `PlayerProgress.completedLevels` 派生。
 
-**Tech Stack:** Cocos Creator 3.8.8、TypeScript、Node.js `node:test`、微信小游戏、现有资源同步脚本、内置 ImageGen。
+**Tech Stack:** Cocos Creator 3.8.8、TypeScript、Node.js `node:test`、微信小游戏、原生 `Graphics`。
 
 **Spec:** `docs/superpowers/specs/2026-08-29-collection-overview-design.md`
 
@@ -27,18 +27,15 @@
 
 - `wechat-game/assets/scripts/core/potion-collection-catalog.ts` — 10 个收藏展示项的稳定数据。
 - `wechat-game/tests/potion-collection-catalog.test.ts` — 收藏目录完整性和锁定边界。
-- `prototype/public/assets/game/chibi/collection/collection-lock.png` — 金色锁图标。
-- `prototype/public/assets/game/chibi/collection/mystery-potions-grid.png` — 3×3 九种神秘药水剪影。
 
 **Modify**
 
 - `wechat-game/assets/scripts/core/scene-flow.ts` — 总览/详情临时选择和导航函数。
 - `wechat-game/tests/scene-flow.test.ts` — 收藏两层导航测试。
-- `wechat-game/assets/scripts/presentation/presentation-layout.ts` — 总览、卡片和剪影裁切布局。
+- `wechat-game/assets/scripts/presentation/presentation-layout.ts` — 总览、卡片和原生矢量剪影布局。
 - `wechat-game/tests/presentation-layout.test.ts` — 两列滚动几何测试。
 - `wechat-game/assets/scripts/presentation/ProductionBootstrap.ts` — 首页入口、总览、详情、锁定反馈。
 - `wechat-game/tests/production-contracts.test.ts` — 资源和展示静态契约。
-- `wechat-game/tools/verify-collection-assets.py` — 新资源尺寸和透明通道验证。
 - `wechat-game/package.json` — 把新目录测试加入 `test:core`。
 - `wechat-game/AGENTS.md` — 收藏总览生产不变量。
 
@@ -140,7 +137,7 @@ git commit -m "feat: add collection overview flow"
 **Interfaces:**
 - Produces: `COLLECTION_OVERVIEW_LAYOUT`
 - Produces: `collectionCardLayout(index: number): CollectionCardLayout`
-- Produces: `mysteryPotionCell(index: number): MysteryPotionCell`
+- Produces: `mysteryPotionVisual(index: number): MysteryPotionVisual`
 
 - [ ] **Step 1: 写布局失败测试**
 
@@ -181,78 +178,31 @@ git commit -m "feat: define collection overview layout"
 
 ---
 
-### Task 3: 锁与九种药水剪影素材
+### Task 3: 原生矢量锁与九种药水剪影
 
 **Files:**
-- Create: `prototype/public/assets/game/chibi/collection/collection-lock.png`
-- Create: `prototype/public/assets/game/chibi/collection/mystery-potions-grid.png`
-- Modify: `wechat-game/tools/verify-collection-assets.py`
+- Modify: `wechat-game/assets/scripts/presentation/presentation-layout.ts`
+- Modify: `wechat-game/assets/scripts/presentation/ProductionBootstrap.ts`
+- Modify: `wechat-game/tests/presentation-layout.test.ts`
 - Modify: `wechat-game/tests/production-contracts.test.ts`
-- Generated: corresponding files under `wechat-game/assets/resources/game/chibi/collection/`
 
 **Interfaces:**
-- Produces SpriteFrames:
-  - `game/chibi/collection/collection-lock/spriteFrame`
-  - `game/chibi/collection/mystery-potions-grid/spriteFrame`
+- Produces: `mysteryPotionVisual(index: number): MysteryPotionVisual`
+- Produces: `renderCollectionLock`、`renderMysteryPotion`
 
-- [ ] **Step 1: 扩展资源契约并确认红灯**
+- [ ] **Step 1: 写九种剪影规格和原生绘制契约失败测试**
 
-把两个 PNG 加入 `collectionAssets`；验证脚本期望锁为 256×256、九宫格为 768×768，格式 PNG 且 alpha extrema 为 `(0, 255)`。
+断言九种 body 唯一、索引越界抛出 `RangeError`，并且生产实现引用 `Graphics`、不引用新增剪影 PNG。
 
-Run: `node --experimental-strip-types --test tests/production-contracts.test.ts`
+- [ ] **Step 2: 实现最小 Graphics 绘制**
 
-Expected: FAIL，缺少 `collection/collection-lock.png`。
+卡框、紫金锁和 9 个药水剪影全部由 Cocos `Graphics` 绘制；星露药水继续复用现有 PNG，不增加 SVG 解析器或第三方依赖。
 
-- [ ] **Step 2: 用内置 ImageGen 生成透明锁图标**
+- [ ] **Step 3: 运行定向契约**
 
-Prompt:
+Run: `node --experimental-strip-types --test tests/presentation-layout.test.ts tests/production-contracts.test.ts`
 
-```text
-Use case: stylized-concept
-Asset type: Cocos Creator game UI icon
-Primary request: one ornate closed padlock for a locked rare-potion collection card
-Style/medium: cute chibi storybook alchemy, thick clean dark-purple outline, polished warm-gold metal, tiny crescent and star engraving
-Composition/framing: single centered front-view object with generous transparent margin
-Color palette: antique gold, amber highlights, deep-purple shadow
-Constraints: genuinely transparent background; no text; no frame; no watermark; readable at 32px
-```
-
-检查原图后等比缩放为 256×256，保存到批准资源目录。
-
-- [ ] **Step 3: 用内置 ImageGen 生成九宫格神秘剪影**
-
-Prompt:
-
-```text
-Use case: stylized-concept
-Asset type: 3 by 3 game sprite grid
-Primary request: exactly nine different mysterious magic-potion bottle silhouettes, one centered in each equal square cell
-Style/medium: cute chibi storybook alchemy silhouette icons, solid near-black purple bodies with a narrow violet rim light
-Composition/framing: strict 3×3 grid, equal cells, no dividers; each bottle fully contained and visibly different in bottle shape, stopper, charm, and surrounding silhouette
-Constraints: genuinely transparent background; no text; no numbers; no locks; no glow crossing cell boundaries; no watermark
-```
-
-检查九格数量和边界后缩放为 768×768，保存到批准资源目录。
-
-- [ ] **Step 4: 验证、同步并导入 SpriteFrame**
-
-Run: `python tools/verify-collection-assets.py`
-
-Run: `npm run sync:assets`
-
-用 Cocos Creator 3.8.8 打开 worktree 的 `wechat-game`，等待两个新 PNG 生成 `.meta`；随后运行 `npm run prepare:sprites`。
-
-- [ ] **Step 5: 运行资源契约并提交**
-
-Run: `node --experimental-strip-types --test tests/production-contracts.test.ts`
-
-Expected: PASS，新 PNG 和 SpriteFrame meta 都可加载。
-
-```bash
-git add prototype/public/assets/game/chibi/collection/collection-lock.png prototype/public/assets/game/chibi/collection/mystery-potions-grid.png wechat-game/assets/resources/game/chibi/collection wechat-game/assets/resources/game/sync-report.json wechat-game/tools/verify-collection-assets.py wechat-game/tests/production-contracts.test.ts
-git diff --cached --check
-git commit -m "feat: add locked collection artwork"
-```
+Expected: PASS，九种剪影稳定且 `mystery-potions-grid` 不出现在生产源码。
 
 ---
 
@@ -263,12 +213,12 @@ git commit -m "feat: add locked collection artwork"
 - Modify: `wechat-game/tests/production-contracts.test.ts`
 
 **Interfaces:**
-- Consumes: `POTION_COLLECTIONS`、`collectionCardLayout`、`mysteryPotionCell`、两层场景流。
+- Consumes: `POTION_COLLECTIONS`、`collectionCardLayout`、`mysteryPotionVisual`、两层场景流。
 - Produces: `renderCollectionOverview`、`renderCollectionCard`、`renderCollectionDetail`。
 
 - [ ] **Step 1: 写展示契约失败测试**
 
-断言源码包含 `ScrollView`、`renderCollectionOverview`、`renderCollectionCard`、`renderCollectionDetail`、`openCollectionDetail`、`closeCollectionDetail`、`POTION_COLLECTIONS`、`mystery-potions-grid/spriteFrame` 和锁定提示文本；断言 `renderCollectionEntry` 不再引用 `revealedPieces`。
+断言源码包含 `ScrollView`、`renderCollectionOverview`、`renderCollectionCard`、`renderCollectionDetail`、`renderMysteryPotion`、`openCollectionDetail`、`closeCollectionDetail`、`POTION_COLLECTIONS` 和锁定提示文本；断言 `renderCollectionEntry` 不再引用 `revealedPieces`，且生产源码不引用 `mystery-potions-grid`。
 
 - [ ] **Step 2: 运行展示契约确认红灯**
 

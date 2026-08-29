@@ -249,17 +249,32 @@ test('production presentation derives level copy, targets, seeds, and reward ids
   assert.match(bootstrap, /persistCompletion/);
 });
 
-test('production derives collection, title, and milestone presentation from saved progress', () => {
+test('production renders one collection entry, a scroll overview, and the selected puzzle detail', () => {
   const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const entry = bootstrap.slice(
+    bootstrap.indexOf('private renderCollectionEntry'),
+    bootstrap.indexOf('private renderCollectionPuzzle'),
+  );
 
   assert.match(bootstrap, /private renderCollection\(/);
-  assert.match(bootstrap, /deriveCollectionProgress\(this\.progress, 1\)/);
+  assert.match(bootstrap, /private renderCollectionOverview\(/);
+  assert.match(bootstrap, /private renderCollectionCard\(/);
+  assert.match(bootstrap, /private renderCollectionDetail\(/);
+  assert.match(bootstrap, /private renderMysteryPotion\(/);
+  assert.match(bootstrap, /addComponent\(ScrollView\)/);
+  assert.match(bootstrap, /POTION_COLLECTIONS/);
+  assert.match(bootstrap, /mysteryPotionVisual\(/);
+  assert.match(bootstrap, /openCollectionDetail\(/);
+  assert.match(bootstrap, /closeCollectionDetail\(/);
   assert.match(bootstrap, /deriveHighestTitle\(this\.progress\)/);
   assert.match(bootstrap, /openCollection\(this\.flow\)/);
   assert.match(bootstrap, /collectionPuzzlePiece\(/);
   assert.match(bootstrap, /collectionHasNewPiece/);
   assert.match(bootstrap, /game\/chibi\/collection\/star-dew-potion\/spriteFrame/);
+  assert.match(bootstrap, /开放后解锁/);
+  assert.doesNotMatch(entry, /revealedPieces/);
   assert.doesNotMatch(bootstrap, /revealedPieces\s*=\s*this\./);
+  assert.doesNotMatch(bootstrap, /mystery-potions-grid/);
 });
 
 test('completion persistence orders local progress before snapshot clearing and result rendering', () => {

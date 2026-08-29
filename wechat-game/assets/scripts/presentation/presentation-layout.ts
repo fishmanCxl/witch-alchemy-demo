@@ -80,9 +80,11 @@ export function launchProgressFill(progress: number): Readonly<{ x: number; widt
 
 export const HOME_LAYOUT = Object.freeze({
   header: Object.freeze({ x: -86, y: 326, width: 176, align: 'left' as const }),
-  titleBadge: Object.freeze({ x: -92, y: 245, width: 168, height: 84 }),
-  collectionButton: Object.freeze({ x: 112, y: 248, width: 64, height: 64 }),
-  witch: Object.freeze({ x: 0, y: 51, width: 246, height: 304 }),
+  titleBadge: Object.freeze({ x: 0, y: 137, width: 168, height: 84 }),
+  titleFloat: Object.freeze({ distance: 6, duration: 1.6 }),
+  settingsButton: Object.freeze({ x: 150, y: 270, width: 48, height: 48 }),
+  collectionButton: Object.freeze({ x: 150, y: 198, width: 64, height: 64 }),
+  witch: Object.freeze({ x: 0, y: 0, width: 246, height: 304 }),
   continueButton: Object.freeze({ x: 0, y: -348, width: 286, height: 72 }),
   selectButton: Object.freeze({ x: 0, y: -266, width: 224, height: 56 }),
   showsProgressCard: false,
@@ -118,6 +120,20 @@ export const COLLECTION_LAYOUT = Object.freeze({
   progressY: -96,
   description: Object.freeze({ x: 0, y: -174, width: 300, height: 92 }),
   backButton: Object.freeze({ x: 0, y: -342, width: 224, height: 72 }),
+});
+
+export const COLLECTION_OVERVIEW_LAYOUT = Object.freeze({
+  title: Object.freeze({ x: 0, y: 350, width: 300, height: 48 }),
+  viewport: Object.freeze({ x: 0, y: -4, width: 360, height: 636 }),
+  card: Object.freeze({ width: 158, height: 180 }),
+  columns: 2,
+  rows: 5,
+  columnCenters: Object.freeze([-87, 87] as const),
+  rowGap: 18,
+  contentPadding: 18,
+  contentHeight: 1008,
+  lockedTipY: -330,
+  backButton: Object.freeze({ x: 0, y: -374, width: 224, height: 48 }),
 });
 
 export const LEVEL_COMPLETE_LAYOUT = Object.freeze({
@@ -185,6 +201,58 @@ export function collectionPuzzlePiece(index: number): CollectionPuzzlePiece {
   });
 }
 
+export interface CollectionCardLayout extends RectLayout {
+  readonly column: number;
+  readonly row: number;
+}
+
+export function collectionCardLayout(index: number): CollectionCardLayout {
+  const total = COLLECTION_OVERVIEW_LAYOUT.columns * COLLECTION_OVERVIEW_LAYOUT.rows;
+  if (!Number.isInteger(index) || index < 0 || index >= total) {
+    throw new RangeError(`collection card index must be from 0 to ${total - 1}`);
+  }
+
+  const column = index % COLLECTION_OVERVIEW_LAYOUT.columns;
+  const row = Math.floor(index / COLLECTION_OVERVIEW_LAYOUT.columns);
+  const { card } = COLLECTION_OVERVIEW_LAYOUT;
+  return Object.freeze({
+    column,
+    row,
+    x: COLLECTION_OVERVIEW_LAYOUT.columnCenters[column],
+    y: COLLECTION_OVERVIEW_LAYOUT.contentHeight / 2 - COLLECTION_OVERVIEW_LAYOUT.contentPadding
+      - card.height / 2 - row * (card.height + COLLECTION_OVERVIEW_LAYOUT.rowGap),
+    width: card.width,
+    height: card.height,
+  });
+}
+
+export type MysteryPotionBody =
+  'round' | 'heart' | 'crystal' | 'winged' | 'star' | 'cauldron' | 'square' | 'gourd' | 'moon';
+
+export interface MysteryPotionVisual {
+  readonly body: MysteryPotionBody;
+  readonly width: number;
+  readonly height: number;
+}
+
+const MYSTERY_POTION_VISUALS: readonly MysteryPotionVisual[] = Object.freeze([
+  { body: 'round', width: 76, height: 86 },
+  { body: 'heart', width: 72, height: 88 },
+  { body: 'crystal', width: 68, height: 90 },
+  { body: 'winged', width: 90, height: 80 },
+  { body: 'star', width: 80, height: 88 },
+  { body: 'cauldron', width: 88, height: 76 },
+  { body: 'square', width: 72, height: 88 },
+  { body: 'gourd', width: 76, height: 90 },
+  { body: 'moon', width: 72, height: 86 },
+].map((visual) => Object.freeze(visual)));
+
+export function mysteryPotionVisual(index: number): MysteryPotionVisual {
+  if (!Number.isInteger(index) || index < 0 || index >= MYSTERY_POTION_VISUALS.length) {
+    throw new RangeError(`mystery potion index must be from 0 to ${MYSTERY_POTION_VISUALS.length - 1}`);
+  }
+  return MYSTERY_POTION_VISUALS[index];
+}
 function hash32(value: number): number {
   let hash = value | 0;
   hash = Math.imul(hash ^ (hash >>> 16), 0x45d9f3b);

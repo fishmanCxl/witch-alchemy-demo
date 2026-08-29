@@ -22,6 +22,8 @@
 - Level 1 is the only authored tutorial; levels 2–30 use the full all-colors rules, level 12 keeps the legacy board byte-for-byte, and generated difficulty rises sharply from level 2 before the approved late-chapter peak and easing.
 - The chapter-one selector shows all 30 levels in one fixed 5×6 page with no scrolling, pagination, or chapter arrows.
 - The six-piece chapter collection and automatic highest title are derived only from `PlayerProgress.completedLevels`: reveal one 2×3 puzzle piece per five distinct completions, never persist collection/title fields, and never offer title equipment or switching.
+- Home and level select expose one unified collection entry. The collection scene shows exactly ten chapter cards in a two-column vertical ScrollView; chapter one opens the existing six-piece puzzle, while locked cards use code-native Graphics frames, locks, and nine distinct silhouettes without new raster assets.
+- On the home scene, center the automatic title above the lowered witch with a subtle vertical float; keep settings above collection in one lowered right-side column while other scenes retain the fixed settings position.
 - Global v2 progress and per-level v2 board snapshots remain separate. A stale/corrupt board resets only that level; it must not erase unlocks or best moves.
 - Local completion progress must be saved before clearing the per-level snapshot or rendering results. Cloud sync/telemetry is opportunistic and cannot roll back a successful local completion.
 - No environment IDs, secrets, ad unit IDs, or admin credentials are committed.
