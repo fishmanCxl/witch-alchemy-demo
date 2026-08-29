@@ -113,6 +113,55 @@ test('generated output comparison normalizes line endings without hiding content
   assert.equal(generatedOutputMatches('alpha\r\nbeta\r\n', 'alpha\nbeta\n'), true);
   assert.equal(generatedOutputMatches('alpha\r\nwrong\r\n', 'alpha\nbeta\n'), false);
 });
+
+test('chapter two difficulty follows the approved anchors and interpolation', async () => {
+  const generator = await import('../tools/generate-chapter-two.ts').catch(() => ({}));
+  assert.equal(typeof generator.chapterTwoDifficultyTarget, 'function');
+  const target = generator.chapterTwoDifficultyTarget as (level: number) => number;
+
+  assert.deepEqual(
+    [31, 32, 33, 35, 40, 50, 55, 57, 58, 60].map(target),
+    [0.88, 0.96, 0.97, 0.99, 1.01, 1.04, 1.05, 1.05, 1.027, 0.98],
+  );
+  assert.throws(() => target(30), RangeError);
+  assert.throws(() => target(61), RangeError);
+});
+
+test('chapter two generation gates start hard and rise at the peak', async () => {
+  const generator = await import('../tools/generate-chapter-two.ts').catch(() => ({}));
+  assert.equal(typeof generator.chapterTwoGenerationSpec, 'function');
+  assert.equal(typeof generator.chapterTwoGeneratorSeed, 'function');
+
+  const opening = generator.chapterTwoGenerationSpec(31);
+  assert.deepEqual(opening, {
+    number: 31,
+    colorCount: 8,
+    emptyBottleCount: 2,
+    reverseMoves: 24,
+    targetDifficulty: 0.88,
+    minimumOptimalMoves: 22,
+    maximumOptimalMoves: 36,
+    minimumSegments: 26,
+    minimumExploredStates: 2_000,
+    minimumOpeningMoves: 2,
+    maximumOpeningMoves: 18,
+    minimumMisleadingBranchRatio: 0.25,
+    maxAttempts: 25_000,
+  });
+
+  const peak = generator.chapterTwoGenerationSpec(55);
+  assert.equal(peak.colorCount, 9);
+  assert.equal(peak.targetDifficulty, 1);
+  assert.equal(peak.minimumOptimalMoves, 24);
+  assert.equal(peak.maximumOptimalMoves, 38);
+  assert.equal(peak.minimumSegments, 28);
+  assert.ok(peak.minimumExploredStates >= 3_800);
+  assert.ok(peak.minimumMisleadingBranchRatio >= 0.29);
+  assert.equal(generator.chapterTwoGeneratorSeed(31), (0x2608_0000 + Math.imul(31, 104_729)) >>> 0);
+  assert.throws(() => generator.chapterTwoGenerationSpec(30), RangeError);
+  assert.throws(() => generator.chapterTwoGeneratorSeed(61), RangeError);
+});
+
 test('chapter one generation curve and range table match the published design', async () => {
   const {
     chapterOneDifficultyTarget,
