@@ -1,3 +1,4 @@
+import { getChapter } from './chapter-catalog.ts';
 import { getLevelConfig } from './level-catalog.ts';
 
 export type GameScene = 'home' | 'levelSelect' | 'collection' | 'level' | 'levelComplete';
@@ -9,6 +10,7 @@ export interface SceneFlowState {
   readonly soundEnabled: boolean;
   readonly settingsOpen: boolean;
   readonly collectionReturnScene: 'home' | 'levelSelect';
+  readonly selectedCollectionChapterId: number | null;
 }
 
 export function createSceneFlow(): SceneFlowState {
@@ -19,11 +21,12 @@ export function createSceneFlow(): SceneFlowState {
     soundEnabled: true,
     settingsOpen: false,
     collectionReturnScene: 'home',
+    selectedCollectionChapterId: null,
   };
 }
 
 export function openLevelSelect(state: SceneFlowState): SceneFlowState {
-  return { ...state, scene: 'levelSelect', nextLevelId: null, settingsOpen: false };
+  return { ...state, scene: 'levelSelect', nextLevelId: null, settingsOpen: false, selectedCollectionChapterId: null };
 }
 
 export function openCollection(state: SceneFlowState): SceneFlowState {
@@ -34,17 +37,32 @@ export function openCollection(state: SceneFlowState): SceneFlowState {
     nextLevelId: null,
     settingsOpen: false,
     collectionReturnScene: state.scene,
+    selectedCollectionChapterId: null,
   };
 }
 
 export function closeCollection(state: SceneFlowState): SceneFlowState {
-  if (state.scene !== 'collection') return state;
+  if (state.scene !== 'collection' || state.selectedCollectionChapterId !== null) return state;
   return {
     ...state,
     scene: state.collectionReturnScene,
     nextLevelId: null,
     settingsOpen: false,
   };
+}
+
+export function openCollectionDetail(
+  state: SceneFlowState,
+  chapterId: number,
+): SceneFlowState {
+  if (state.scene !== 'collection' || state.selectedCollectionChapterId !== null) return state;
+  if (getChapter(chapterId)?.releaseState !== 'available') return state;
+  return { ...state, selectedCollectionChapterId: chapterId, settingsOpen: false };
+}
+
+export function closeCollectionDetail(state: SceneFlowState): SceneFlowState {
+  if (state.scene !== 'collection' || state.selectedCollectionChapterId === null) return state;
+  return { ...state, selectedCollectionChapterId: null, settingsOpen: false };
 }
 
 export function enterSelectedLevel(

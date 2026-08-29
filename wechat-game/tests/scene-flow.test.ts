@@ -3,10 +3,12 @@ import assert from 'node:assert/strict';
 
 import {
   closeCollection,
+  closeCollectionDetail,
   continueFromLevelComplete,
   createSceneFlow,
   enterSelectedLevel,
   openCollection,
+  openCollectionDetail,
   openLevelSelect,
   returnHome,
   showLevelComplete,
@@ -22,6 +24,7 @@ test('scene flow starts on home without an implicit selected level', () => {
     soundEnabled: true,
     settingsOpen: false,
     collectionReturnScene: 'home',
+    selectedCollectionChapterId: null,
   });
 });
 
@@ -67,6 +70,24 @@ test('collection returns to the scene that opened it', () => {
 
   const fromSelect = openCollection(openLevelSelect(createSceneFlow()));
   assert.equal(closeCollection(fromSelect).scene, 'levelSelect');
+});
+
+test('available collection detail returns to the overview before leaving collection', () => {
+  const overview = openCollection(createSceneFlow());
+  const detail = openCollectionDetail(overview, 1);
+  const returned = closeCollectionDetail(detail);
+
+  assert.equal(overview.selectedCollectionChapterId, null);
+  assert.equal(detail.selectedCollectionChapterId, 1);
+  assert.equal(returned.scene, 'collection');
+  assert.equal(returned.selectedCollectionChapterId, null);
+  assert.equal(closeCollection(detail), detail);
+});
+
+test('locked and invalid collection chapters cannot open a detail view', () => {
+  const overview = openCollection(createSceneFlow());
+  assert.equal(openCollectionDetail(overview, 2), overview);
+  assert.equal(openCollectionDetail(overview, 11), overview);
 });
 
 test('collection navigation closes settings and clears pending next levels', () => {
