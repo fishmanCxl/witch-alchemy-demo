@@ -27,7 +27,7 @@ import type { PotionColor } from '../core/types.ts';
 import { LocalProgressStore } from '../platform/LocalProgressStore.ts';
 import { PlatformRuntime } from '../platform/WeChatPlatform.ts';
 import { RewardedBottleCoordinator, type RewardFlowStatus } from '../platform/rewarded-bottle.ts';
-import { ProgressSyncCoordinator } from '../platform/progress-sync.ts';
+import { applyProgressSyncResult, ProgressSyncCoordinator } from '../platform/progress-sync.ts';
 import { createPlatformStorage } from '../platform/storage-port.ts';
 import { AudioDirector } from './AudioDirector.ts';
 import {
@@ -1129,7 +1129,7 @@ export class ProductionBootstrap extends Component {
     if (!this.progressSync) return;
     const result = await this.progressSync.sync(this.progress, this.platform.isOnline());
     if (result.status !== 'synced') return;
-    this.progress = result.progress;
+    this.progress = applyProgressSyncResult(this.progress, result);
     try {
       this.store.saveProgress(this.progress);
     } catch {

@@ -21,6 +21,14 @@ export interface ProgressSyncResult {
   readonly status: 'offline' | 'synced' | 'invalid' | 'failed';
   readonly progress: PlayerProgress;
 }
+export function applyProgressSyncResult(
+  current: PlayerProgress,
+  result: ProgressSyncResult,
+): PlayerProgress {
+  return result.status === 'synced'
+    ? mergePlayerProgress(current, result.progress)
+    : current;
+}
 
 export class ProgressSyncCoordinator {
   private readonly port: ProgressSyncPort;

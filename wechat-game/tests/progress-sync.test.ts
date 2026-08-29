@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { completeLevel, createDefaultProgress } from '../assets/scripts/core/level-progress.ts';
 import {
   ProgressSyncCoordinator,
+  applyProgressSyncResult,
   type ProgressSyncPort,
 } from '../assets/scripts/platform/progress-sync.ts';
 
@@ -104,3 +105,15 @@ test('a failed request releases the coalescing lock so the next call can retry',
   assert.equal(calls, 2);
 });
 
+test('a stale cloud sync result cannot erase newer local completions', () => {
+  let current = createDefaultProgress();
+  for (let level = 1; level <= 5; level += 1) {
+    current = completeLevel(current, `level-${String(level).padStart(3, '0')}`, 8)!;
+  }
+  const stale = createDefaultProgress();
+  const applied = applyProgressSyncResult(current, { status: 'synced', progress: stale });
+
+  assert.deepEqual(applied.completedLevels, [
+    'level-001', 'level-002', 'level-003', 'level-004', 'level-005',
+  ]);
+});
