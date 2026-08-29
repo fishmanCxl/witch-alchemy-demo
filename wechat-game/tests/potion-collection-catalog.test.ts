@@ -20,14 +20,22 @@ test('collection catalog maps all ten chapters to stable collection identities',
   assert.equal(Object.isFrozen(POTION_COLLECTIONS[0]), true);
 });
 
-test('only star dew exposes finished artwork while locked chapters use distinct silhouettes', () => {
+test('the first two collections expose approved artwork while later chapters use distinct silhouettes', () => {
   assert.equal(POTION_COLLECTIONS[0].name, '星露药水');
   assert.equal(POTION_COLLECTIONS[0].artworkKey, 'star-dew-potion');
   assert.equal(POTION_COLLECTIONS[0].silhouetteIndex, null);
-  assert.deepEqual(POTION_COLLECTIONS.slice(1).map((item) => item.name), Array(9).fill('???'));
+  assert.deepEqual(getPotionCollection(2), {
+    chapterId: 2,
+    collectionId: 'forest-potion',
+    name: '森林药水',
+    description: '凝聚古林生机与草木萤光的稀有药水',
+    artworkKey: 'forest-potion',
+    silhouetteIndex: 0,
+  });
+  assert.deepEqual(POTION_COLLECTIONS.slice(2).map((item) => item.name), Array(8).fill('???'));
   assert.equal(
-    new Set(POTION_COLLECTIONS.slice(1).map((item) => item.silhouetteIndex)).size,
-    9,
+    new Set(POTION_COLLECTIONS.slice(2).map((item) => item.silhouetteIndex)).size,
+    8,
   );
 });
 

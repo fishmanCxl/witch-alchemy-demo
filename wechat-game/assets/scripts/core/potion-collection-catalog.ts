@@ -12,9 +12,11 @@ export interface PotionCollectionConfig {
 export const POTION_COLLECTIONS: readonly PotionCollectionConfig[] = Object.freeze(CHAPTERS.map((chapter, index) => Object.freeze({
   chapterId: chapter.id,
   collectionId: chapter.collectionId,
-  name: index === 0 ? '星露药水' : '???',
-  description: index === 0 ? '收集夜空星辉的稀有药水' : '',
-  artworkKey: index === 0 ? 'star-dew-potion' : null,
+  name: index === 0 ? '星露药水' : index === 1 ? '森林药水' : '???',
+  description: index === 0
+    ? '收集夜空星辉的稀有药水'
+    : index === 1 ? '凝聚古林生机与草木萤光的稀有药水' : '',
+  artworkKey: index === 0 ? 'star-dew-potion' : index === 1 ? 'forest-potion' : null,
   silhouetteIndex: index === 0 ? null : index - 1,
 })));
 

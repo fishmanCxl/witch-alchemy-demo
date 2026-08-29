@@ -25,6 +25,18 @@ test('title order follows the approved reference', () => {
   ]);
 });
 
+test('chapter two keeps its approved herb theme and forest collection identity', () => {
+  assert.deepEqual(getChapter(2), {
+    id: 2,
+    stageTitle: '初级魔女',
+    themeTitle: '草药与自然',
+    firstLevel: 31,
+    levelCount: 30,
+    collectionId: 'forest-potion',
+    releaseState: 'coming-soon',
+  });
+});
+
 test('catalog lookup rejects out-of-range chapter and level values', () => {
   assert.equal(getChapter(0), null);
   assert.equal(getChapter(11), null);
