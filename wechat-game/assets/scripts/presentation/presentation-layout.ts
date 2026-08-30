@@ -104,6 +104,8 @@ export const LEVEL_LAYOUT = Object.freeze({
 export const LEVEL_SELECT_LAYOUT = Object.freeze({
   header: Object.freeze({ x: 0, y: 344, width: 321, height: 44 }),
   subtitleY: 310,
+  previousChapterButton: Object.freeze({ x: -158, y: 320, width: 44, height: 44 }),
+  nextChapterButton: Object.freeze({ x: 158, y: 320, width: 44, height: 44 }),
   collectionButton: Object.freeze({ x: 0, y: 255, width: 176, height: 44 }),
   columns: 5,
   rows: 6,

@@ -87,6 +87,8 @@ test('selector fits thirty square buttons in one five by six page', () => {
   assert.equal(LEVEL_SELECT_LAYOUT.rows, 6);
   assert.equal(LEVEL_SELECT_LAYOUT.subtitleY, 310);
   assert.deepEqual(LEVEL_SELECT_LAYOUT.collectionButton, { x: 0, y: 255, width: 176, height: 44 });
+  assert.deepEqual(LEVEL_SELECT_LAYOUT.previousChapterButton, { x: -158, y: 320, width: 44, height: 44 });
+  assert.deepEqual(LEVEL_SELECT_LAYOUT.nextChapterButton, { x: 158, y: 320, width: 44, height: 44 });
   assert.equal(cells.length, 30);
   assert.throws(() => levelSelectButton(30), RangeError);
   for (const cell of cells) {
@@ -94,6 +96,7 @@ test('selector fits thirty square buttons in one five by six page', () => {
     assert.equal(cell.height, 48);
     assert.ok(Math.abs(cell.x) + 24 <= 393 / 2);
     assert.ok(Math.abs(cell.y) + 24 <= 852 / 2);
+    assert.ok(cell.y - cell.height / 2 >= -144);
   }
 });
 

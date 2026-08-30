@@ -7,7 +7,7 @@ import {
   completePendingBottles, createGameSession, finishWitchReturn, grantRewardBottle, pressBottle, restartSession,
   settleWitch, undoSession, type GameSession, type SessionResult, type WitchMood,
 } from '../core/game-session.ts';
-import { FIRST_CHAPTER_LEVELS, getLevelConfig, nextLevelConfig } from '../core/level-catalog.ts';
+import { FIRST_CHAPTER_LEVELS, getLevelConfig, levelsForChapter, nextLevelConfig } from '../core/level-catalog.ts';
 import type { LevelConfig } from '../core/level-config.ts';
 import {
   completeLevel, createDefaultProgress, isLevelUnlocked, selectCurrentLevel, type PlayerProgress,
@@ -16,11 +16,11 @@ import {
   deriveCollectionProgress, deriveCompletionReward, deriveHighestTitle, type CollectionProgress,
   type CompletionReward, type HighestTitle,
 } from '../core/collection-progress.ts';
-import { getChapter } from '../core/chapter-catalog.ts';
+import { chapterForLevel, getChapter } from '../core/chapter-catalog.ts';
 import { POTION_COLLECTIONS, type PotionCollectionConfig } from '../core/potion-collection-catalog.ts';
 import {
   closeCollection, closeCollectionDetail, createSceneFlow, enterSelectedLevel, openCollection, openCollectionDetail,
-  openLevelSelect, returnHome,
+  openLevelSelect, returnHome, selectLevelChapter,
   showLevelComplete, toggleSettings, toggleSound, type SceneFlowState,
 } from '../core/scene-flow.ts';
 import type { PotionColor } from '../core/types.ts';
@@ -336,7 +336,7 @@ export class ProductionBootstrap extends Component {
       HOME_LAYOUT.selectButton.height, HOME_LAYOUT.selectButton.x, HOME_LAYOUT.selectButton.y, () => {
         this.resumeAudio();
         this.store.saveSession(this.session);
-        this.flow = openLevelSelect(this.flow);
+        this.flow = openLevelSelect(this.flow, chapterForLevel(this.currentLevel.number)?.id ?? 1);
         this.render();
       }, false, undefined, 16);
     this.addRasterButton(root, `继续炼金 · 第 ${this.currentLevel.number} 关`, 'purple', HOME_LAYOUT.continueButton.width,
@@ -349,14 +349,28 @@ export class ProductionBootstrap extends Component {
   private renderLevelSelect(root: Node, token: number): void {
     this.addSprite(root, 'game/chibi/background/alchemy-room/spriteFrame', 393, 852, 0, 0, token);
     this.addPanel(root, 393, 852, 0, 0, color('#130A20', 96));
-    const chapter = getChapter(1)!;
-    this.addLabel(root, chapter.stageTitle + ' · ' + chapter.themeTitle, 26, LEVEL_SELECT_LAYOUT.header.x,
+    const chapter = getChapter(this.flow.selectedLevelChapterId)!;
+    this.addLabel(root, chapter.stageTitle, 26, LEVEL_SELECT_LAYOUT.header.x,
       LEVEL_SELECT_LAYOUT.header.y, color('#FFF4DF'), LEVEL_SELECT_LAYOUT.header.width);
-    this.addLabel(root, '第一章 · 1–30 关', 12, 0, LEVEL_SELECT_LAYOUT.subtitleY,
-      color('#DCC7E8'), 220);
+    const chapterLabel = chapter.id === 1 ? '第一章' : '第二章';
+    const lastLevel = chapter.firstLevel + chapter.levelCount - 1;
+    this.addLabel(root, `${chapterLabel} · ${chapter.themeTitle} · ${chapter.firstLevel}–${lastLevel}关`, 12,
+      0, LEVEL_SELECT_LAYOUT.subtitleY, color('#DCC7E8'), 270);
+    const previousChapter = getChapter(chapter.id - 1);
+    const nextChapter = getChapter(chapter.id + 1);
+    this.addRasterButton(root, '‹', 'purple', LEVEL_SELECT_LAYOUT.previousChapterButton.width,
+      LEVEL_SELECT_LAYOUT.previousChapterButton.height, LEVEL_SELECT_LAYOUT.previousChapterButton.x,
+      LEVEL_SELECT_LAYOUT.previousChapterButton.y, () => this.changeLevelChapter(chapter.id - 1, true),
+      previousChapter?.releaseState !== 'available', undefined, 24);
+    const nextUnlocked = nextChapter?.releaseState === 'available'
+      && isLevelUnlocked(this.progress, `level-${String(nextChapter.firstLevel).padStart(3, '0')}`);
+    this.addRasterButton(root, '›', 'purple', LEVEL_SELECT_LAYOUT.nextChapterButton.width,
+      LEVEL_SELECT_LAYOUT.nextChapterButton.height, LEVEL_SELECT_LAYOUT.nextChapterButton.x,
+      LEVEL_SELECT_LAYOUT.nextChapterButton.y, () => this.changeLevelChapter(chapter.id + 1, nextUnlocked),
+      !nextUnlocked, undefined, 24);
     this.renderCollectionEntry(root, LEVEL_SELECT_LAYOUT.collectionButton, token);
 
-    FIRST_CHAPTER_LEVELS.forEach((level, index) => {
+    levelsForChapter(this.flow.selectedLevelChapterId).forEach((level, index) => {
       const state = this.levelButtonState(level);
       const visual = levelButtonVisual(state);
       const layout = levelSelectButton(index);
@@ -762,10 +776,17 @@ export class ProductionBootstrap extends Component {
     return level.completionRule.type === 'all-colors' ? level.completionRule.targetCount : 1;
   }
 
+  private changeLevelChapter(chapterId: number, unlocked: boolean): void {
+    const nextFlow = selectLevelChapter(this.flow, chapterId, unlocked);
+    if (nextFlow === this.flow) return;
+    this.flow = nextFlow;
+    this.render();
+  }
+
   private openSelector(): void {
     this.completionReward = null;
     this.store.saveSession(this.session);
-    this.flow = openLevelSelect(this.flow);
+    this.flow = openLevelSelect(this.flow, chapterForLevel(this.currentLevel.number)?.id ?? 1);
     this.render();
   }
 

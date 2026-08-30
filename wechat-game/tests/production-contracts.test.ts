@@ -244,6 +244,10 @@ test('production presentation derives level copy, targets, seeds, and reward ids
   assert.match(bootstrap, /this\.currentLevel\.presentationSeed/);
   assert.match(bootstrap, /this\.session\.levelId/);
   assert.match(bootstrap, /renderLevelSelect/);
+  assert.match(bootstrap, /levelsForChapter\(this\.flow\.selectedLevelChapterId\)/);
+  assert.match(bootstrap, /selectLevelChapter\(/);
+  assert.doesNotMatch(bootstrap, /FIRST_CHAPTER_LEVELS\.forEach/);
+  assert.doesNotMatch(bootstrap, /'第一章 · 1–30 关'/);
   assert.match(bootstrap, /renderLevelComplete/);
   assert.match(bootstrap, /switchLevel/);
   assert.match(bootstrap, /persistCompletion/);

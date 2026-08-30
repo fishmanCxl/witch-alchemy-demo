@@ -10,6 +10,7 @@ export interface SceneFlowState {
   readonly soundEnabled: boolean;
   readonly settingsOpen: boolean;
   readonly collectionReturnScene: 'home' | 'levelSelect';
+  readonly selectedLevelChapterId: number;
   readonly selectedCollectionChapterId: number | null;
 }
 
@@ -21,12 +22,34 @@ export function createSceneFlow(): SceneFlowState {
     soundEnabled: true,
     settingsOpen: false,
     collectionReturnScene: 'home',
+    selectedLevelChapterId: 1,
     selectedCollectionChapterId: null,
   };
 }
 
-export function openLevelSelect(state: SceneFlowState): SceneFlowState {
-  return { ...state, scene: 'levelSelect', nextLevelId: null, settingsOpen: false, selectedCollectionChapterId: null };
+export function openLevelSelect(
+  state: SceneFlowState,
+  chapterId = state.selectedLevelChapterId,
+): SceneFlowState {
+  const chapter = getChapter(chapterId);
+  return {
+    ...state,
+    scene: 'levelSelect',
+    nextLevelId: null,
+    settingsOpen: false,
+    selectedLevelChapterId: chapter?.releaseState === 'available' ? chapterId : state.selectedLevelChapterId,
+    selectedCollectionChapterId: null,
+  };
+}
+
+export function selectLevelChapter(
+  state: SceneFlowState,
+  chapterId: number,
+  unlocked: boolean,
+): SceneFlowState {
+  const chapter = getChapter(chapterId);
+  if (state.scene !== 'levelSelect' || !unlocked || chapter?.releaseState !== 'available') return state;
+  return chapterId === state.selectedLevelChapterId ? state : { ...state, selectedLevelChapterId: chapterId };
 }
 
 export function openCollection(state: SceneFlowState): SceneFlowState {

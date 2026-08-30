@@ -11,6 +11,7 @@ import {
   openCollectionDetail,
   openLevelSelect,
   returnHome,
+  selectLevelChapter,
   showLevelComplete,
   toggleSettings,
   toggleSound,
@@ -24,8 +25,18 @@ test('scene flow starts on home without an implicit selected level', () => {
     soundEnabled: true,
     settingsOpen: false,
     collectionReturnScene: 'home',
+    selectedLevelChapterId: 1,
     selectedCollectionChapterId: null,
   });
+});
+
+test('selector changes only to a published chapter that the player has unlocked', () => {
+  const selector = openLevelSelect(createSceneFlow(), 1);
+
+  assert.equal(selector.selectedLevelChapterId, 1);
+  assert.equal(selectLevelChapter(selector, 2, false), selector);
+  assert.equal(selectLevelChapter(selector, 2, true).selectedLevelChapterId, 2);
+  assert.equal(selectLevelChapter(selector, 3, true), selector);
 });
 
 test('home, selector, unlocked level, completion, and next level form a legal flow', () => {
@@ -49,7 +60,7 @@ test('selector rejects locked and unpublished level ids without changing state',
   const selector = openLevelSelect(createSceneFlow());
 
   assert.equal(enterSelectedLevel(selector, 'level-004', false), selector);
-  assert.equal(enterSelectedLevel(selector, 'level-031', true), selector);
+  assert.equal(enterSelectedLevel(selector, 'level-061', true), selector);
   assert.equal(enterSelectedLevel(selector, 'not-a-level', true), selector);
 });
 
@@ -84,9 +95,8 @@ test('available collection detail returns to the overview before leaving collect
   assert.equal(closeCollection(detail), detail);
 });
 
-test('locked and invalid collection chapters cannot open a detail view', () => {
+test('invalid collection chapters cannot open a detail view', () => {
   const overview = openCollection(createSceneFlow());
-  assert.equal(openCollectionDetail(overview, 2), overview);
   assert.equal(openCollectionDetail(overview, 11), overview);
 });
 
