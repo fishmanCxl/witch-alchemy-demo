@@ -79,3 +79,26 @@ test('completion reward grants only the newly reached piece and collection compl
     titleChanged: true,
   });
 });
+
+test('chapter two reveals one forest potion piece for every five completions', () => {
+  const chapterOneComplete = progressWithCompleted(30);
+  assert.deepEqual(deriveHighestTitle(chapterOneComplete), {
+    chapterId: 2,
+    title: '初级魔女',
+  });
+
+  const fiveForestLevels = progressWithCompleted(35);
+  assert.equal(deriveCollectionProgress(fiveForestLevels, 2).revealedPieces, 1);
+});
+
+test('chapter two completion collects forest potion and promotes the title', () => {
+  const before = progressWithCompleted(59);
+  const after = progressWithCompleted(60);
+
+  assert.equal(deriveCollectionProgress(after, 2).collected, true);
+  assert.deepEqual(deriveCompletionReward(before, after, 'level-060'), {
+    puzzlePiece: 6,
+    collectionCompleted: true,
+    titleChanged: true,
+  });
+});

@@ -85,7 +85,7 @@ test('collection returns to the scene that opened it', () => {
 
 test('available collection detail returns to the overview before leaving collection', () => {
   const overview = openCollection(createSceneFlow());
-  const detail = openCollectionDetail(overview, 1);
+  const detail = openCollectionDetail(overview, 1, true);
   const returned = closeCollectionDetail(detail);
 
   assert.equal(overview.selectedCollectionChapterId, null);
@@ -95,9 +95,12 @@ test('available collection detail returns to the overview before leaving collect
   assert.equal(closeCollection(detail), detail);
 });
 
-test('invalid collection chapters cannot open a detail view', () => {
+test('collection detail requires a published chapter that the player has unlocked', () => {
   const overview = openCollection(createSceneFlow());
-  assert.equal(openCollectionDetail(overview, 11), overview);
+  assert.equal(openCollectionDetail(overview, 2, false), overview);
+  assert.equal(openCollectionDetail(overview, 2, true).selectedCollectionChapterId, 2);
+  assert.equal(openCollectionDetail(overview, 3, true), overview);
+  assert.equal(openCollectionDetail(overview, 11, true), overview);
 });
 
 test('collection navigation closes settings and clears pending next levels', () => {

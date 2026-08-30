@@ -77,9 +77,10 @@ export function closeCollection(state: SceneFlowState): SceneFlowState {
 export function openCollectionDetail(
   state: SceneFlowState,
   chapterId: number,
+  unlocked: boolean,
 ): SceneFlowState {
   if (state.scene !== 'collection' || state.selectedCollectionChapterId !== null) return state;
-  if (getChapter(chapterId)?.releaseState !== 'available') return state;
+  if (!unlocked || getChapter(chapterId)?.releaseState !== 'available') return state;
   return { ...state, selectedCollectionChapterId: chapterId, settingsOpen: false };
 }
 

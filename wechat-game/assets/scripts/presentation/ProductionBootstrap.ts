@@ -439,7 +439,13 @@ export class ProductionBootstrap extends Component {
         color('#FFE8AA'), 120);
       card.on(Button.EventType.CLICK, () => {
         this.resumeAudio();
-        const nextFlow = openCollectionDetail(this.flow, collection.chapterId);
+        const chapter = getChapter(collection.chapterId)!;
+        const firstLevelId = `level-${String(chapter.firstLevel).padStart(3, '0')}`;
+        const nextFlow = openCollectionDetail(
+          this.flow,
+          collection.chapterId,
+          isLevelUnlocked(this.progress, firstLevelId),
+        );
         if (nextFlow === this.flow) return;
         this.flow = nextFlow;
         this.render();
