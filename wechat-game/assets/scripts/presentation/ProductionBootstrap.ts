@@ -111,6 +111,13 @@ export class ProductionBootstrap extends Component {
     const rewardPorts = this.platform.createRewardedPorts(REWARDED_AD_UNIT_ID);
     this.rewarded = new RewardedBottleCoordinator(rewardPorts.ad, rewardPorts.claims);
     this.progressSync = new ProgressSyncCoordinator(this.platform.createProgressSyncPort());
+    this.platform.registerQaActions({
+      unlockAll: () => {
+        this.store.saveSession(this.session);
+        this.applyQaProgress(this.store.enableQaAllLevels());
+      },
+      reset: () => this.applyQaProgress(this.store.resetQaMode()),
+    });
     this.platform.bindLifecycle(
       () => this.handlePlatformForeground(),
       () => { this.store.saveSession(this.session); this.audio?.setForeground(false); },
@@ -1167,7 +1174,7 @@ export class ProductionBootstrap extends Component {
   }
 
   private async syncCloudProgress(): Promise<void> {
-    if (!this.progressSync) return;
+    if (this.store.isQaMode() || !this.progressSync) return;
     const result = await this.progressSync.sync(this.progress, this.platform.isOnline());
     if (result.status !== 'synced') return;
     this.progress = applyProgressSyncResult(this.progress, result);
@@ -1179,7 +1186,7 @@ export class ProductionBootstrap extends Component {
   }
 
   private async syncAfterCompletion(): Promise<void> {
-    if (!this.progressSync) return;
+    if (this.store.isQaMode() || !this.progressSync) return;
     const durationMs = Math.max(1, Math.min(86_400_000, Date.now() - this.levelStartedAt));
     await Promise.all([
       this.syncCloudProgress(),
@@ -1191,6 +1198,27 @@ export class ProductionBootstrap extends Component {
         rewardedBottleUsed: this.session.game.rewardBottleUsed,
       }, this.platform.isOnline()),
     ]);
+  }
+
+  private applyQaProgress(progress: PlayerProgress): void {
+    this.progress = progress;
+    this.currentLevel = getLevelConfig(progress.currentLevel) ?? FIRST_CHAPTER_LEVELS[0];
+    this.session = this.store.loadSession(this.currentLevel);
+    this.flow = returnHome({
+      ...this.flow,
+      selectedLevelId: this.currentLevel.id,
+      selectedLevelChapterId: chapterForLevel(this.currentLevel.number)?.id ?? 1,
+    });
+    this.unscheduleAllCallbacks();
+    this.completionScheduled = false;
+    this.completionSaveFailed = false;
+    this.completionReward = null;
+    this.collectionHasNewPiece = false;
+    this.levelStartedAt = Date.now();
+    this.undoCount = 0;
+    this.invalid.clear();
+    this.pouring.clear();
+    this.render();
   }
 
   private refreshBottleHighlights(): void {

@@ -1,5 +1,5 @@
 import { createGameSession, type GameSession } from '../core/game-session.ts';
-import { getLevelConfig } from '../core/level-catalog.ts';
+import { getLevelConfig, PUBLISHED_LEVELS } from '../core/level-catalog.ts';
 import {
   createDefaultProgress,
   decodePlayerProgress,
@@ -15,6 +15,8 @@ import type { LevelConfig } from '../core/level-config.ts';
 import type { KeyValueStorage } from './storage-port.ts';
 
 const PROGRESS_KEY = 'witch-water-sort:progress:v2';
+const QA_MODE_KEY = 'witch-water-sort:qa-mode:v1';
+const QA_BACKUP_KEY = 'witch-water-sort:qa-backup:v1';
 const LEGACY_LEVEL_12_KEY = 'witch-water-sort:level-012:v1';
 const MIGRATION_MARKER_KEY = 'witch-water-sort:migration:level-012:v2';
 const SOUND_KEY = 'witch-water-sort:sound-enabled';
@@ -52,6 +54,58 @@ export class LocalProgressStore {
 
   saveProgress(progress: PlayerProgress): void {
     this.storage.setItem(PROGRESS_KEY, encodePlayerProgress(progress));
+  }
+
+  isQaMode(): boolean {
+    return this.storage.getItem(QA_MODE_KEY) === 'enabled';
+  }
+
+  enableQaAllLevels(): PlayerProgress {
+    if (!this.isQaMode()) {
+      this.storage.setItem(QA_BACKUP_KEY, JSON.stringify({
+        progress: this.storage.getItem(PROGRESS_KEY),
+      }));
+      this.storage.setItem(QA_MODE_KEY, 'enabled');
+    }
+
+    const previous = this.loadProgress();
+    const lastLevel = PUBLISHED_LEVELS[PUBLISHED_LEVELS.length - 1];
+    const qaProgress: PlayerProgress = {
+      ...previous,
+      revision: previous.revision + 1,
+      currentLevel: lastLevel.id,
+      highestUnlockedLevel: lastLevel.id,
+      completedLevels: PUBLISHED_LEVELS.map((level) => level.id),
+      bestMoves: {},
+    };
+    this.saveProgress(qaProgress);
+    return qaProgress;
+  }
+
+  resetQaMode(): PlayerProgress {
+    if (!this.isQaMode()) return this.loadProgress();
+
+    const serializedBackup = this.storage.getItem(QA_BACKUP_KEY);
+    let backup: unknown;
+    try {
+      backup = serializedBackup ? JSON.parse(serializedBackup) : null;
+    } catch {
+      backup = null;
+    }
+    if (
+      typeof backup !== 'object'
+      || backup === null
+      || !('progress' in backup)
+      || (backup.progress !== null && typeof backup.progress !== 'string')
+    ) {
+      throw new Error('QA progress backup is unavailable');
+    }
+
+    if (backup.progress === null) this.storage.removeItem(PROGRESS_KEY);
+    else this.storage.setItem(PROGRESS_KEY, backup.progress);
+    this.storage.removeItem(QA_MODE_KEY);
+    this.storage.removeItem(QA_BACKUP_KEY);
+    return this.loadProgress();
   }
 
   loadSession(level: LevelConfig): GameSession {

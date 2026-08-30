@@ -5,9 +5,10 @@ import {
   createGameSession,
   pressBottle,
 } from '../assets/scripts/core/game-session.ts';
-import { getLevelConfig } from '../assets/scripts/core/level-catalog.ts';
+import { getLevelConfig, PUBLISHED_LEVELS } from '../assets/scripts/core/level-catalog.ts';
 import { createLocalSnapshot } from '../assets/scripts/core/save-schema.ts';
 import { LocalProgressStore } from '../assets/scripts/platform/LocalProgressStore.ts';
+import { PlatformRuntime } from '../assets/scripts/platform/WeChatPlatform.ts';
 import type { KeyValueStorage } from '../assets/scripts/platform/storage-port.ts';
 
 class MemoryStorage implements KeyValueStorage {
@@ -246,4 +247,80 @@ test('invalid legacy data marks migration complete and keeps the new-player fall
   assert.equal(progress.highestUnlockedLevel, 'level-001');
   assert.equal(storage.getItem('witch-water-sort:migration:level-012:v2'), 'done');
   assert.equal(storage.getItem('witch-water-sort:level-012:v1'), '{bad json');
+});
+
+test('QA all-level mode backs up progress once and reset restores it exactly', () => {
+  const storage = new MemoryStorage();
+  const store = new LocalProgressStore(storage);
+  const original = {
+    ...store.loadProgress(),
+    revision: 8,
+    currentLevel: 'level-005',
+    highestUnlockedLevel: 'level-006',
+    completedLevels: ['level-001', 'level-003', 'level-005'],
+    bestMoves: { 'level-001': 4, 'level-003': 18, 'level-005': 31 },
+  } as const;
+  store.saveProgress(original);
+  const serializedOriginal = storage.getItem('witch-water-sort:progress:v2');
+
+  assert.equal(typeof store.enableQaAllLevels, 'function');
+  const qaProgress = store.enableQaAllLevels();
+
+  assert.equal(store.isQaMode(), true);
+  assert.equal(qaProgress.currentLevel, 'level-060');
+  assert.equal(qaProgress.highestUnlockedLevel, 'level-060');
+  assert.deepEqual(qaProgress.completedLevels, PUBLISHED_LEVELS.map((level) => level.id));
+
+  store.enableQaAllLevels();
+  const restored = store.resetQaMode();
+
+  assert.equal(store.isQaMode(), false);
+  assert.deepEqual(restored, original);
+  assert.equal(storage.getItem('witch-water-sort:progress:v2'), serializedOriginal);
+});
+
+test('QA reset removes progress when the player had no progress before QA mode', () => {
+  const storage = new MemoryStorage();
+  const store = new LocalProgressStore(storage);
+
+  assert.equal(storage.getItem('witch-water-sort:progress:v2'), null);
+  store.enableQaAllLevels();
+  const restored = store.resetQaMode();
+
+  assert.equal(restored.currentLevel, 'level-001');
+  assert.equal(storage.getItem('witch-water-sort:progress:v2'), null);
+  assert.equal(store.isQaMode(), false);
+});
+
+test('QA console actions exist only in WeChat develop and trial environments', () => {
+  const host = globalThis as typeof globalThis & {
+    wx?: unknown;
+    WitchAlchemyQA?: unknown;
+  };
+  const previousWx = host.wx;
+  const previousQa = host.WitchAlchemyQA;
+  const actions = { unlockAll: () => undefined, reset: () => undefined };
+
+  try {
+    for (const envVersion of ['develop', 'trial']) {
+      host.wx = { getAccountInfoSync: () => ({ miniProgram: { envVersion } }) };
+      const runtime = new PlatformRuntime();
+      assert.equal(typeof runtime.registerQaActions, 'function');
+      runtime.registerQaActions(actions);
+      assert.equal(host.WitchAlchemyQA, actions);
+      runtime.dispose();
+      assert.equal(host.WitchAlchemyQA, undefined);
+    }
+
+    host.wx = { getAccountInfoSync: () => ({ miniProgram: { envVersion: 'release' } }) };
+    const runtime = new PlatformRuntime();
+    runtime.registerQaActions(actions);
+    assert.equal(host.WitchAlchemyQA, undefined);
+    runtime.dispose();
+  } finally {
+    if (previousWx === undefined) delete host.wx;
+    else host.wx = previousWx;
+    if (previousQa === undefined) delete host.WitchAlchemyQA;
+    else host.WitchAlchemyQA = previousQa;
+  }
 });

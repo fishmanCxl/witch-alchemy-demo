@@ -14,6 +14,7 @@ interface RewardedVideoAdLike {
 
 interface WeChatApiLike {
   createRewardedVideoAd(options: { adUnitId: string }): RewardedVideoAdLike;
+  getAccountInfoSync?(): { miniProgram?: { envVersion?: string } };
   getNetworkType?(options: { success: (result: { networkType: string }) => void }): void;
   onNetworkStatusChange?(callback: (result: { isConnected: boolean }) => void): void;
   offNetworkStatusChange?(callback: (result: { isConnected: boolean }) => void): void;
@@ -30,6 +31,13 @@ interface WeChatApiLike {
 function runtimeWx(): WeChatApiLike | null {
   return (globalThis as typeof globalThis & { wx?: WeChatApiLike }).wx ?? null;
 }
+
+export interface QaActions {
+  unlockAll(): void;
+  reset(): void;
+}
+
+type QaGlobal = typeof globalThis & { WitchAlchemyQA?: QaActions };
 
 export class WeChatRewardedAd implements RewardedAdPort {
   private readonly ad: RewardedVideoAdLike;
@@ -131,6 +139,7 @@ export class PlatformRuntime {
   private readonly networkListener = (result: { isConnected: boolean }): void => { this.online = result.isConnected; };
   private showListener: (() => void) | null = null;
   private hideListener: (() => void) | null = null;
+  private qaActions: QaActions | null = null;
 
   constructor() {
     this.api?.getNetworkType?.({ success: ({ networkType }) => { this.online = networkType !== 'none'; } });
@@ -152,6 +161,13 @@ export class PlatformRuntime {
     return this.api?.cloud ? new WeChatProgressClient(this.api) : new UnavailableProgressClient();
   }
 
+  registerQaActions(actions: QaActions): void {
+    const envVersion = this.api?.getAccountInfoSync?.().miniProgram?.envVersion;
+    if (envVersion !== 'develop' && envVersion !== 'trial') return;
+    (globalThis as QaGlobal).WitchAlchemyQA = actions;
+    this.qaActions = actions;
+  }
+
   bindLifecycle(onShow: () => void, onHide: () => void): void {
     this.showListener = onShow;
     this.hideListener = onHide;
@@ -163,5 +179,8 @@ export class PlatformRuntime {
     this.api?.offNetworkStatusChange?.(this.networkListener);
     if (this.showListener) this.api?.offShow?.(this.showListener);
     if (this.hideListener) this.api?.offHide?.(this.hideListener);
+    const host = globalThis as QaGlobal;
+    if (this.qaActions && host.WitchAlchemyQA === this.qaActions) delete host.WitchAlchemyQA;
+    this.qaActions = null;
   }
 }
