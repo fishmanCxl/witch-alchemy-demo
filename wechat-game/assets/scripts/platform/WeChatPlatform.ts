@@ -147,9 +147,10 @@ export class PlatformRuntime {
   private hideListener: (() => void) | null = null;
   private qaActions: QaActions | null = null;
 
-  constructor() {
+  constructor(qaActions?: QaActions) {
     this.api?.getNetworkType?.({ success: ({ networkType }) => { this.online = networkType !== 'none'; } });
     this.api?.onNetworkStatusChange?.(this.networkListener);
+    if (qaActions) this.registerQaActions(qaActions);
   }
 
   isWeChat(): boolean { return this.api !== null; }

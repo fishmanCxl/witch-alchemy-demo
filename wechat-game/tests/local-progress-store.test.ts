@@ -307,9 +307,7 @@ test('QA console actions attach to the WeChat GameGlobal only in develop and tri
     for (const envVersion of ['develop', 'trial']) {
       host.wx = { getAccountInfoSync: () => ({ miniProgram: { envVersion } }) };
       host.GameGlobal = {};
-      const runtime = new PlatformRuntime();
-      assert.equal(typeof runtime.registerQaActions, 'function');
-      runtime.registerQaActions(actions);
+      const runtime = new PlatformRuntime(actions);
       assert.equal(host.GameGlobal.WitchAlchemyQA, actions);
       runtime.dispose();
       assert.equal(host.GameGlobal.WitchAlchemyQA, undefined);
@@ -317,8 +315,7 @@ test('QA console actions attach to the WeChat GameGlobal only in develop and tri
 
     host.wx = { getAccountInfoSync: () => ({ miniProgram: { envVersion: 'release' } }) };
     host.GameGlobal = {};
-    const runtime = new PlatformRuntime();
-    runtime.registerQaActions(actions);
+    const runtime = new PlatformRuntime(actions);
     assert.equal(host.GameGlobal.WitchAlchemyQA, undefined);
     runtime.dispose();
   } finally {

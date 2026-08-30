@@ -81,7 +81,13 @@ export class ProductionBootstrap extends Component {
   private levelMessageLabel: Label | null = null;
   private levelWitchAnimator: WitchAnimator | null = null;
   private completionScheduled = false;
-  private readonly platform = new PlatformRuntime();
+  private readonly platform = new PlatformRuntime({
+    unlockAll: () => {
+      this.store.saveSession(this.session);
+      this.applyQaProgress(this.store.enableQaAllLevels());
+    },
+    reset: () => this.applyQaProgress(this.store.resetQaMode()),
+  });
   private rewarded: RewardedBottleCoordinator | null = null;
   private progressSync: ProgressSyncCoordinator | null = null;
   private rewardBusy = false;
@@ -111,13 +117,6 @@ export class ProductionBootstrap extends Component {
     const rewardPorts = this.platform.createRewardedPorts(REWARDED_AD_UNIT_ID);
     this.rewarded = new RewardedBottleCoordinator(rewardPorts.ad, rewardPorts.claims);
     this.progressSync = new ProgressSyncCoordinator(this.platform.createProgressSyncPort());
-    this.platform.registerQaActions({
-      unlockAll: () => {
-        this.store.saveSession(this.session);
-        this.applyQaProgress(this.store.enableQaAllLevels());
-      },
-      reset: () => this.applyQaProgress(this.store.resetQaMode()),
-    });
     this.platform.bindLifecycle(
       () => this.handlePlatformForeground(),
       () => { this.store.saveSession(this.session); this.audio?.setForeground(false); },
