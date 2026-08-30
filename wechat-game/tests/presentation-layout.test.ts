@@ -513,8 +513,17 @@ test('completion and collection copy follows chapter boundaries and potion catal
   assert.equal(collectionCompleteLabel(2), '森林药水已收入图鉴');
 });
 
+test('non-home settings trigger stays in the top-left safe area without overlapping chapter navigation', () => {
+  assert.deepEqual(SETTINGS_LAYOUT.trigger, { x: -155, y: 378, width: 48, height: 48 });
+  const triggerOverlapsPreviousChapter =
+    Math.abs(SETTINGS_LAYOUT.trigger.x - LEVEL_SELECT_LAYOUT.previousChapterButton.x)
+      < (SETTINGS_LAYOUT.trigger.width + LEVEL_SELECT_LAYOUT.previousChapterButton.width) / 2
+    && Math.abs(SETTINGS_LAYOUT.trigger.y - LEVEL_SELECT_LAYOUT.previousChapterButton.y)
+      < (SETTINGS_LAYOUT.trigger.height + LEVEL_SELECT_LAYOUT.previousChapterButton.height) / 2;
+  assert.equal(triggerOverlapsPreviousChapter, false);
+});
+
 test('settings layout uses the accepted raster-backed dialog geometry', () => {
-  assert.deepEqual(SETTINGS_LAYOUT.trigger, { x: 155, y: 340, width: 48, height: 48 });
   assert.deepEqual(SETTINGS_LAYOUT.dialog, { x: 0, y: -21, width: 304, height: 360 });
   assert.deepEqual(SETTINGS_LAYOUT.close, { x: 110, y: 138, width: 48, height: 48 });
   assert.deepEqual(SETTINGS_LAYOUT.soundButton, { x: 0, y: 14, width: 224, height: 72 });

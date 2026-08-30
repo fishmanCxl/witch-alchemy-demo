@@ -161,7 +161,7 @@ export const LEVEL_COMPLETE_LAYOUT = Object.freeze({
 });
 
 export const SETTINGS_LAYOUT = Object.freeze({
-  trigger: Object.freeze({ x: 155, y: 340, width: 48, height: 48 }),
+  trigger: Object.freeze({ x: -155, y: 378, width: 48, height: 48 }),
   dialog: Object.freeze({ x: 0, y: -21, width: 304, height: 360 }),
   close: Object.freeze({ x: 110, y: 138, width: 48, height: 48 }),
   soundButton: Object.freeze({ x: 0, y: 14, width: 224, height: 72 }),

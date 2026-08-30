@@ -101,6 +101,6 @@ When any text-entry control loses focus, dismiss the simulated keyboard. If the 
 ## Home and Unified Settings Decisions
 
 - The first app-owned scene is the witch-alchemy home screen, structured as top progress information, one centered idle-witch focal area, and one bottom `继续炼金 · 第 12 关` action.
-- The same 48×48 raster gear control remains fixed at the top right of both the home and level scenes; it opens a centered, modal purple-and-gold settings panel whose mask continues intercepting input through its 160ms exit.
+- The 48×48 raster gear control stays in the right-side settings/collection column on the home scene. Every non-home scene places it in the fixed top-left safe area, clear of the WeChat menu capsule and chapter navigation arrows; it opens the same centered, modal purple-and-gold settings panel whose mask continues intercepting input through its 160ms exit.
 - Settings expose exactly one master sound switch. The UI changes `musicEnabled` and `sfxEnabled` atomically through the versioned `witch-water-sort.audio.v1` preference while the audio director retains its two internal tracks, default gains, voice cap, and ducking behavior.
 - Returning home changes only the top-level scene. The active level instance retains bottle contents and seeded positions, move count, completed count, rewarded empty-bottle state, and undo history so continuing resumes the same stable board.
