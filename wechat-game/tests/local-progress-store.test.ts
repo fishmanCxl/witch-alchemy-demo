@@ -189,7 +189,7 @@ test('progress persistence strips derived and unknown fields from storage and re
     highestUnlockedLevel: 'level-004',
     completedLevels: ['level-001', 'level-003'],
     bestMoves: { 'level-001': 5, 'level-003': 9 },
-    configVersion: 'chapter-1.2026-08-25.1',
+    configVersion: 'chapters-1-2.2026-08-29.1',
   };
 
   assert.deepEqual(stored, expected);

@@ -1,7 +1,7 @@
 const LEVEL_ID = /^level-(\d{3})$/;
 const CLAIM_ID = /^[A-Za-z0-9_-]{8,128}$/;
 const FIRST_LEVEL = 1;
-const LAST_LEVEL = 15;
+const LAST_LEVEL = 60;
 
 function record(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};

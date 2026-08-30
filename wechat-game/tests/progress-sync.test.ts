@@ -71,7 +71,7 @@ test('remote progress is validated before legal union and minimum merge', async 
 test('malformed remote data and cloud failures preserve the exact local object', async () => {
   const local = createDefaultProgress();
   const invalid = new ProgressSyncCoordinator({
-    sync: async () => ({ ...local, highestUnlockedLevel: 'level-031' }),
+    sync: async () => ({ ...local, highestUnlockedLevel: 'level-061' }),
     submitLevelResult: async () => undefined,
   });
   const failing = new ProgressSyncCoordinator({

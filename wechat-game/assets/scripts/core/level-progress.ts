@@ -1,6 +1,6 @@
 import {
-  FIRST_CHAPTER_CONFIG_VERSION,
-  FIRST_CHAPTER_LEVELS,
+  GAME_CONFIG_VERSION,
+  PUBLISHED_LEVELS,
   getLevelConfig,
   nextLevelConfig,
 } from './level-catalog.ts';
@@ -23,7 +23,7 @@ export function createDefaultProgress(): PlayerProgress {
     highestUnlockedLevel: 'level-001',
     completedLevels: [],
     bestMoves: {},
-    configVersion: FIRST_CHAPTER_CONFIG_VERSION,
+    configVersion: GAME_CONFIG_VERSION,
   };
 }
 
@@ -35,7 +35,7 @@ export function encodePlayerProgress(progress: PlayerProgress): string {
     highestUnlockedLevel: progress.highestUnlockedLevel,
     completedLevels: progress.completedLevels,
     bestMoves: progress.bestMoves,
-    configVersion: FIRST_CHAPTER_CONFIG_VERSION,
+    configVersion: GAME_CONFIG_VERSION,
   });
 }
 
@@ -91,12 +91,12 @@ export function completeLevel(
     highestUnlockedLevel: unlocked?.id ?? progress.highestUnlockedLevel,
     completedLevels: sortedPublishedIds([...progress.completedLevels, id]),
     bestMoves,
-    configVersion: FIRST_CHAPTER_CONFIG_VERSION,
+    configVersion: GAME_CONFIG_VERSION,
   };
 }
 
 function legalHighest(...ids: readonly string[]): string {
-  let highest = FIRST_CHAPTER_LEVELS[0];
+  let highest = PUBLISHED_LEVELS[0];
   for (const id of ids) {
     const level = getLevelConfig(id);
     if (level && level.number > highest.number) highest = level;
@@ -153,7 +153,7 @@ export function mergePlayerProgress(
       ...remote.completedLevels,
     ]),
     bestMoves: mergedBestMoves(local.bestMoves, remote.bestMoves),
-    configVersion: FIRST_CHAPTER_CONFIG_VERSION,
+    configVersion: GAME_CONFIG_VERSION,
   };
 }
 
@@ -187,7 +187,7 @@ export function decodePlayerProgress(serialized: string | null | undefined): Pla
       highestUnlockedLevel: value.highestUnlockedLevel,
       completedLevels: sortedPublishedIds(value.completedLevels as string[]),
       bestMoves: mergedBestMoves(value.bestMoves as Record<string, number>, {}),
-      configVersion: FIRST_CHAPTER_CONFIG_VERSION,
+      configVersion: GAME_CONFIG_VERSION,
     };
     if (!isLevelUnlocked(progress, progress.currentLevel)) return null;
     return progress;

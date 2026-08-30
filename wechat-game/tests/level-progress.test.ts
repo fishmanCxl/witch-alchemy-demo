@@ -30,6 +30,7 @@ const oldFifteenLevelProgress: PlayerProgress = {
   currentLevel: 'level-015',
   highestUnlockedLevel: 'level-015',
   completedLevels: Array.from({ length: 14 }, (_, index) => levelId(index + 1)),
+  bestMoves: { 'level-001': 5, 'level-015': 23 },
   configVersion: 'chapter-1.2026-08-23.1',
 };
 
@@ -43,7 +44,7 @@ test('new players start at level 1 with only level 1 unlocked', () => {
     highestUnlockedLevel: 'level-001',
     completedLevels: [],
     bestMoves: {},
-    configVersion: 'chapter-1.2026-08-25.1',
+    configVersion: 'chapters-1-2.2026-08-29.1',
   });
   assert.equal(isLevelUnlocked(progress, 'level-001'), true);
   assert.equal(isLevelUnlocked(progress, 'level-002'), false);
@@ -117,25 +118,29 @@ test('merging progress unions completion, minimizes best moves, and keeps legal 
     highestUnlockedLevel: 'level-006',
     completedLevels: ['level-001', 'level-002', 'level-003'],
     bestMoves: { 'level-001': 8, 'level-002': 9, 'level-003': 10 },
-    configVersion: 'chapter-1.2026-08-25.1',
+    configVersion: 'chapters-1-2.2026-08-29.1',
   });
 });
 
-test('level 30 caps progression without unlocking an unpublished chapter', () => {
-  const progress = progressAt('level-030');
-  const completed = completeLevel(progress, 'level-030', 42)!;
+test('level 30 unlocks chapter two while level 60 caps published progression', () => {
+  const afterThirty = completeLevel(progressAt('level-030'), 'level-030', 28)!;
+  assert.equal(afterThirty.currentLevel, 'level-031');
+  assert.equal(afterThirty.highestUnlockedLevel, 'level-031');
+  assert.equal(isLevelUnlocked(afterThirty, 'level-031'), true);
 
-  assert.equal(completed.currentLevel, 'level-030');
-  assert.equal(completed.highestUnlockedLevel, 'level-030');
-  assert.deepEqual(completed.completedLevels, ['level-030']);
-  assert.equal(isLevelUnlocked(completed, 'level-031'), false);
+  const afterSixty = completeLevel(progressAt('level-060'), 'level-060', 41)!;
+  assert.equal(afterSixty.currentLevel, 'level-060');
+  assert.equal(afterSixty.highestUnlockedLevel, 'level-060');
+  assert.deepEqual(afterSixty.completedLevels, ['level-060']);
+  assert.equal(isLevelUnlocked(afterSixty, 'level-061'), false);
 });
 
 test('old v2 progress is normalized to the new config without losing completions', () => {
   const decoded = decodePlayerProgress(JSON.stringify(oldFifteenLevelProgress));
 
   assert.deepEqual(decoded?.completedLevels, oldFifteenLevelProgress.completedLevels);
-  assert.equal(decoded?.configVersion, 'chapter-1.2026-08-25.1');
+  assert.deepEqual(decoded?.bestMoves, oldFifteenLevelProgress.bestMoves);
+  assert.equal(decoded?.configVersion, 'chapters-1-2.2026-08-29.1');
 });
 
 test('a high legacy unlock does not invent missing earlier completions', () => {
@@ -173,7 +178,7 @@ test('progress encoding strips derived and unknown top-level fields', () => {
     highestUnlockedLevel: 'level-004',
     completedLevels: ['level-001', 'level-003'],
     bestMoves: { 'level-001': 5, 'level-003': 9 },
-    configVersion: 'chapter-1.2026-08-25.1',
+    configVersion: 'chapters-1-2.2026-08-29.1',
   });
 });
 
@@ -198,7 +203,6 @@ test('progress decoding strips derived and unknown top-level fields', () => {
     highestUnlockedLevel: 'level-004',
     completedLevels: ['level-001', 'level-003'],
     bestMoves: { 'level-001': 5, 'level-003': 9 },
-    configVersion: 'chapter-1.2026-08-25.1',
+    configVersion: 'chapters-1-2.2026-08-29.1',
   });
 });
-
