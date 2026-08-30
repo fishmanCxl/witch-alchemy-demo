@@ -275,7 +275,10 @@ test('production renders one collection entry, a scroll overview, and the select
   assert.match(bootstrap, /openCollection\(this\.flow\)/);
   assert.match(bootstrap, /collectionPuzzlePiece\(/);
   assert.match(bootstrap, /collectionHasNewPiece/);
-  assert.match(bootstrap, /game\/chibi\/collection\/star-dew-potion\/spriteFrame/);
+  assert.match(bootstrap, /const collectionConfig = getPotionCollection\(collection\.chapterId\)!/);
+  assert.match(bootstrap, /const artworkPath = `game\/chibi\/collection\/\$\{collectionConfig\.artworkKey\}\/spriteFrame`/);
+  assert.match(bootstrap, /isLevelUnlocked\(this\.progress, firstLevelId\)/);
+  assert.doesNotMatch(bootstrap, /game\/chibi\/collection\/star-dew-potion\/spriteFrame/);
   assert.match(bootstrap, /开放后解锁/);
   assert.doesNotMatch(entry, /revealedPieces/);
   assert.doesNotMatch(bootstrap, /revealedPieces\s*=\s*this\./);

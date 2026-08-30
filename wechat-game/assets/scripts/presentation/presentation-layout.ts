@@ -1,4 +1,5 @@
 import type { BottleStatus } from '../core/types.ts';
+import { getPotionCollection } from '../core/potion-collection-catalog.ts';
 
 export interface RectLayout {
   readonly x: number;
@@ -51,6 +52,19 @@ export interface PotionParticleFrame {
 
 export const ART_FONT_RESOURCE = 'game/fonts/noto-serif-sc-ui';
 export const RESTART_LABEL = '重来';
+
+export function completionPrimaryLabel(currentLevel: number, nextLevel: number | null): string {
+  if (nextLevel === null) return '返回选关';
+  return currentLevel === 30 && nextLevel === 31 ? '进入第二章' : '下一关';
+}
+
+export function collectionRewardLabel(chapterId: number, piece: number): string {
+  return `获得${getPotionCollection(chapterId)?.name ?? '稀有药水'}拼图 ${piece}/6`;
+}
+
+export function collectionCompleteLabel(chapterId: number): string {
+  return `${getPotionCollection(chapterId)?.name ?? '稀有药水'}已收入图鉴`;
+}
 
 export const HEALTHY_GAME_ADVICE_LINES = Object.freeze([
   '抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。',

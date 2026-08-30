@@ -17,6 +17,9 @@ import {
   bottlePlacement,
   buttonBaseLayout,
   buttonSpritePath,
+  collectionCompleteLabel,
+  collectionRewardLabel,
+  completionPrimaryLabel,
   levelButtonVisual,
   levelSelectButton,
   collectionPuzzlePiece,
@@ -500,6 +503,14 @@ test('production copy and art-font contract match the approved prototype', () =>
   assert.equal(potionProgressLabel(3, 8), '魔药 3/8');
   assert.equal(RESTART_LABEL, '重来');
   assert.equal(ART_FONT_RESOURCE, 'game/fonts/noto-serif-sc-ui');
+});
+
+test('completion and collection copy follows chapter boundaries and potion catalog', () => {
+  assert.equal(completionPrimaryLabel(30, 31), '进入第二章');
+  assert.equal(completionPrimaryLabel(59, 60), '下一关');
+  assert.equal(completionPrimaryLabel(60, null), '返回选关');
+  assert.equal(collectionRewardLabel(2, 1), '获得森林药水拼图 1/6');
+  assert.equal(collectionCompleteLabel(2), '森林药水已收入图鉴');
 });
 
 test('settings layout uses the accepted raster-backed dialog geometry', () => {

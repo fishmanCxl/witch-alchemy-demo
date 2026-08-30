@@ -17,7 +17,7 @@ import {
   type CompletionReward, type HighestTitle,
 } from '../core/collection-progress.ts';
 import { chapterForLevel, getChapter } from '../core/chapter-catalog.ts';
-import { POTION_COLLECTIONS, type PotionCollectionConfig } from '../core/potion-collection-catalog.ts';
+import { POTION_COLLECTIONS, getPotionCollection, type PotionCollectionConfig } from '../core/potion-collection-catalog.ts';
 import {
   closeCollection, closeCollectionDetail, createSceneFlow, enterSelectedLevel, openCollection, openCollectionDetail,
   openLevelSelect, returnHome, selectLevelChapter,
@@ -39,7 +39,8 @@ import {
   ART_FONT_RESOURCE, COLLECTION_LAYOUT, COLLECTION_OVERVIEW_LAYOUT, HEALTHY_GAME_ADVICE_LINES, HOME_LAYOUT, LAUNCH_LAYOUT,
   LEVEL_COMPLETE_LAYOUT, LEVEL_LAYOUT, LEVEL_SELECT_LAYOUT, RESTART_LABEL,
   SETTINGS_LAYOUT, bottleFeedbackVisual, bottlePlacement, buttonBaseLayout, buttonSpritePath,
-  collectionCardLayout, collectionPuzzlePiece, launchProgressFill, levelButtonVisual, levelInteractionRefreshMode,
+  collectionCardLayout, collectionCompleteLabel, collectionPuzzlePiece, collectionRewardLabel,
+  completionPrimaryLabel, launchProgressFill, levelButtonVisual, levelInteractionRefreshMode,
   levelSelectButton, potionParticleState, potionParticleVisuals, potionProgressLabel,
   mysteryPotionVisual, selectedBottleAuraVisual, shouldRenderBottle,
   type ButtonBaseLayout, type ButtonVariant, type LevelButtonState, type PotionParticleState,
@@ -429,8 +430,11 @@ export class ProductionBootstrap extends Component {
       color('#21102F', 246), color('#A37A52'), 18);
     this.addLabel(card, `第 ${collection.chapterId} 章`, 11, 0, 72, color('#C9A978'), 126);
     card.addComponent(Button);
+    const chapter = getChapter(collection.chapterId)!;
+    const firstLevelId = `level-${String(chapter.firstLevel).padStart(3, '0')}`;
+    const unlocked = isLevelUnlocked(this.progress, firstLevelId);
 
-    if (collection.artworkKey) {
+    if (collection.artworkKey && unlocked) {
       const progress = deriveCollectionProgress(this.progress, collection.chapterId);
       this.addSprite(card, `game/chibi/collection/${collection.artworkKey}/spriteFrame`,
         88, 88, 0, 25, token);
@@ -439,12 +443,10 @@ export class ProductionBootstrap extends Component {
         color('#FFE8AA'), 120);
       card.on(Button.EventType.CLICK, () => {
         this.resumeAudio();
-        const chapter = getChapter(collection.chapterId)!;
-        const firstLevelId = `level-${String(chapter.firstLevel).padStart(3, '0')}`;
         const nextFlow = openCollectionDetail(
           this.flow,
           collection.chapterId,
-          isLevelUnlocked(this.progress, firstLevelId),
+          unlocked,
         );
         if (nextFlow === this.flow) return;
         this.flow = nextFlow;
@@ -470,7 +472,9 @@ export class ProductionBootstrap extends Component {
       const label = lockedTip.getComponent(Label);
       const opacity = lockedTip.getComponent(UIOpacity);
       if (!label || !opacity) return;
-      label.string = `第 ${collection.chapterId} 章开放后解锁`;
+      label.string = collection.artworkKey
+        ? `完成第 ${chapter.firstLevel - 1} 关后解锁`
+        : `第 ${collection.chapterId} 章开放后解锁`;
       Tween.stopAllByTarget(opacity);
       opacity.opacity = 255;
       tween(opacity).delay(1).to(0.4, { opacity: 0 }).start();
@@ -588,15 +592,17 @@ export class ProductionBootstrap extends Component {
 
   private renderCollectionDetail(root: Node, chapterId: number, token: number): void {
     const collection = deriveCollectionProgress(this.progress, chapterId);
+    const collectionConfig = getPotionCollection(collection.chapterId)!;
+    const artworkPath = `game/chibi/collection/${collectionConfig.artworkKey}/spriteFrame`;
     const title = deriveHighestTitle(this.progress);
     this.addLabel(root, '炼金图鉴', 30, COLLECTION_LAYOUT.title.x, COLLECTION_LAYOUT.title.y,
       color('#FFF2CF'), COLLECTION_LAYOUT.title.width);
     this.renderTitleBadge(root, title, COLLECTION_LAYOUT.titleBadge, token);
-    this.renderCollectionPuzzle(root, collection, token);
+    this.renderCollectionPuzzle(root, collection, artworkPath, token);
     this.addLabel(root, '已收集 ' + collection.revealedPieces + '/' + collection.totalPieces, 17,
       0, COLLECTION_LAYOUT.progressY, color('#FFF0C2'), 240);
-    this.addLabel(root, '星露药水', 21, 0, -142, color('#D7C4FF'), COLLECTION_LAYOUT.description.width);
-    this.addLabel(root, '收集夜空星辉的稀有药水', 12, 0, -174,
+    this.addLabel(root, collectionConfig.name, 21, 0, -142, color('#D7C4FF'), COLLECTION_LAYOUT.description.width);
+    this.addLabel(root, collectionConfig.description, 12, 0, -174,
       color('#E6D5E9'), COLLECTION_LAYOUT.description.width);
     const milestone = collection.nextMilestone === null
       ? '完整药水已收入炼金图鉴'
@@ -650,7 +656,12 @@ export class ProductionBootstrap extends Component {
       square ? 0 : 24, square ? -23 : 0, color('#FFF4DF'), square ? 56 : 88);
   }
 
-  private renderCollectionPuzzle(root: Node, collection: CollectionProgress, token: number): void {
+  private renderCollectionPuzzle(
+    root: Node,
+    collection: CollectionProgress,
+    artworkPath: string,
+    token: number,
+  ): void {
     for (let index = 0; index < collection.totalPieces; index += 1) {
       const piece = collectionPuzzlePiece(index);
       const pieceNode = new Node('CollectionPuzzlePiece-' + (index + 1));
@@ -663,8 +674,7 @@ export class ProductionBootstrap extends Component {
       graphics.clear();
       graphics.rect(-piece.width / 2, -piece.height / 2, piece.width, piece.height);
       graphics.fill();
-      const art = this.addSprite(pieceNode,
-        'game/chibi/collection/star-dew-potion/spriteFrame',
+      const art = this.addSprite(pieceNode, artworkPath,
         COLLECTION_LAYOUT.puzzle.width, COLLECTION_LAYOUT.puzzle.height,
         piece.artOffsetX, piece.artOffsetY, token);
       if (index >= collection.revealedPieces) {
@@ -704,13 +714,16 @@ export class ProductionBootstrap extends Component {
 
   private renderLevelComplete(root: Node, token: number): void {
     const next = nextLevelConfig(this.session.levelId);
+    const chapter = chapterForLevel(this.currentLevel.number)!;
+    const chapterComplete = this.currentLevel.number === chapter.firstLevel + chapter.levelCount - 1;
+    const chapterLabel = chapter.id === 1 ? '第一章' : '第二章';
     const best = this.progress.bestMoves[this.session.levelId] ?? this.session.game.moves;
     this.addSprite(root, 'game/chibi/background/alchemy-room/spriteFrame', 393, 852, 0, 0, token);
     this.addPanel(root, 393, 852, 0, 0, color('#0C0614', 166));
     this.addSprite(root, 'game/chibi/ui/settings-dialog-panel/spriteFrame',
       LEVEL_COMPLETE_LAYOUT.panel.width, LEVEL_COMPLETE_LAYOUT.panel.height,
       LEVEL_COMPLETE_LAYOUT.panel.x, LEVEL_COMPLETE_LAYOUT.panel.y, token);
-    this.addLabel(root, next ? '炼金完成！' : '第一章完成！', 30,
+    this.addLabel(root, chapterComplete ? `${chapterLabel}完成！` : '炼金完成！', 30,
       LEVEL_COMPLETE_LAYOUT.title.x, LEVEL_COMPLETE_LAYOUT.title.y,
       color('#FFF2CF'), LEVEL_COMPLETE_LAYOUT.title.width);
     this.addLabel(root, `本局 ${this.session.game.moves} 步 · 最佳 ${best} 步`, 15,
@@ -720,7 +733,7 @@ export class ProductionBootstrap extends Component {
       this.addLabel(root, line, 14, 0, 26 - index * 28, color('#FFE5A3'), 280);
     });
 
-    this.addRasterButton(root, next ? `下一关 · 第 ${next.number} 关` : '返回选关', 'gold',
+    this.addRasterButton(root, completionPrimaryLabel(this.currentLevel.number, next?.number ?? null), 'gold',
       LEVEL_COMPLETE_LAYOUT.primaryButton.width, LEVEL_COMPLETE_LAYOUT.primaryButton.height,
       LEVEL_COMPLETE_LAYOUT.primaryButton.x, LEVEL_COMPLETE_LAYOUT.primaryButton.y, () => {
         if (next) this.switchLevel(next.id);
@@ -737,14 +750,15 @@ export class ProductionBootstrap extends Component {
   private completionRewardLines(): readonly string[] {
     const reward = this.completionReward;
     if (!reward) return [];
+    const chapterId = chapterForLevel(this.currentLevel.number)?.id ?? 1;
     if (reward.collectionCompleted) {
-      const lines = ['星露药水已收入图鉴'];
+      const lines = [collectionCompleteLabel(chapterId)];
       if (reward.titleChanged) lines.push('晋升 · ' + deriveHighestTitle(this.progress).title);
       return lines;
     }
     return reward.puzzlePiece === null
       ? []
-      : ['获得星露药水拼图 · ' + reward.puzzlePiece + '/6'];
+      : [collectionRewardLabel(chapterId, reward.puzzlePiece)];
   }
 
   private levelButtonState(level: LevelConfig): LevelButtonState {
