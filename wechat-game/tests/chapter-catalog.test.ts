@@ -8,12 +8,12 @@ import {
   publishedChapters,
 } from '../assets/scripts/core/chapter-catalog.ts';
 
-test('catalog defines ten non-overlapping thirty-level chapters and only chapter one is available', () => {
+test('catalog defines ten non-overlapping thirty-level chapters and publishes the first two', () => {
   assert.equal(CHAPTERS.length, 10);
   assert.deepEqual(CHAPTERS.map((chapter) => chapter.firstLevel), [
     1, 31, 61, 91, 121, 151, 181, 211, 241, 271,
   ]);
-  assert.deepEqual(publishedChapters().map((chapter) => chapter.id), [1]);
+  assert.deepEqual(publishedChapters().map((chapter) => chapter.id), [1, 2]);
   assert.equal(chapterForLevel(30)?.id, 1);
   assert.equal(chapterForLevel(31)?.id, 2);
 });
@@ -33,7 +33,7 @@ test('chapter two keeps its approved herb theme and forest collection identity',
     firstLevel: 31,
     levelCount: 30,
     collectionId: 'forest-potion',
-    releaseState: 'coming-soon',
+    releaseState: 'available',
   });
 });
 

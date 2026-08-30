@@ -22,7 +22,7 @@ export const CHAPTERS: readonly ChapterConfig[] = Object.freeze(TITLES.map((stag
   collectionId: index === 0
     ? 'star-dew-potion'
     : index === 1 ? 'forest-potion' : `chapter-${String(index + 1).padStart(2, '0')}-potion`,
-  releaseState: index === 0 ? 'available' : 'coming-soon' as const,
+  releaseState: index <= 1 ? 'available' : 'coming-soon' as const,
 })));
 
 export function getChapter(id: number): ChapterConfig | null {

@@ -21,7 +21,7 @@ test('first chapter publishes exactly thirty consecutive validated levels', () =
 
 test('only level one is tutorial and level two starts at seven to ten optimal moves', () => {
   assert.deepEqual(getLevelConfig('level-001')?.completionRule, { type: 'first-valid-pour' });
-  for (let number = 2; number <= 30; number += 1) {
+  for (let number = 2; number <= 60; number += 1) {
     const level = getLevelConfig(levelId(number));
     assert.equal(level?.completionRule.type, 'all-colors');
     if (level?.completionRule.type === 'all-colors') {
@@ -52,21 +52,38 @@ test('levels 25 to 27 satisfy peak metric envelopes and actual ratings ease from
   assert.deepEqual(getLevelConfig('level-012')?.initialState, createDemoState());
 });
 
-test('published boards are unique across the first chapter', () => {
-  const boardKeys = FIRST_CHAPTER_LEVELS.map((level) => JSON.stringify(
+test('all published boards are unique across both chapters', async () => {
+  const catalog = await import('../assets/scripts/core/level-catalog.ts');
+  assert.equal(Array.isArray(catalog.PUBLISHED_LEVELS), true);
+  const boardKeys = catalog.PUBLISHED_LEVELS.map((level) => JSON.stringify(
     level.initialState.bottles.map((bottle) => ({
       layers: bottle.layers,
       status: bottle.status,
     })),
   ));
-  assert.equal(new Set(boardKeys).size, FIRST_CHAPTER_LEVELS.length);
+  assert.equal(new Set(boardKeys).size, 60);
 });
 
-test('catalog lookup rejects unpublished ids and next-level lookup stops after level 30', () => {
+test('chapter two publishes levels 31 to 60 and next-level lookup crosses the chapter boundary', async () => {
+  const catalog = await import('../assets/scripts/core/level-catalog.ts');
+  assert.equal(catalog.GAME_CONFIG_VERSION, 'chapters-1-2.2026-08-29.1');
+  assert.equal(catalog.PUBLISHED_LEVELS?.length, 60);
+  assert.deepEqual(
+    catalog.levelsForChapter?.(2).map((level) => level.number),
+    Array.from({ length: 30 }, (_, index) => index + 31),
+  );
+  assert.equal(getLevelConfig('level-031')?.completionRule.type, 'all-colors');
+  assert.equal(getLevelConfig('level-060')?.number, 60);
+  assert.equal(nextLevelConfig('level-030')?.id, 'level-031');
+  assert.equal(nextLevelConfig('level-060'), null);
+});
+
+test('catalog lookup rejects unpublished ids after chapter two', () => {
   assert.equal(getLevelConfig('level-000'), null);
-  assert.equal(getLevelConfig('level-031'), null);
+  assert.equal(getLevelConfig('level-061'), null);
   assert.equal(nextLevelConfig('level-001')?.id, 'level-002');
   assert.equal(nextLevelConfig('level-029')?.id, 'level-030');
-  assert.equal(nextLevelConfig('level-030'), null);
+  assert.equal(nextLevelConfig('level-030')?.id, 'level-031');
+  assert.equal(nextLevelConfig('level-060'), null);
   assert.equal(nextLevelConfig('not-a-level'), null);
 });

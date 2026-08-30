@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 
 import { validateLevelConfig, type LevelConfig } from '../assets/scripts/core/level-config.ts';
 import { isCompleteBottle } from '../assets/scripts/core/water-sort.ts';
@@ -157,6 +158,7 @@ test('chapter two generation gates start hard and rise at the peak', async () =>
   assert.equal(peak.minimumSegments, 28);
   assert.ok(peak.minimumExploredStates >= 3_800);
   assert.ok(peak.minimumMisleadingBranchRatio >= 0.29);
+  assert.equal(peak.maximumOpeningMoves, 18);
   assert.equal(generator.chapterTwoGeneratorSeed(31), (0x2608_0000 + Math.imul(31, 104_729)) >>> 0);
   assert.throws(() => generator.chapterTwoGenerationSpec(30), RangeError);
   assert.throws(() => generator.chapterTwoGeneratorSeed(61), RangeError);
@@ -350,6 +352,37 @@ test('generation report records the exact target peak and every published metric
   }) => level.metrics.difficultyRating);
   assert.ok(easingRatings[0] > easingRatings[1]);
   assert.ok(easingRatings[1] > easingRatings[2]);
+});
+
+test('chapter two report records thirty generated levels without exemptions', () => {
+  const reportUrl = new URL(
+    '../assets/scripts/core/level-generation-report.chapter-02.json',
+    import.meta.url,
+  );
+  assert.equal(existsSync(reportUrl), true);
+  const report = JSON.parse(readFileSync(reportUrl, 'utf8'));
+
+  assert.equal(report.schemaVersion, 1);
+  assert.equal(report.chapterId, 2);
+  assert.equal(report.levels.length, 30);
+  assert.deepEqual(
+    report.levels.map((entry: { id: string }) => entry.id),
+    Array.from({ length: 30 }, (_, index) => `level-${String(index + 31).padStart(3, '0')}`),
+  );
+  for (const entry of report.levels) {
+    assert.equal(entry.source, 'generated');
+    assert.equal(entry.compatibilityExemption, null);
+  }
+});
+
+test('chapter two generation leaves the frozen first chapter data byte-for-byte unchanged', () => {
+  const data = readFileSync(
+    new URL('../assets/scripts/core/level-data.generated.ts', import.meta.url),
+  );
+  assert.equal(
+    createHash('sha256').update(data).digest('hex'),
+    '1072854a1cbe8685df288c869d8ebf515e68badf9ed7253dbc16c423ce6b5050',
+  );
 });
 
 test('reverse-move plans distinguish formula values from evidence-backed overrides', async () => {
