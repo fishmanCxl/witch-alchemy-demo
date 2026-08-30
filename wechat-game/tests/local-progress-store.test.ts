@@ -292,35 +292,41 @@ test('QA reset removes progress when the player had no progress before QA mode',
   assert.equal(store.isQaMode(), false);
 });
 
-test('QA console actions exist only in WeChat develop and trial environments', () => {
+test('QA console actions attach to the WeChat GameGlobal only in develop and trial environments', () => {
   const host = globalThis as typeof globalThis & {
     wx?: unknown;
     WitchAlchemyQA?: unknown;
+    GameGlobal?: { WitchAlchemyQA?: unknown };
   };
   const previousWx = host.wx;
   const previousQa = host.WitchAlchemyQA;
+  const previousGameGlobal = host.GameGlobal;
   const actions = { unlockAll: () => undefined, reset: () => undefined };
 
   try {
     for (const envVersion of ['develop', 'trial']) {
       host.wx = { getAccountInfoSync: () => ({ miniProgram: { envVersion } }) };
+      host.GameGlobal = {};
       const runtime = new PlatformRuntime();
       assert.equal(typeof runtime.registerQaActions, 'function');
       runtime.registerQaActions(actions);
-      assert.equal(host.WitchAlchemyQA, actions);
+      assert.equal(host.GameGlobal.WitchAlchemyQA, actions);
       runtime.dispose();
-      assert.equal(host.WitchAlchemyQA, undefined);
+      assert.equal(host.GameGlobal.WitchAlchemyQA, undefined);
     }
 
     host.wx = { getAccountInfoSync: () => ({ miniProgram: { envVersion: 'release' } }) };
+    host.GameGlobal = {};
     const runtime = new PlatformRuntime();
     runtime.registerQaActions(actions);
-    assert.equal(host.WitchAlchemyQA, undefined);
+    assert.equal(host.GameGlobal.WitchAlchemyQA, undefined);
     runtime.dispose();
   } finally {
     if (previousWx === undefined) delete host.wx;
     else host.wx = previousWx;
     if (previousQa === undefined) delete host.WitchAlchemyQA;
     else host.WitchAlchemyQA = previousQa;
+    if (previousGameGlobal === undefined) delete host.GameGlobal;
+    else host.GameGlobal = previousGameGlobal;
   }
 });

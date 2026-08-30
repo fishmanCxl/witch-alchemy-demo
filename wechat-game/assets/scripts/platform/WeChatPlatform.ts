@@ -37,7 +37,13 @@ export interface QaActions {
   reset(): void;
 }
 
-type QaGlobal = typeof globalThis & { WitchAlchemyQA?: QaActions };
+type QaGlobal = { WitchAlchemyQA?: QaActions };
+
+declare const GameGlobal: QaGlobal | undefined;
+
+function runtimeQaGlobal(): QaGlobal {
+  return typeof GameGlobal === 'undefined' ? globalThis as QaGlobal : GameGlobal;
+}
 
 export class WeChatRewardedAd implements RewardedAdPort {
   private readonly ad: RewardedVideoAdLike;
@@ -164,7 +170,7 @@ export class PlatformRuntime {
   registerQaActions(actions: QaActions): void {
     const envVersion = this.api?.getAccountInfoSync?.().miniProgram?.envVersion;
     if (envVersion !== 'develop' && envVersion !== 'trial') return;
-    (globalThis as QaGlobal).WitchAlchemyQA = actions;
+    runtimeQaGlobal().WitchAlchemyQA = actions;
     this.qaActions = actions;
   }
 
@@ -179,7 +185,7 @@ export class PlatformRuntime {
     this.api?.offNetworkStatusChange?.(this.networkListener);
     if (this.showListener) this.api?.offShow?.(this.showListener);
     if (this.hideListener) this.api?.offHide?.(this.hideListener);
-    const host = globalThis as QaGlobal;
+    const host = runtimeQaGlobal();
     if (this.qaActions && host.WitchAlchemyQA === this.qaActions) delete host.WitchAlchemyQA;
     this.qaActions = null;
   }
