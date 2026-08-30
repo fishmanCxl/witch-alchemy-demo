@@ -113,6 +113,7 @@ test('collection and title artwork is synchronized as loadable SpriteFrames', ()
   const collectionAssets = [
     'ui/icon-alchemy-book.png',
     'collection/star-dew-potion.png',
+    'collection/forest-potion.png',
     'titles/title-badge-novice.png',
     'titles/title-badge-junior.png',
     'effects/particle-scarlet-flame.png',

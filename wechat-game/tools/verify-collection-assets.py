@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[2] / 'prototype/public/assets/game/chibi
 EXPECTED = {
     'ui/icon-alchemy-book.png': (256, 256),
     'collection/star-dew-potion.png': (1024, 1024),
+    'collection/forest-potion.png': (512, 512),
     'titles/title-badge-novice.png': (768, 384),
     'titles/title-badge-junior.png': (768, 384),
     'effects/particle-scarlet-flame.png': (64, 64),
@@ -21,5 +22,7 @@ for relative, expected_size in EXPECTED.items():
         assert image.size == expected_size, (relative, image.size)
         rgba = image.convert('RGBA')
         assert rgba.getchannel('A').getextrema() == (0, 255), relative
+
+assert (ROOT / 'collection/forest-potion.png').stat().st_size <= 307_200
 
 print(f'verified {len(EXPECTED)} collection assets')

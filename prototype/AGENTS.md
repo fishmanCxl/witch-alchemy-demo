@@ -10,6 +10,7 @@
 - The witch has idle, casting, and completed-potion celebration states. Bottle interaction triggers casting; one second without interaction returns her to idle.
 - The prototype simulates rewarded-ad completion locally and does not integrate an advertising SDK.
 - The approved art direction is cute chibi storybook alchemy: approximately three-head-tall witch proportions, rounded silhouettes, clean thick outlines, deep-purple ambient light, and warm-orange candlelight.
+- The chapter-two rare collection is the Forest Potion: a centered leaf-bud glass bottle with emerald-to-teal liquid, cork, small vines, a gold leaf pendant, sparse fireflies, and a soft green magic halo. Its approved PNG is 512×512 with real transparency, stays under 300 KiB, and keeps key details clear of the 2×3 puzzle seams.
 - Witch animation uses seven production states: idle 18, prepare 12, raise 12, cast 20, celebrate 14, return 18, and invalid feedback 12. Every runtime frame is 512×512, independently normalized to a 370±3px character height, and uses the fixed foot anchor `(256,470)`; cast/celebrate magic remains a separate synchronized overlay.
 - Potion readability uses both high-separation hues and a unique particle language per potion color.
 - Bottle placement uses deterministic controlled randomness inside the fixed 5 × 3 safety grid: x offset within ±5px, y offset within ±10px, and rotation within ±2 degrees. A level never rerolls positions while active.
