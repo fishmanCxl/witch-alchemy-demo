@@ -434,3 +434,50 @@ test('bottle and stamina rewards share the production busy guard', () => {
     assert.match(handler, /this\.rewardBusy = false/);
   }
 });
+
+test('confirmed exit cancels pending completion before its single stamina charge', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const exit = bootstrap.slice(
+    bootstrap.indexOf('private renderExitConfirm'),
+    bootstrap.indexOf('private consumeOneStamina'),
+  );
+  const cancelCallbacks = exit.indexOf('this.unscheduleAllCallbacks()');
+  const clearPending = exit.indexOf('this.completionScheduled = false');
+  const saveSession = exit.indexOf('this.store.saveSession(this.session)');
+  const charge = exit.indexOf('this.staminaSpentForActiveLevel = this.consumeOneStamina()');
+
+  assert.ok(cancelCallbacks >= 0);
+  assert.ok(clearPending > cancelCallbacks);
+  assert.ok(saveSession > clearPending);
+  assert.ok(charge > saveSession);
+});
+
+test('completion and exit retries share one durable-before-memory stamina charge', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const switchLevel = bootstrap.slice(
+    bootstrap.indexOf('private switchLevel'),
+    bootstrap.indexOf('private renderLevel('),
+  );
+  const persist = bootstrap.slice(
+    bootstrap.indexOf('private persistCompletion'),
+    bootstrap.indexOf('private async syncCloudProgress'),
+  );
+  const exit = bootstrap.slice(
+    bootstrap.indexOf('private renderExitConfirm'),
+    bootstrap.indexOf('private consumeOneStamina'),
+  );
+  const consume = bootstrap.slice(
+    bootstrap.indexOf('private consumeOneStamina'),
+    bootstrap.indexOf('private renderStaminaIcon'),
+  );
+
+  assert.match(bootstrap, /private staminaSpentForActiveLevel = false/);
+  assert.match(switchLevel, /this\.staminaSpentForActiveLevel = false/);
+  assert.match(persist, /if \(!this\.staminaSpentForActiveLevel\) \{\s+this\.staminaSpentForActiveLevel = this\.consumeOneStamina\(\);\s+\}/);
+  assert.match(exit, /if \(!this\.staminaSpentForActiveLevel\) \{\s+this\.staminaSpentForActiveLevel = this\.consumeOneStamina\(\);\s+\}/);
+  assert.ok(persist.indexOf('this.staminaSpentForActiveLevel = this.consumeOneStamina()')
+    < persist.indexOf('this.store.clearSession(this.session.levelId)'));
+  assert.ok(persist.indexOf('} catch {') < persist.indexOf('this.store.clearSession(this.session.levelId)'));
+  assert.ok(consume.indexOf('this.store.saveStamina(next)') < consume.indexOf('this.stamina = next'));
+  assert.match(consume, /private consumeOneStamina\(\): boolean/);
+});

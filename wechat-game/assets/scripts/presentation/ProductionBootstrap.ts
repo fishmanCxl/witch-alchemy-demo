@@ -87,6 +87,7 @@ export class ProductionBootstrap extends Component {
   private levelMessageLabel: Label | null = null;
   private levelWitchAnimator: WitchAnimator | null = null;
   private completionScheduled = false;
+  private staminaSpentForActiveLevel = false;
   private readonly platform = new PlatformRuntime({
     unlockAll: () => {
       this.store.saveSession(this.session);
@@ -893,6 +894,7 @@ export class ProductionBootstrap extends Component {
     this.flow = enterSelectedLevel(this.flow, levelId, true);
     this.unscheduleAllCallbacks();
     this.completionScheduled = false;
+    this.staminaSpentForActiveLevel = false;
     this.completionSaveFailed = false;
     this.levelStartedAt = Date.now();
     this.undoCount = 0;
@@ -1204,24 +1206,31 @@ export class ProductionBootstrap extends Component {
 
     try {
       this.store.saveProgress(nextProgress);
-      this.completionReward = deriveCompletionReward(
-        previousProgress,
-        nextProgress,
-        this.session.levelId,
-      );
-      if (this.completionReward.puzzlePiece !== null) this.collectionHasNewPiece = true;
-      this.consumeOneStamina();
-      this.store.clearSession(this.session.levelId);
-      this.progress = nextProgress;
-      this.completionSaveFailed = false;
-      this.flow = showLevelComplete(this.flow, nextLevelConfig(this.session.levelId)?.id ?? null);
-      this.render();
-      void this.syncAfterCompletion();
+      if (!this.staminaSpentForActiveLevel) {
+        this.staminaSpentForActiveLevel = this.consumeOneStamina();
+      }
     } catch {
       this.completionSaveFailed = true;
       this.session = { ...this.session, message: '进度保存失败，请重试', witchMood: 'oops' };
       this.render();
+      return;
     }
+    this.completionReward = deriveCompletionReward(
+      previousProgress,
+      nextProgress,
+      this.session.levelId,
+    );
+    if (this.completionReward.puzzlePiece !== null) this.collectionHasNewPiece = true;
+    try {
+      this.store.clearSession(this.session.levelId);
+    } catch {
+      // Progress and stamina are already durable; a stale snapshot must not make the charge retryable.
+    }
+    this.progress = nextProgress;
+    this.completionSaveFailed = false;
+    this.flow = showLevelComplete(this.flow, nextLevelConfig(this.session.levelId)?.id ?? null);
+    this.render();
+    void this.syncAfterCompletion();
   }
 
   private async syncCloudProgress(): Promise<void> {
@@ -1402,8 +1411,12 @@ export class ProductionBootstrap extends Component {
     this.addLabel(panel, '当前关卡进度会保留', 11, 0, 5, color('#DCC7E8'), 240);
     this.addRasterButton(panel, '确认返回', 'gold', STAMINA_LAYOUT.exitConfirm.width,
       STAMINA_LAYOUT.exitConfirm.height, STAMINA_LAYOUT.exitConfirm.x, STAMINA_LAYOUT.exitConfirm.y, () => {
+      this.unscheduleAllCallbacks();
+      this.completionScheduled = false;
       this.store.saveSession(this.session);
-      this.consumeOneStamina();
+      if (!this.staminaSpentForActiveLevel) {
+        this.staminaSpentForActiveLevel = this.consumeOneStamina();
+      }
       this.completionReward = null;
       this.flow = returnHome(this.flow);
       this.render();
@@ -1415,11 +1428,12 @@ export class ProductionBootstrap extends Component {
     }, false, undefined, 15);
   }
 
-  private consumeOneStamina(): void {
+  private consumeOneStamina(): boolean {
     const next = spendStamina(this.stamina, Date.now());
-    if (!next) return;
+    if (!next) return false;
+    this.store.saveStamina(next);
     this.stamina = next;
-    this.store.saveStamina(this.stamina);
+    return true;
   }
 
   private renderStaminaIcon(root: Node, index: 0 | 1, x: number, y: number, size: number, token: number): void {

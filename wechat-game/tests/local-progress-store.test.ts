@@ -331,7 +331,13 @@ test('QA console actions attach to the WeChat GameGlobal only in develop and tri
 test('stamina uses its own key and corrupt data never changes progress or sessions', () => {
   const storage = new MemoryStorage();
   const store = new LocalProgressStore(storage);
-  const progress = { ...store.loadProgress(), revision: 3, currentLevel: 'level-003', completedThrough: 2 };
+  const progress = {
+    ...store.loadProgress(),
+    revision: 3,
+    currentLevel: 'level-002',
+    highestUnlockedLevel: 'level-002',
+    completedLevels: ['level-001'],
+  };
   store.saveProgress(progress);
   storage.setItem('witch-water-sort:stamina:v1', '{bad');
 
