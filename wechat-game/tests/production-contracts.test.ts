@@ -435,21 +435,31 @@ test('bottle and stamina rewards share the production busy guard', () => {
   }
 });
 
-test('confirmed exit cancels pending completion before its single stamina charge', () => {
+test('final settling blocks exit without cancelling completion callbacks or charging stamina', () => {
   const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
-  const exit = bootstrap.slice(
-    bootstrap.indexOf('private renderExitConfirm'),
+  const apply = bootstrap.slice(
+    bootstrap.indexOf('private applySessionResult'),
+    bootstrap.indexOf('private persistCompletion'),
+  );
+  const confirmStart = bootstrap.indexOf('private confirmLevelExit');
+  const confirm = bootstrap.slice(
+    confirmStart,
     bootstrap.indexOf('private consumeOneStamina'),
   );
-  const cancelCallbacks = exit.indexOf('this.unscheduleAllCallbacks()');
-  const clearPending = exit.indexOf('this.completionScheduled = false');
-  const saveSession = exit.indexOf('this.store.saveSession(this.session)');
-  const charge = exit.indexOf('this.staminaSpentForActiveLevel = this.consumeOneStamina()');
+  const settings = bootstrap.slice(
+    bootstrap.indexOf('private renderSettings('),
+    bootstrap.indexOf('private addMessage'),
+  );
+  const guard = /if \(this\.completionScheduled \|\| this\.session\.pendingCompletion\.length > 0 \|\| this\.session\.levelComplete\) return;/;
 
-  assert.ok(cancelCallbacks >= 0);
-  assert.ok(clearPending > cancelCallbacks);
-  assert.ok(saveSession > clearPending);
-  assert.ok(charge > saveSession);
+  assert.ok(confirmStart >= 0);
+  assert.match(confirm, guard);
+  assert.match(settings, guard);
+  assert.ok(confirm.indexOf(') return;') < confirm.indexOf('this.unscheduleAllCallbacks()'));
+  assert.ok(confirm.indexOf(') return;') < confirm.indexOf('this.store.saveSession(this.session)'));
+  assert.ok(confirm.indexOf(') return;') < confirm.indexOf('this.consumeOneStamina()'));
+  assert.ok(confirm.indexOf(') return;') < confirm.indexOf('returnHome(this.flow)'));
+  assert.match(apply, /this\.scheduleOnce\(\(\) => \{[\s\S]*this\.persistCompletion\(\);/);
 });
 
 test('completion and exit retries share one durable-before-memory stamina charge', () => {

@@ -1410,22 +1410,25 @@ export class ProductionBootstrap extends Component {
     this.addLabel(panel, '返回主页将消耗 1 点体力', 15, 0, 34, color('#FFE3A0'), 260);
     this.addLabel(panel, '当前关卡进度会保留', 11, 0, 5, color('#DCC7E8'), 240);
     this.addRasterButton(panel, '确认返回', 'gold', STAMINA_LAYOUT.exitConfirm.width,
-      STAMINA_LAYOUT.exitConfirm.height, STAMINA_LAYOUT.exitConfirm.x, STAMINA_LAYOUT.exitConfirm.y, () => {
-      this.unscheduleAllCallbacks();
-      this.completionScheduled = false;
-      this.store.saveSession(this.session);
-      if (!this.staminaSpentForActiveLevel) {
-        this.staminaSpentForActiveLevel = this.consumeOneStamina();
-      }
-      this.completionReward = null;
-      this.flow = returnHome(this.flow);
-      this.render();
-    }, false, 'icon-settings-home', 16);
+      STAMINA_LAYOUT.exitConfirm.height, STAMINA_LAYOUT.exitConfirm.x, STAMINA_LAYOUT.exitConfirm.y,
+      () => this.confirmLevelExit(), false, 'icon-settings-home', 16);
     this.addRasterButton(panel, '继续炼金', 'purple', STAMINA_LAYOUT.exitCancel.width,
       STAMINA_LAYOUT.exitCancel.height, STAMINA_LAYOUT.exitCancel.x, STAMINA_LAYOUT.exitCancel.y, () => {
       this.flow = closeExitConfirm(this.flow);
       this.render();
     }, false, undefined, 15);
+  }
+
+  private confirmLevelExit(): void {
+    if (this.completionScheduled || this.session.pendingCompletion.length > 0 || this.session.levelComplete) return;
+    this.unscheduleAllCallbacks();
+    this.store.saveSession(this.session);
+    if (!this.staminaSpentForActiveLevel) {
+      this.staminaSpentForActiveLevel = this.consumeOneStamina();
+    }
+    this.completionReward = null;
+    this.flow = returnHome(this.flow);
+    this.render();
   }
 
   private consumeOneStamina(): boolean {
@@ -1486,6 +1489,7 @@ export class ProductionBootstrap extends Component {
       SETTINGS_LAYOUT.homeButton.width, SETTINGS_LAYOUT.homeButton.height,
       SETTINGS_LAYOUT.homeButton.x, SETTINGS_LAYOUT.homeButton.y, () => {
       if (this.flow.scene === 'level') {
+        if (this.completionScheduled || this.session.pendingCompletion.length > 0 || this.session.levelComplete) return;
         this.flow = openExitConfirm(this.flow);
         this.render();
       } else this.returnToHome();
