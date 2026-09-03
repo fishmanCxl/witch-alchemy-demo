@@ -375,3 +375,62 @@ test('production launch ignores stale preload callbacks before UI work and clear
   assert.match(exitBody, /this\.clearLaunchNodeReferences\(\);\s+this\.render\(\);/);
   assert.match(bootstrap, /private clearLaunchNodeReferences\(\): void \{\s+this\.launchProgressFill = null;\s+this\.launchPercentLabel = null;\s+this\.launchStatusLabel = null;\s+this\.launchRetryButton = null;\s+\}/);
 });
+
+test('production integrates stamina startup, refill, countdown labels, and zero-value entry guard', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const switchLevel = bootstrap.slice(
+    bootstrap.indexOf('private switchLevel'),
+    bootstrap.indexOf('private renderLevel('),
+  );
+  const update = bootstrap.slice(
+    bootstrap.indexOf('update(deltaTime: number): void'),
+    bootstrap.indexOf('private scheduleLaunchMinimumCheck'),
+  );
+
+  assert.match(bootstrap, /private stamina: StaminaState/);
+  assert.match(bootstrap, /this\.store\.loadStamina\(Date\.now\(\)\)/);
+  assert.match(bootstrap, /spendStamina\(this\.stamina, Date\.now\(\)\)/);
+  assert.match(bootstrap, /grantAdStamina\(this\.stamina, Date\.now\(\)\)/);
+  assert.match(bootstrap, /看广告 · 恢复 5 点/);
+  assert.match(bootstrap, /返回主页将消耗 1 点体力/);
+  assert.match(bootstrap, /game\/chibi\/ui\/stamina-icons\/spriteFrame/);
+  assert.match(update, /reconcileStamina\(this\.stamina, Date\.now\(\)\)/);
+  assert.match(update, /this\.refreshStaminaLabels\(\)/);
+  assert.doesNotMatch(update, /this\.render\(\)/);
+  assert.match(switchLevel, /reconcileStamina\(this\.stamina, Date\.now\(\)\)/);
+  assert.match(switchLevel, /if \(this\.stamina\.value === 0\)[\s\S]*openStaminaDialog\(this\.flow\)[\s\S]*this\.render\(\);[\s\S]*return;/);
+  assert.ok(switchLevel.indexOf('this.stamina.value === 0') < switchLevel.indexOf('selectCurrentLevel'));
+});
+
+test('production spends stamina only after completion progress and before clearing the session', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const persist = bootstrap.slice(
+    bootstrap.indexOf('private persistCompletion'),
+    bootstrap.indexOf('private async syncCloudProgress'),
+  );
+  const save = persist.indexOf('this.store.saveProgress(nextProgress)');
+  const spend = persist.indexOf('this.consumeOneStamina()');
+  const clear = persist.indexOf('this.store.clearSession(this.session.levelId)');
+
+  assert.ok(save >= 0);
+  assert.ok(spend > save);
+  assert.ok(clear > spend);
+});
+
+test('bottle and stamina rewards share the production busy guard', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const bottle = bootstrap.slice(
+    bootstrap.indexOf('private async handleRewardedBottle'),
+    bootstrap.indexOf('private rewardFailureMessage'),
+  );
+  const stamina = bootstrap.slice(
+    bootstrap.indexOf('private async handleRewardedStamina'),
+    bootstrap.indexOf('private renderExitConfirm'),
+  );
+
+  for (const handler of [bottle, stamina]) {
+    assert.match(handler, /this\.rewardBusy/);
+    assert.match(handler, /this\.rewardBusy = true/);
+    assert.match(handler, /this\.rewardBusy = false/);
+  }
+});

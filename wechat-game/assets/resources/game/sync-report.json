@@ -1,8 +1,8 @@
 {
   "source": "prototype/public/assets/game",
-  "generatedAt": "2026-08-27T13:03:58.355Z",
-  "files": 193,
-  "bytes": 18905567,
+  "generatedAt": "2026-09-03T01:42:40.474Z",
+  "files": 194,
+  "bytes": 18932662,
   "paths": [
     "audio/audio-manifest.json",
     "audio/bgm/alchemy-room-loop.mp3",
@@ -196,6 +196,7 @@
     "chibi/ui/icon-sfx-on.png",
     "chibi/ui/icon-undo.png",
     "chibi/ui/message-panel.png",
-    "chibi/ui/settings-dialog-panel.png"
+    "chibi/ui/settings-dialog-panel.png",
+    "chibi/ui/stamina-icons.png"
   ]
 }

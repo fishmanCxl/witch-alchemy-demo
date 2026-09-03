@@ -13,20 +13,25 @@ import {
   completeLevel, createDefaultProgress, isLevelUnlocked, selectCurrentLevel, type PlayerProgress,
 } from '../core/level-progress.ts';
 import {
+  STAMINA_MAX, createFullStamina, grantAdStamina, nextRecoveryMs, reconcileStamina, spendStamina,
+  type StaminaState,
+} from '../core/stamina.ts';
+import {
   deriveCollectionProgress, deriveCompletionReward, deriveHighestTitle, type CollectionProgress,
   type CompletionReward, type HighestTitle,
 } from '../core/collection-progress.ts';
 import { chapterForLevel, getChapter } from '../core/chapter-catalog.ts';
 import { POTION_COLLECTIONS, getPotionCollection, type PotionCollectionConfig } from '../core/potion-collection-catalog.ts';
 import {
-  closeCollection, closeCollectionDetail, createSceneFlow, enterSelectedLevel, openCollection, openCollectionDetail,
-  openLevelSelect, returnHome, selectLevelChapter,
+  closeCollection, closeCollectionDetail, closeExitConfirm, closeStaminaDialog, createSceneFlow, enterSelectedLevel,
+  openCollection, openCollectionDetail, openExitConfirm, openLevelSelect, openStaminaDialog, returnHome, selectLevelChapter,
   showLevelComplete, toggleSettings, toggleSound, type SceneFlowState,
 } from '../core/scene-flow.ts';
 import type { PotionColor } from '../core/types.ts';
 import { LocalProgressStore } from '../platform/LocalProgressStore.ts';
 import { PlatformRuntime } from '../platform/WeChatPlatform.ts';
 import { RewardedBottleCoordinator, type RewardFlowStatus } from '../platform/rewarded-bottle.ts';
+import { RewardedStaminaCoordinator } from '../platform/rewarded-stamina.ts';
 import { applyProgressSyncResult, ProgressSyncCoordinator } from '../platform/progress-sync.ts';
 import { createPlatformStorage } from '../platform/storage-port.ts';
 import { AudioDirector } from './AudioDirector.ts';
@@ -38,9 +43,9 @@ import {
 import {
   ART_FONT_RESOURCE, COLLECTION_LAYOUT, COLLECTION_OVERVIEW_LAYOUT, HEALTHY_GAME_ADVICE_LINES, HOME_LAYOUT, LAUNCH_LAYOUT,
   LEVEL_COMPLETE_LAYOUT, LEVEL_LAYOUT, LEVEL_SELECT_LAYOUT, RESTART_LABEL,
-  SETTINGS_LAYOUT, bottleFeedbackVisual, bottlePlacement, buttonBaseLayout, buttonSpritePath,
+  SETTINGS_LAYOUT, STAMINA_LAYOUT, bottleFeedbackVisual, bottlePlacement, buttonBaseLayout, buttonSpritePath,
   collectionCardLayout, collectionCompleteLabel, collectionPuzzlePiece, collectionRewardLabel,
-  completionPrimaryLabel, launchProgressFill, levelButtonVisual, levelInteractionRefreshMode,
+  completionPrimaryLabel, formatRecoveryCountdown, launchProgressFill, levelButtonVisual, levelInteractionRefreshMode,
   levelSelectButton, potionParticleState, potionParticleVisuals, potionProgressLabel,
   mysteryPotionVisual, selectedBottleAuraVisual, shouldRenderBottle,
   type ButtonBaseLayout, type ButtonVariant, type LevelButtonState, type PotionParticleState,
@@ -66,6 +71,7 @@ function color(hex: string, alpha = 255): Color {
 export class ProductionBootstrap extends Component {
   private flow: SceneFlowState = createSceneFlow();
   private progress: PlayerProgress = createDefaultProgress();
+  private stamina: StaminaState = createFullStamina(Date.now());
   private currentLevel: LevelConfig = FIRST_CHAPTER_LEVELS[0];
   private session: GameSession = createGameSession(this.currentLevel);
   private surface: Node | null = null;
@@ -89,8 +95,15 @@ export class ProductionBootstrap extends Component {
     reset: () => this.applyQaProgress(this.store.resetQaMode()),
   });
   private rewarded: RewardedBottleCoordinator | null = null;
+  private staminaRewarded: RewardedStaminaCoordinator | null = null;
   private progressSync: ProgressSyncCoordinator | null = null;
   private rewardBusy = false;
+  private staminaTickAccumulator = 0;
+  private homeStaminaValueLabel: Label | null = null;
+  private homeStaminaCountdownLabel: Label | null = null;
+  private staminaDialogValueLabel: Label | null = null;
+  private staminaDialogCountdownLabel: Label | null = null;
+  private staminaMessage = '';
   private completionSaveFailed = false;
   private completionReward: CompletionReward | null = null;
   private collectionHasNewPiece = false;
@@ -105,6 +118,7 @@ export class ProductionBootstrap extends Component {
   start(): void {
     view.setDesignResolutionSize(393, 852, ResolutionPolicy.FIXED_WIDTH);
     this.progress = this.store.migrateLegacyLevel12();
+    this.stamina = this.store.loadStamina(Date.now());
     this.currentLevel = getLevelConfig(this.progress.currentLevel) ?? FIRST_CHAPTER_LEVELS[0];
     this.session = this.store.loadSession(this.currentLevel);
     this.flow = {
@@ -116,6 +130,7 @@ export class ProductionBootstrap extends Component {
     this.audio.initialize(this.flow.soundEnabled);
     const rewardPorts = this.platform.createRewardedPorts(REWARDED_AD_UNIT_ID);
     this.rewarded = new RewardedBottleCoordinator(rewardPorts.ad, rewardPorts.claims);
+    this.staminaRewarded = new RewardedStaminaCoordinator(rewardPorts.ad);
     this.progressSync = new ProgressSyncCoordinator(this.platform.createProgressSyncPort());
     this.platform.bindLifecycle(
       () => this.handlePlatformForeground(),
@@ -130,6 +145,18 @@ export class ProductionBootstrap extends Component {
       for (const label of this.surface?.getComponentsInChildren(Label) ?? []) label.font = font;
     });
     this.startLaunchPreload();
+  }
+
+  update(deltaTime: number): void {
+    this.staminaTickAccumulator += deltaTime;
+    if (this.staminaTickAccumulator < 1) return;
+    this.staminaTickAccumulator %= 1;
+    const reconciled = reconcileStamina(this.stamina, Date.now());
+    if (reconciled !== this.stamina) {
+      this.stamina = reconciled;
+      this.store.saveStamina(this.stamina);
+    }
+    this.refreshStaminaLabels();
   }
 
   private scheduleLaunchMinimumCheck(): void {
@@ -151,6 +178,12 @@ export class ProductionBootstrap extends Component {
 
   private handlePlatformForeground(): void {
     this.audio?.setForeground(true);
+    const reconciled = reconcileStamina(this.stamina, Date.now());
+    if (reconciled !== this.stamina) {
+      this.stamina = reconciled;
+      this.store.saveStamina(this.stamina);
+    }
+    this.refreshStaminaLabels();
     if (!this.isLaunchActive()) void this.syncCloudProgress();
   }
 
@@ -299,6 +332,10 @@ export class ProductionBootstrap extends Component {
   private render(): void {
     this.renderToken += 1;
     this.clearLevelReferences();
+    this.homeStaminaValueLabel = null;
+    this.homeStaminaCountdownLabel = null;
+    this.staminaDialogValueLabel = null;
+    this.staminaDialogCountdownLabel = null;
     this.surface?.destroy();
     this.bottleNodes.clear();
     this.particleAnimators.clear();
@@ -311,6 +348,8 @@ export class ProductionBootstrap extends Component {
     else this.renderLevel(this.surface, this.renderToken);
     this.renderSettingsButton(this.surface, this.renderToken);
     if (this.flow.settingsOpen) this.renderSettings(this.surface, this.renderToken);
+    if (this.flow.staminaDialogOpen) this.renderStaminaDialog(this.surface, this.renderToken);
+    if (this.flow.exitConfirmOpen) this.renderExitConfirm(this.surface, this.renderToken);
   }
 
   private clearLevelReferences(): void {
@@ -326,6 +365,7 @@ export class ProductionBootstrap extends Component {
     this.addLabel(root, '暮影炼金室', 12, HOME_LAYOUT.header.x, 350, color('#DDBED2'), HOME_LAYOUT.header.width, Label.HorizontalAlign.LEFT);
     this.addLabel(root, `第 ${this.currentLevel.number} 关`, 34, HOME_LAYOUT.header.x, 316,
       color('#FFF4DF'), HOME_LAYOUT.header.width, Label.HorizontalAlign.LEFT);
+    this.renderStaminaBar(root, token);
     const titleBadge = this.renderTitleBadge(root, title, HOME_LAYOUT.titleBadge, token);
     tween(titleBadge).repeatForever(
       tween<Node>()
@@ -831,6 +871,17 @@ export class ProductionBootstrap extends Component {
   private switchLevel(levelId: string): void {
     const level = getLevelConfig(levelId);
     if (!level || !isLevelUnlocked(this.progress, levelId)) return;
+    const reconciled = reconcileStamina(this.stamina, Date.now());
+    if (reconciled !== this.stamina) {
+      this.stamina = reconciled;
+      this.store.saveStamina(this.stamina);
+    }
+    if (this.stamina.value === 0) {
+      this.staminaMessage = '';
+      this.flow = openStaminaDialog(this.flow);
+      this.render();
+      return;
+    }
     this.completionReward = null;
     this.store.saveSession(this.session);
     const selected = selectCurrentLevel(this.progress, levelId);
@@ -1159,6 +1210,7 @@ export class ProductionBootstrap extends Component {
         this.session.levelId,
       );
       if (this.completionReward.puzzlePiece !== null) this.collectionHasNewPiece = true;
+      this.consumeOneStamina();
       this.store.clearSession(this.session.levelId);
       this.progress = nextProgress;
       this.completionSaveFailed = false;
@@ -1250,6 +1302,136 @@ export class ProductionBootstrap extends Component {
     }
   }
 
+  private renderStaminaBar(root: Node, token: number): void {
+    const layout = STAMINA_LAYOUT.homeBar;
+    const bar = this.addPanel(root, layout.width, layout.height, layout.x, layout.y,
+      color('#251134', 236), color('#E6BD70'), 18);
+    bar.name = 'StaminaBar';
+    bar.addComponent(Button);
+    bar.on(Button.EventType.CLICK, () => {
+      this.resumeAudio();
+      this.staminaMessage = '';
+      this.flow = openStaminaDialog(this.flow);
+      this.render();
+    });
+    this.renderStaminaIcon(bar, 0, -52, 0, 34, token);
+    this.homeStaminaValueLabel = this.addLabel(bar, '', 15, -13, 7, color('#FFF0C2'), 48)
+      .getComponent(Label);
+    this.homeStaminaCountdownLabel = this.addLabel(bar, '', 9, 31, -10, color('#D9C3E2'), 68)
+      .getComponent(Label);
+    this.refreshStaminaLabels();
+  }
+
+  private staminaRecoveryText(now: number): string {
+    return this.stamina.value >= STAMINA_MAX
+      ? '体力已满'
+      : `恢复 ${formatRecoveryCountdown(nextRecoveryMs(this.stamina, now))}`;
+  }
+
+  private refreshStaminaLabels(): void {
+    const value = `${this.stamina.value}/${STAMINA_MAX}`;
+    const countdown = this.staminaRecoveryText(Date.now());
+    if (this.homeStaminaValueLabel?.node.isValid) this.homeStaminaValueLabel.string = value;
+    if (this.homeStaminaCountdownLabel?.node.isValid) this.homeStaminaCountdownLabel.string = countdown;
+    if (this.staminaDialogValueLabel?.node.isValid) this.staminaDialogValueLabel.string = value;
+    if (this.staminaDialogCountdownLabel?.node.isValid) this.staminaDialogCountdownLabel.string = countdown;
+  }
+
+  private renderStaminaDialog(root: Node, token: number): void {
+    const shield = new Node('StaminaDialogShield');
+    shield.addComponent(UITransform).setContentSize(393, 852);
+    shield.addComponent(BlockInputEvents);
+    root.addChild(shield);
+    this.addPanel(shield, 393, 852, 0, 0, color('#090411', 184));
+    const panel = new Node('StaminaDialog');
+    panel.setPosition(STAMINA_LAYOUT.dialog.x, STAMINA_LAYOUT.dialog.y);
+    panel.addComponent(UITransform).setContentSize(STAMINA_LAYOUT.dialog.width, STAMINA_LAYOUT.dialog.height);
+    shield.addChild(panel);
+    this.addSprite(panel, 'game/chibi/ui/settings-dialog-panel/spriteFrame',
+      STAMINA_LAYOUT.dialog.width, STAMINA_LAYOUT.dialog.height, 0, 0, token);
+    this.addLabel(panel, '体力补给', 27, 0, 148, color('#FFF2CF'), 220);
+    this.addIconButton(panel, '关闭体力补给', 'icon-settings-close', STAMINA_LAYOUT.close, () => {
+      this.flow = closeStaminaDialog(this.flow);
+      this.render();
+    });
+    this.renderStaminaIcon(panel, 0, 0, 82, 64, token);
+    this.staminaDialogValueLabel = this.addLabel(panel, '', 24, 0, 28, color('#FFF0C2'), 150)
+      .getComponent(Label);
+    this.staminaDialogCountdownLabel = this.addLabel(panel, '', 13, 0, -3, color('#DCC7E8'), 220)
+      .getComponent(Label);
+    this.addLabel(panel, '每 30 分钟恢复 1 点 · 上限 10 点', 11, 0, -31, color('#BDAFC4'), 250);
+    const adButton = this.addRasterButton(panel, '看广告 · 恢复 5 点', 'gold',
+      STAMINA_LAYOUT.adButton.width, STAMINA_LAYOUT.adButton.height,
+      STAMINA_LAYOUT.adButton.x, STAMINA_LAYOUT.adButton.y,
+      () => { void this.handleRewardedStamina(); }, this.rewardBusy, undefined, 16);
+    this.renderStaminaIcon(adButton, 1, -92, 0, 34, token);
+    if (this.staminaMessage) this.addLabel(panel, this.staminaMessage, 11, 0, -132, color('#FFE3A0'), 270);
+    this.refreshStaminaLabels();
+  }
+
+  private async handleRewardedStamina(): Promise<void> {
+    this.resumeAudio();
+    if (this.rewardBusy || !this.staminaRewarded) return;
+    this.rewardBusy = true;
+    this.staminaMessage = '正在准备激励广告…';
+    this.render();
+    const result = await this.staminaRewarded.run(this.platform.isOnline());
+    this.rewardBusy = false;
+    if (result === 'completed') {
+      this.stamina = grantAdStamina(this.stamina, Date.now());
+      this.store.saveStamina(this.stamina);
+      this.staminaMessage = '体力已恢复';
+    } else this.staminaMessage = this.rewardFailureMessage(result);
+    this.render();
+  }
+
+  private renderExitConfirm(root: Node, token: number): void {
+    const shield = new Node('ExitConfirmShield');
+    shield.addComponent(UITransform).setContentSize(393, 852);
+    shield.addComponent(BlockInputEvents);
+    root.addChild(shield);
+    this.addPanel(shield, 393, 852, 0, 0, color('#090411', 184));
+    const panel = new Node('ExitConfirmDialog');
+    panel.setPosition(STAMINA_LAYOUT.exitDialog.x, STAMINA_LAYOUT.exitDialog.y);
+    panel.addComponent(UITransform).setContentSize(STAMINA_LAYOUT.exitDialog.width, STAMINA_LAYOUT.exitDialog.height);
+    shield.addChild(panel);
+    this.addSprite(panel, 'game/chibi/ui/settings-dialog-panel/spriteFrame',
+      STAMINA_LAYOUT.exitDialog.width, STAMINA_LAYOUT.exitDialog.height, 0, 0, token);
+    this.addLabel(panel, '返回主页？', 25, 0, 88, color('#FFF2CF'), 240);
+    this.addLabel(panel, '返回主页将消耗 1 点体力', 15, 0, 34, color('#FFE3A0'), 260);
+    this.addLabel(panel, '当前关卡进度会保留', 11, 0, 5, color('#DCC7E8'), 240);
+    this.addRasterButton(panel, '确认返回', 'gold', STAMINA_LAYOUT.exitConfirm.width,
+      STAMINA_LAYOUT.exitConfirm.height, STAMINA_LAYOUT.exitConfirm.x, STAMINA_LAYOUT.exitConfirm.y, () => {
+      this.store.saveSession(this.session);
+      this.consumeOneStamina();
+      this.completionReward = null;
+      this.flow = returnHome(this.flow);
+      this.render();
+    }, false, 'icon-settings-home', 16);
+    this.addRasterButton(panel, '继续炼金', 'purple', STAMINA_LAYOUT.exitCancel.width,
+      STAMINA_LAYOUT.exitCancel.height, STAMINA_LAYOUT.exitCancel.x, STAMINA_LAYOUT.exitCancel.y, () => {
+      this.flow = closeExitConfirm(this.flow);
+      this.render();
+    }, false, undefined, 15);
+  }
+
+  private consumeOneStamina(): void {
+    const next = spendStamina(this.stamina, Date.now());
+    if (!next) return;
+    this.stamina = next;
+    this.store.saveStamina(this.stamina);
+  }
+
+  private renderStaminaIcon(root: Node, index: 0 | 1, x: number, y: number, size: number, token: number): void {
+    const clip = new Node(index === 0 ? 'StaminaHeartIcon' : 'StaminaRewardIcon');
+    clip.setPosition(x, y);
+    clip.addComponent(UITransform).setContentSize(size, size);
+    clip.addComponent(Mask).type = Mask.Type.RECT;
+    root.addChild(clip);
+    this.addSprite(clip, 'game/chibi/ui/stamina-icons/spriteFrame',
+      size * 2, size, (0.5 - index) * size, 0, token);
+  }
+
   private renderSettingsButton(root: Node, token: number): void {
     const layout = this.flow.scene === 'home' ? HOME_LAYOUT.settingsButton : SETTINGS_LAYOUT.trigger;
     const button = new Node('SettingsButton');
@@ -1289,7 +1471,10 @@ export class ProductionBootstrap extends Component {
     if (this.flow.scene !== 'home') this.addRasterButton(panel, '返回主页', 'gold',
       SETTINGS_LAYOUT.homeButton.width, SETTINGS_LAYOUT.homeButton.height,
       SETTINGS_LAYOUT.homeButton.x, SETTINGS_LAYOUT.homeButton.y, () => {
-      this.returnToHome();
+      if (this.flow.scene === 'level') {
+        this.flow = openExitConfirm(this.flow);
+        this.render();
+      } else this.returnToHome();
     }, false, 'icon-settings-home', 16);
   }
 
