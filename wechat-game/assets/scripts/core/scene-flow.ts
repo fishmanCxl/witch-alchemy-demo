@@ -73,7 +73,7 @@ export function selectLevelChapter(
 ): SceneFlowState {
   const chapter = getChapter(chapterId);
   if (state.scene !== 'levelSelect' || !unlocked || chapter?.releaseState !== 'available') return state;
-  return chapterId === state.selectedLevelChapterId ? state : { ...state, selectedLevelChapterId: chapterId };
+  return chapterId === state.selectedLevelChapterId ? state : { ...state, selectedLevelChapterId: chapterId, staminaDialogOpen: false, exitConfirmOpen: false };
 }
 
 export function openCollection(state: SceneFlowState): SceneFlowState {

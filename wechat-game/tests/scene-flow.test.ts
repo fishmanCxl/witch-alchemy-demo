@@ -55,6 +55,15 @@ test('selector changes only to a published chapter that the player has unlocked'
   assert.equal(selectLevelChapter(selector, 2, false), selector);
   assert.equal(selectLevelChapter(selector, 2, true).selectedLevelChapterId, 2);
   assert.equal(selectLevelChapter(selector, 3, true), selector);
+
+test('selecting an unlocked chapter closes the stamina dialog', () => {
+  const selector = openStaminaDialog(openLevelSelect(createSceneFlow(), 1));
+  const selected = selectLevelChapter(selector, 2, true);
+
+  assert.equal(selected.selectedLevelChapterId, 2);
+  assert.equal(selected.staminaDialogOpen, false);
+  assert.equal(selected.exitConfirmOpen, false);
+});
 });
 
 test('home, selector, unlocked level, completion, and next level form a legal flow', () => {
