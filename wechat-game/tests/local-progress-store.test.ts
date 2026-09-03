@@ -327,3 +327,16 @@ test('QA console actions attach to the WeChat GameGlobal only in develop and tri
     else host.GameGlobal = previousGameGlobal;
   }
 });
+
+test('stamina uses its own key and corrupt data never changes progress or sessions', () => {
+  const storage = new MemoryStorage();
+  const store = new LocalProgressStore(storage);
+  const progress = { ...store.loadProgress(), revision: 3, currentLevel: 'level-003', completedThrough: 2 };
+  store.saveProgress(progress);
+  storage.setItem('witch-water-sort:stamina:v1', '{bad');
+
+  assert.deepEqual(store.loadStamina(5_000), { schemaVersion: 1, value: 10, updatedAt: 5_000 });
+  store.saveStamina({ schemaVersion: 1, value: 6, updatedAt: 4_000 });
+  assert.deepEqual(store.loadStamina(5_000), { schemaVersion: 1, value: 6, updatedAt: 4_000 });
+  assert.deepEqual(store.loadProgress(), progress);
+});

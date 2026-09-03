@@ -1,4 +1,5 @@
 import { createGameSession, type GameSession } from '../core/game-session.ts';
+import { decodeStamina, encodeStamina, type StaminaState } from '../core/stamina.ts';
 import { getLevelConfig, PUBLISHED_LEVELS } from '../core/level-catalog.ts';
 import {
   createDefaultProgress,
@@ -20,6 +21,7 @@ const QA_BACKUP_KEY = 'witch-water-sort:qa-backup:v1';
 const LEGACY_LEVEL_12_KEY = 'witch-water-sort:level-012:v1';
 const MIGRATION_MARKER_KEY = 'witch-water-sort:migration:level-012:v2';
 const SOUND_KEY = 'witch-water-sort:sound-enabled';
+const STAMINA_KEY = 'witch-water-sort:stamina:v1';
 
 function sessionKey(levelId: string): string {
   return `witch-water-sort:session:${levelId}:v2`;
@@ -176,5 +178,13 @@ export class LocalProgressStore {
 
   saveSoundEnabled(enabled: boolean): void {
     this.storage.setItem(SOUND_KEY, String(enabled));
+  }
+
+  loadStamina(now: number): StaminaState {
+    return decodeStamina(this.storage.getItem(STAMINA_KEY), now);
+  }
+
+  saveStamina(state: StaminaState): void {
+    this.storage.setItem(STAMINA_KEY, encodeStamina(state));
   }
 }
