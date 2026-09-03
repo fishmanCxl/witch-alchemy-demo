@@ -12,6 +12,7 @@ import {
   LEVEL_LAYOUT,
   LEVEL_SELECT_LAYOUT,
   SETTINGS_LAYOUT,
+  STAMINA_LAYOUT,
   RESTART_LABEL,
   bottleFeedbackVisual,
   bottlePlacement,
@@ -19,6 +20,7 @@ import {
   buttonSpritePath,
   collectionCompleteLabel,
   collectionRewardLabel,
+  formatRecoveryCountdown,
   completionPrimaryLabel,
   levelButtonVisual,
   levelSelectButton,
@@ -50,6 +52,13 @@ test('launch screen keeps every required element inside the 393 by 852 safe fram
     assert.ok(Math.abs(rect.x) + rect.width / 2 <= 393 / 2);
     assert.ok(Math.abs(rect.y) + rect.height / 2 <= 852 / 2);
   }
+});
+
+test('stamina layouts stay clear of home title and WeChat capsule', () => {
+  assert.equal(formatRecoveryCountdown(1_800_000), '30:00');
+  assert.equal(formatRecoveryCountdown(1), '00:01');
+  assert.ok(STAMINA_LAYOUT.homeBar.x - STAMINA_LAYOUT.homeBar.width / 2 >= 4);
+  assert.ok(STAMINA_LAYOUT.homeBar.x + STAMINA_LAYOUT.homeBar.width / 2 <= 158);
 });
 
 test('launch progress fill grows from the left edge and clamps to the track', () => {

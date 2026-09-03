@@ -4,11 +4,15 @@ import assert from 'node:assert/strict';
 import {
   closeCollection,
   closeCollectionDetail,
+  closeExitConfirm,
+  closeStaminaDialog,
   continueFromLevelComplete,
   createSceneFlow,
   enterSelectedLevel,
   openCollection,
   openCollectionDetail,
+  openExitConfirm,
+  openStaminaDialog,
   openLevelSelect,
   returnHome,
   selectLevelChapter,
@@ -20,6 +24,8 @@ import {
 test('scene flow starts on home without an implicit selected level', () => {
   assert.deepEqual(createSceneFlow(), {
     scene: 'home',
+    staminaDialogOpen: false,
+    exitConfirmOpen: false,
     selectedLevelId: null,
     nextLevelId: null,
     soundEnabled: true,
@@ -30,6 +36,18 @@ test('scene flow starts on home without an implicit selected level', () => {
   });
 });
 
+
+test('stamina and exit overlays are mutually exclusive and navigation closes both', () => {
+  const home = openStaminaDialog(createSceneFlow());
+  assert.equal(home.staminaDialogOpen, true);
+  const level = enterSelectedLevel(closeStaminaDialog(home), 'level-001', true);
+  const exit = openExitConfirm(level);
+  assert.equal(exit.exitConfirmOpen, true);
+  assert.equal(exit.settingsOpen, false);
+  const homeState = createSceneFlow();
+  assert.equal(openExitConfirm(homeState), homeState);
+  assert.equal(returnHome(exit).exitConfirmOpen, false);
+});
 test('selector changes only to a published chapter that the player has unlocked', () => {
   const selector = openLevelSelect(createSceneFlow(), 1);
 

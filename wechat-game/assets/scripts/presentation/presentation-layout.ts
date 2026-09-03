@@ -104,6 +104,21 @@ export const HOME_LAYOUT = Object.freeze({
   showsProgressCard: false,
 });
 
+export const STAMINA_LAYOUT = Object.freeze({
+  homeBar: Object.freeze({ x: 80, y: 330, width: 148, height: 46 }),
+  dialog: Object.freeze({ x: 0, y: -8, width: 321, height: 430 }),
+  close: Object.freeze({ x: 118, y: 166, width: 48, height: 48 }),
+  adButton: Object.freeze({ x: 0, y: -72, width: 240, height: 72 }),
+  exitDialog: Object.freeze({ x: 0, y: -12, width: 304, height: 310 }),
+  exitConfirm: Object.freeze({ x: 0, y: -48, width: 224, height: 64 }),
+  exitCancel: Object.freeze({ x: 0, y: -120, width: 224, height: 56 }),
+});
+
+export function formatRecoveryCountdown(ms: number): string {
+  const seconds = Number.isFinite(ms) ? Math.max(0, Math.ceil(ms / 1000)) : 0;
+  return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
 export const LEVEL_LAYOUT = Object.freeze({
   witch: Object.freeze({ x: 0, y: 213, width: 174, height: 182 }),
   bottle: Object.freeze({ width: 48, height: 104 }),

@@ -9,6 +9,8 @@ export interface SceneFlowState {
   readonly nextLevelId: string | null;
   readonly soundEnabled: boolean;
   readonly settingsOpen: boolean;
+  readonly staminaDialogOpen: boolean;
+  readonly exitConfirmOpen: boolean;
   readonly collectionReturnScene: 'home' | 'levelSelect';
   readonly selectedLevelChapterId: number;
   readonly selectedCollectionChapterId: number | null;
@@ -20,11 +22,31 @@ export function createSceneFlow(): SceneFlowState {
     selectedLevelId: null,
     nextLevelId: null,
     soundEnabled: true,
+    staminaDialogOpen: false,
+    exitConfirmOpen: false,
     settingsOpen: false,
     collectionReturnScene: 'home',
     selectedLevelChapterId: 1,
     selectedCollectionChapterId: null,
   };
+}
+
+
+export function openStaminaDialog(state: SceneFlowState): SceneFlowState {
+  return { ...state, settingsOpen: false, staminaDialogOpen: true, exitConfirmOpen: false };
+}
+
+export function closeStaminaDialog(state: SceneFlowState): SceneFlowState {
+  return { ...state, staminaDialogOpen: false };
+}
+
+export function openExitConfirm(state: SceneFlowState): SceneFlowState {
+  if (state.scene !== 'level') return state;
+  return { ...state, settingsOpen: false, staminaDialogOpen: false, exitConfirmOpen: true };
+}
+
+export function closeExitConfirm(state: SceneFlowState): SceneFlowState {
+  return { ...state, exitConfirmOpen: false };
 }
 
 export function openLevelSelect(
@@ -37,6 +59,8 @@ export function openLevelSelect(
     scene: 'levelSelect',
     nextLevelId: null,
     settingsOpen: false,
+    staminaDialogOpen: false,
+    exitConfirmOpen: false,
     selectedLevelChapterId: chapter?.releaseState === 'available' ? chapterId : state.selectedLevelChapterId,
     selectedCollectionChapterId: null,
   };
@@ -59,6 +83,8 @@ export function openCollection(state: SceneFlowState): SceneFlowState {
     scene: 'collection',
     nextLevelId: null,
     settingsOpen: false,
+    staminaDialogOpen: false,
+    exitConfirmOpen: false,
     collectionReturnScene: state.scene,
     selectedCollectionChapterId: null,
   };
@@ -71,6 +97,8 @@ export function closeCollection(state: SceneFlowState): SceneFlowState {
     scene: state.collectionReturnScene,
     nextLevelId: null,
     settingsOpen: false,
+    staminaDialogOpen: false,
+    exitConfirmOpen: false,
   };
 }
 
@@ -81,12 +109,12 @@ export function openCollectionDetail(
 ): SceneFlowState {
   if (state.scene !== 'collection' || state.selectedCollectionChapterId !== null) return state;
   if (!unlocked || getChapter(chapterId)?.releaseState !== 'available') return state;
-  return { ...state, selectedCollectionChapterId: chapterId, settingsOpen: false };
+  return { ...state, selectedCollectionChapterId: chapterId, settingsOpen: false, staminaDialogOpen: false, exitConfirmOpen: false };
 }
 
 export function closeCollectionDetail(state: SceneFlowState): SceneFlowState {
   if (state.scene !== 'collection' || state.selectedCollectionChapterId === null) return state;
-  return { ...state, selectedCollectionChapterId: null, settingsOpen: false };
+  return { ...state, selectedCollectionChapterId: null, settingsOpen: false, staminaDialogOpen: false, exitConfirmOpen: false };
 }
 
 export function enterSelectedLevel(
@@ -101,6 +129,8 @@ export function enterSelectedLevel(
     selectedLevelId: levelId,
     nextLevelId: null,
     settingsOpen: false,
+    staminaDialogOpen: false,
+    exitConfirmOpen: false,
   };
 }
 
@@ -110,7 +140,7 @@ export function showLevelComplete(
 ): SceneFlowState {
   if (state.scene !== 'level') return state;
   if (nextLevelId !== null && !getLevelConfig(nextLevelId)) return state;
-  return { ...state, scene: 'levelComplete', nextLevelId, settingsOpen: false };
+  return { ...state, scene: 'levelComplete', nextLevelId, settingsOpen: false, staminaDialogOpen: false, exitConfirmOpen: false };
 }
 
 export function continueFromLevelComplete(state: SceneFlowState): SceneFlowState {
@@ -122,13 +152,15 @@ export function continueFromLevelComplete(state: SceneFlowState): SceneFlowState
       selectedLevelId: state.nextLevelId,
       nextLevelId: null,
       settingsOpen: false,
+      staminaDialogOpen: false,
+      exitConfirmOpen: false,
     };
   }
-  return { ...state, scene: 'levelSelect', nextLevelId: null, settingsOpen: false };
+  return { ...state, scene: 'levelSelect', nextLevelId: null, settingsOpen: false, staminaDialogOpen: false, exitConfirmOpen: false };
 }
 
 export function returnHome(state: SceneFlowState): SceneFlowState {
-  return { ...state, scene: 'home', nextLevelId: null, settingsOpen: false };
+  return { ...state, scene: 'home', nextLevelId: null, settingsOpen: false, staminaDialogOpen: false, exitConfirmOpen: false };
 }
 
 export function toggleSound(state: SceneFlowState): SceneFlowState {
