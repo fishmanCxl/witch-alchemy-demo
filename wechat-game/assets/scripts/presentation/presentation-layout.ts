@@ -114,6 +114,19 @@ export const STAMINA_LAYOUT = Object.freeze({
   exitCancel: Object.freeze({ x: 0, y: -120, width: 224, height: 56 }),
 });
 
+export function staminaBarContentLayout(): Readonly<{ width: number; height: number; icon: RectLayout; value: RectLayout; status: RectLayout; }> {
+  const { homeBar } = STAMINA_LAYOUT;
+  const height = 30;
+  const iconWidth = 30;
+  const valueWidth = 36;
+  const statusWidth = 58;
+  const width = iconWidth + homeBar.gap + valueWidth + homeBar.gap + statusWidth;
+  const left = -width / 2;
+  const icon = Object.freeze({ x: left, y: 0, width: iconWidth, height });
+  const value = Object.freeze({ x: icon.x + icon.width + homeBar.gap, y: 0, width: valueWidth, height });
+  const status = Object.freeze({ x: value.x + value.width + homeBar.gap, y: 0, width: statusWidth, height });
+  return Object.freeze({ width, height, icon, value, status });
+}
 export function formatRecoveryCountdown(ms: number): string {
   const seconds = Number.isFinite(ms) ? Math.max(0, Math.ceil(ms / 1000)) : 0;
   return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;

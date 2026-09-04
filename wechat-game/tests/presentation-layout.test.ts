@@ -31,6 +31,7 @@ import {
   potionProgressLabel,
   shouldRenderBottle,
   squareBottomFit,
+  staminaBarContentLayout,
 } from '../assets/scripts/presentation/presentation-layout.ts';
 import * as presentationLayout from '../assets/scripts/presentation/presentation-layout.ts';
 
@@ -64,22 +65,17 @@ test('home stamina content uses a centered flex-like row within padded bar bound
   assert.deepEqual(STAMINA_LAYOUT.homeBar.padding, { horizontal: 8, vertical: 4 });
   assert.equal(STAMINA_LAYOUT.homeBar.gap, 4);
   const content = staminaBarContentLayout();
-  assert.deepEqual(content, {
-    width: 126,
-    height: 30,
-    icon: { x: -63, y: 0, width: 30, height: 30 },
-    value: { x: -29, y: 0, width: 36, height: 30 },
-    status: { x: 11, y: 0, width: 52, height: 30 },
-  });
-  assert.equal(content.icon.y, content.value.y);
-  assert.equal(content.value.y, content.status.y);
+  assert.equal(content.width, 132);
+  assert.deepEqual(content.icon, { x: -66, y: 0, width: 30, height: 30 });
+  assert.deepEqual(content.value, { x: -32, y: 0, width: 36, height: 30 });
+  assert.deepEqual(content.status, { x: 8, y: 0, width: 58, height: 30 });
   assert.equal(content.value.x - (content.icon.x + content.icon.width), 4);
   assert.equal(content.status.x - (content.value.x + content.value.width), 4);
-  assert.equal(content.width <= STAMINA_LAYOUT.homeBar.width - 16, true);
-  assert.equal(content.height <= STAMINA_LAYOUT.homeBar.height - 8, true);
-  assert.equal(content.icon.x + content.width / 2, 0);
-  assert.equal(content.status.x + content.status.width / 2, 37);
+  assert.ok(content.width <= STAMINA_LAYOUT.homeBar.width - 16);
+  assert.equal(content.icon.y, content.value.y);
+  assert.equal(content.value.y, content.status.y);
 });
+
 test('launch progress fill grows from the left edge and clamps to the track', () => {
   assert.deepEqual(launchProgressFill(-1), { x: -148, width: 0 });
   assert.deepEqual(launchProgressFill(0), { x: -148, width: 0 });

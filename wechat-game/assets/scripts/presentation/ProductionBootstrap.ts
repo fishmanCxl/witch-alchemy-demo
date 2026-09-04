@@ -47,7 +47,7 @@ import {
   collectionCardLayout, collectionCompleteLabel, collectionPuzzlePiece, collectionRewardLabel,
   completionPrimaryLabel, formatRecoveryCountdown, launchProgressFill, levelButtonVisual, levelInteractionRefreshMode,
   levelSelectButton, potionParticleState, potionParticleVisuals, potionProgressLabel,
-  mysteryPotionSheetCell, rewardBottleFlow, selectedBottleAuraVisual, shouldRenderBottle, staminaBarContentLayout,
+  mysteryPotionVisual, selectedBottleAuraVisual, shouldRenderBottle, staminaBarContentLayout,
   type ButtonBaseLayout, type ButtonVariant, type LevelButtonState, type PotionParticleState,
   type PotionParticleVisual,
 } from './presentation-layout.ts';
@@ -1328,9 +1328,13 @@ export class ProductionBootstrap extends Component {
     this.homeStaminaValueLabel = this.addLabel(bar, '', 13,
       content.value.x + content.value.width / 2, content.value.y, color('#FFF0C2'), content.value.width)
       .getComponent(Label);
+    this.homeStaminaValueLabel.overflow = Label.Overflow.SHRINK;
+    this.homeStaminaValueLabel.enableWrapText = false;
     this.homeStaminaCountdownLabel = this.addLabel(bar, '', 9,
       content.status.x + content.status.width / 2, content.status.y, color('#D9C3E2'), content.status.width)
       .getComponent(Label);
+    this.homeStaminaCountdownLabel.overflow = Label.Overflow.SHRINK;
+    this.homeStaminaCountdownLabel.enableWrapText = false;
     this.refreshStaminaLabels();
   }
 
