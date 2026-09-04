@@ -376,6 +376,18 @@ test('production launch ignores stale preload callbacks before UI work and clear
   assert.match(bootstrap, /private clearLaunchNodeReferences\(\): void \{\s+this\.launchProgressFill = null;\s+this\.launchPercentLabel = null;\s+this\.launchStatusLabel = null;\s+this\.launchRetryButton = null;\s+\}/);
 });
 
+test('home stamina labels explicitly shrink without wrapping', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const render = bootstrap.slice(
+    bootstrap.indexOf('private renderStaminaBar'),
+    bootstrap.indexOf('private staminaRecoveryText'),
+  );
+  assert.match(render, /homeStaminaValueLabel\\.overflow = Label\\.Overflow\\.SHRINK/);
+  assert.match(render, /homeStaminaValueLabel\\.enableWrapText = false/);
+  assert.match(render, /homeStaminaCountdownLabel\\.overflow = Label\\.Overflow\\.SHRINK/);
+  assert.match(render, /homeStaminaCountdownLabel\\.enableWrapText = false/);
+});
+
 test('production integrates stamina startup, refill, countdown labels, and zero-value entry guard', () => {
   const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
   const switchLevel = bootstrap.slice(
