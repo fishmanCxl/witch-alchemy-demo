@@ -105,7 +105,7 @@ export const HOME_LAYOUT = Object.freeze({
 });
 
 export const STAMINA_LAYOUT = Object.freeze({
-  homeBar: Object.freeze({ x: 80, y: 330, width: 148, height: 46 }),
+  homeBar: Object.freeze({ x: 80, y: 330, width: 148, height: 46, padding: Object.freeze({ horizontal: 8, vertical: 4 }), gap: 4 }),
   dialog: Object.freeze({ x: 0, y: -8, width: 321, height: 430 }),
   close: Object.freeze({ x: 118, y: 166, width: 48, height: 48 }),
   adButton: Object.freeze({ x: 0, y: -72, width: 240, height: 72 }),

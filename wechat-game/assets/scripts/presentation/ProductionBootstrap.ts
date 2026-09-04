@@ -47,7 +47,7 @@ import {
   collectionCardLayout, collectionCompleteLabel, collectionPuzzlePiece, collectionRewardLabel,
   completionPrimaryLabel, formatRecoveryCountdown, launchProgressFill, levelButtonVisual, levelInteractionRefreshMode,
   levelSelectButton, potionParticleState, potionParticleVisuals, potionProgressLabel,
-  mysteryPotionVisual, selectedBottleAuraVisual, shouldRenderBottle,
+  mysteryPotionSheetCell, rewardBottleFlow, selectedBottleAuraVisual, shouldRenderBottle, staminaBarContentLayout,
   type ButtonBaseLayout, type ButtonVariant, type LevelButtonState, type PotionParticleState,
   type PotionParticleVisual,
 } from './presentation-layout.ts';
@@ -1323,10 +1323,13 @@ export class ProductionBootstrap extends Component {
       this.flow = openStaminaDialog(this.flow);
       this.render();
     });
-    this.renderStaminaIcon(bar, 0, -52, 0, 34, token);
-    this.homeStaminaValueLabel = this.addLabel(bar, '', 15, -13, 7, color('#FFF0C2'), 48)
+    const content = staminaBarContentLayout();
+    this.renderStaminaIcon(bar, 0, content.icon.x + content.icon.width / 2, content.icon.y, content.icon.width, token);
+    this.homeStaminaValueLabel = this.addLabel(bar, '', 13,
+      content.value.x + content.value.width / 2, content.value.y, color('#FFF0C2'), content.value.width)
       .getComponent(Label);
-    this.homeStaminaCountdownLabel = this.addLabel(bar, '', 9, 31, -10, color('#D9C3E2'), 68)
+    this.homeStaminaCountdownLabel = this.addLabel(bar, '', 9,
+      content.status.x + content.status.width / 2, content.status.y, color('#D9C3E2'), content.status.width)
       .getComponent(Label);
     this.refreshStaminaLabels();
   }
