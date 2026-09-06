@@ -71,6 +71,12 @@ export function completionPrimaryLabel(currentLevel: number, nextLevel: number |
     : '下一关';
 }
 
+export function completionOptimalLabel(moves: number, optimalMoves: number): string {
+  return moves <= optimalMoves
+    ? '✦ 完美炼成 · 已达理论最优'
+    : `本关最少 ${optimalMoves} 步 · 还可优化 ${moves - optimalMoves} 步`;
+}
+
 export function collectionRewardLabel(chapterId: number, piece: number): string {
   return `获得${getPotionCollection(chapterId)?.name ?? '稀有药水'}拼图 ${piece}/6`;
 }
@@ -215,6 +221,7 @@ export const LEVEL_COMPLETE_LAYOUT = Object.freeze({
   panel: Object.freeze({ x: 0, y: -5, width: 321, height: 470 }),
   title: Object.freeze({ x: 0, y: 142, width: 260, height: 52 }),
   stats: Object.freeze({ x: 0, y: 68, width: 250, height: 46 }),
+  feedback: Object.freeze({ x: 0, y: 0, width: 280, lineGap: 22 }),
   primaryButton: Object.freeze({ x: 0, y: -72, width: 240, height: 72 }),
   secondaryButton: Object.freeze({ x: 0, y: -164, width: 240, height: 72 }),
 });

@@ -46,7 +46,7 @@ import {
   LEVEL_COMPLETE_LAYOUT, LEVEL_LAYOUT, LEVEL_SELECT_LAYOUT, RESTART_LABEL,
   SETTINGS_LAYOUT, STAMINA_LAYOUT, bottleFeedbackVisual, bottlePlacement, buttonBaseLayout, buttonSpritePath,
   chapterLabel, collectionCardLayout, collectionCompleteLabel, collectionPuzzlePiece, collectionRewardLabel,
-  completionPrimaryLabel, formatRecoveryCountdown, launchProgressFill, levelButtonVisual, levelInteractionRefreshMode,
+  completionOptimalLabel, completionPrimaryLabel, formatRecoveryCountdown, launchProgressFill, levelButtonVisual, levelInteractionRefreshMode,
   levelSelectButton, potionParticleState, potionParticleVisuals, potionProgressLabel,
   mysteryPotionVisual, mysteryPotionSheetCell, rewardBottleFlow, selectedBottleAuraVisual, shouldRenderBottle, staminaBarContentLayout,
   type ButtonBaseLayout, type ButtonVariant, type LevelButtonState, type PotionParticleState,
@@ -706,6 +706,10 @@ export class ProductionBootstrap extends Component {
     const chapter = chapterForLevel(this.currentLevel.number)!;
     const chapterComplete = this.currentLevel.number === chapter.firstLevel + chapter.levelCount - 1;
     const best = this.progress.bestMoves[this.session.levelId] ?? this.session.game.moves;
+    const feedbackLines = [
+      completionOptimalLabel(this.session.game.moves, this.currentLevel.metrics.optimalMoves),
+      ...this.completionRewardLines(),
+    ];
     this.addSprite(root, 'game/chibi/background/alchemy-room/spriteFrame', 393, 852, 0, 0, token);
     this.addPanel(root, 393, 852, 0, 0, color('#0C0614', 166));
     this.addSprite(root, 'game/chibi/ui/settings-dialog-panel/spriteFrame',
@@ -717,8 +721,11 @@ export class ProductionBootstrap extends Component {
     this.addLabel(root, `本局 ${this.session.game.moves} 步 · 最佳 ${best} 步`, 15,
       LEVEL_COMPLETE_LAYOUT.stats.x, LEVEL_COMPLETE_LAYOUT.stats.y,
       color('#EFD9C9'), LEVEL_COMPLETE_LAYOUT.stats.width);
-    this.completionRewardLines().forEach((line, index) => {
-      this.addLabel(root, line, 14, 0, 26 - index * 28, color('#FFE5A3'), 280);
+    feedbackLines.forEach((line, index) => {
+      const feedback = LEVEL_COMPLETE_LAYOUT.feedback;
+      const y = feedback.y + ((feedbackLines.length - 1) / 2 - index) * feedback.lineGap;
+      this.addLabel(root, line, index === 0 ? 15 : 14,
+        feedback.x, y, color('#FFE5A3'), feedback.width);
     });
 
     this.addRasterButton(root, completionPrimaryLabel(this.currentLevel.number, next?.number ?? null), 'gold',

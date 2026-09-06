@@ -261,6 +261,7 @@ test('production presentation derives level copy, targets, seeds, and reward ids
   assert.match(bootstrap, /chapterLabel\(chapter\.id\)/);
   assert.doesNotMatch(bootstrap, /chapter\.id === 1 \? '第一章' : '第二章'/);
   assert.match(bootstrap, /renderLevelComplete/);
+  assert.match(bootstrap, /completionOptimalLabel\(this\.session\.game\.moves,\s*this\.currentLevel\.metrics\.optimalMoves\)/);
   assert.match(bootstrap, /switchLevel/);
   assert.match(bootstrap, /persistCompletion/);
 });

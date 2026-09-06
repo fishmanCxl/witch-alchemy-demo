@@ -21,6 +21,7 @@ import {
   collectionCompleteLabel,
   collectionRewardLabel,
   chapterLabel,
+  completionOptimalLabel,
   completionPrimaryLabel,
   formatRecoveryCountdown,
   levelButtonVisual,
@@ -335,6 +336,7 @@ test('selector and completion actions use wide sliced buttons inside safe bounds
   assert.deepEqual(LEVEL_SELECT_LAYOUT.backButton, { x: 0, y: -342, width: 224, height: 72 });
   assert.deepEqual(LEVEL_COMPLETE_LAYOUT.primaryButton, { x: 0, y: -72, width: 240, height: 72 });
   assert.deepEqual(LEVEL_COMPLETE_LAYOUT.secondaryButton, { x: 0, y: -164, width: 240, height: 72 });
+  assert.deepEqual(LEVEL_COMPLETE_LAYOUT.feedback, { x: 0, y: 0, width: 280, lineGap: 22 });
   for (const button of [
     LEVEL_SELECT_LAYOUT.backButton,
     LEVEL_COMPLETE_LAYOUT.primaryButton,
@@ -609,6 +611,8 @@ test('completion and collection copy follows chapter boundaries and potion catal
   assert.equal(completionPrimaryLabel(90, 91), '进入第四章');
   assert.equal(completionPrimaryLabel(119, 120), '下一关');
   assert.equal(completionPrimaryLabel(120, null), '返回选关');
+  assert.equal(completionOptimalLabel(22, 22), '✦ 完美炼成 · 已达理论最优');
+  assert.equal(completionOptimalLabel(25, 22), '本关最少 22 步 · 还可优化 3 步');
   assert.equal(collectionRewardLabel(2, 1), '获得森林药水拼图 1/6');
   assert.equal(collectionCompleteLabel(2), '森林药水已收入图鉴');
   assert.equal(collectionRewardLabel(3, 1), '获得月辉药水拼图 1/6');
