@@ -547,10 +547,11 @@ test('chapter four report records thirty solved levels and every approved coeffi
   }
 });
 
-test('chapter two generation leaves the frozen first chapter data byte-for-byte unchanged', () => {
+test('chapter two generation leaves the frozen first chapter content unchanged across line endings', () => {
   const data = readFileSync(
     new URL('../assets/scripts/core/level-data.generated.ts', import.meta.url),
-  );
+    'utf8',
+  ).replace(/\r\n?/g, '\n');
   assert.equal(
     createHash('sha256').update(data).digest('hex'),
     '1072854a1cbe8685df288c869d8ebf515e68badf9ed7253dbc16c423ce6b5050',
