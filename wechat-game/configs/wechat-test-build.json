@@ -17,7 +17,7 @@
   ],
   "packages": {
     "wechatgame": {
-      "appid": "wx6ac3f5090a6b99c5",
+      "appid": "",
       "orientation": "portrait",
       "separateEngine": false,
       "highPerformanceMode": false

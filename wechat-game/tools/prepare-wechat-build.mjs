@@ -32,6 +32,8 @@ writeFileSync(gamePath, `${JSON.stringify(game, null, 2)}\n`);
 
 const projectConfigPath = join(outputRoot, 'project.config.json');
 const projectConfig = JSON.parse(readFileSync(projectConfigPath, 'utf8'));
+const appId = process.env.WECHAT_APPID?.trim();
+if (appId) projectConfig.appid = appId;
 projectConfig.setting = projectConfig.setting || {};
 projectConfig.setting.ignoreDevUnusedFiles = false;
 projectConfig.setting.ignoreUploadUnusedFiles = false;

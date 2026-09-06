@@ -20,9 +20,11 @@ import {
   buttonSpritePath,
   collectionCompleteLabel,
   collectionRewardLabel,
-  formatRecoveryCountdown,
+  chapterLabel,
   completionPrimaryLabel,
+  formatRecoveryCountdown,
   levelButtonVisual,
+  levelInteractionRefreshMode,
   levelSelectButton,
   collectionPuzzlePiece,
   collectionCardLayout,
@@ -34,6 +36,8 @@ import {
   staminaBarContentLayout,
 } from '../assets/scripts/presentation/presentation-layout.ts';
 import * as presentationLayout from '../assets/scripts/presentation/presentation-layout.ts';
+import { createDemoState } from '../assets/scripts/core/demo-level.ts';
+import { pour, vanishBottle } from '../assets/scripts/core/water-sort.ts';
 
 test('launch screen keeps every required element inside the 393 by 852 safe frame', () => {
   assert.deepEqual(LAUNCH_LAYOUT.ageBadge, { x: -155, y: 376, width: 42, height: 42 });
@@ -54,26 +58,58 @@ test('launch screen keeps every required element inside the 393 by 852 safe fram
   }
 });
 
-test('stamina layouts stay clear of home title and WeChat capsule', () => {
+test('home stamina bar stays in the left safe area aligned with the WeChat capsule', () => {
   assert.equal(formatRecoveryCountdown(1_800_000), '30:00');
   assert.equal(formatRecoveryCountdown(1), '00:01');
-  assert.ok(STAMINA_LAYOUT.homeBar.x - STAMINA_LAYOUT.homeBar.width / 2 >= 4);
-  assert.ok(STAMINA_LAYOUT.homeBar.x + STAMINA_LAYOUT.homeBar.width / 2 <= 158);
+  assert.equal(STAMINA_LAYOUT.homeBar.x, -112);
+  assert.equal(STAMINA_LAYOUT.homeBar.y, 365);
+  assert.ok(STAMINA_LAYOUT.homeBar.x - STAMINA_LAYOUT.homeBar.width / 2 >= -393 / 2 + 4);
+  assert.ok(STAMINA_LAYOUT.homeBar.x + STAMINA_LAYOUT.homeBar.width / 2 < 0);
 });
 
 test('home stamina content uses a centered flex-like row within padded bar bounds', () => {
   assert.deepEqual(STAMINA_LAYOUT.homeBar.padding, { horizontal: 8, vertical: 4 });
   assert.equal(STAMINA_LAYOUT.homeBar.gap, 4);
   const content = staminaBarContentLayout();
-  assert.equal(content.width, 132);
-  assert.deepEqual(content.icon, { x: -66, y: 0, width: 30, height: 30 });
-  assert.deepEqual(content.value, { x: -32, y: 0, width: 36, height: 30 });
-  assert.deepEqual(content.status, { x: 8, y: 0, width: 58, height: 30 });
-  assert.equal(content.value.x - (content.icon.x + content.icon.width), 4);
-  assert.equal(content.status.x - (content.value.x + content.value.width), 4);
-  assert.ok(content.width <= STAMINA_LAYOUT.homeBar.width - 16);
+  assert.deepEqual(content, {
+    width: 132,
+    height: 30,
+    icon: { x: -66, y: 0, width: 30, height: 30 },
+    value: { x: -32, y: 0, width: 36, height: 30 },
+    status: { x: 8, y: 0, width: 58, height: 30 },
+  });
   assert.equal(content.icon.y, content.value.y);
   assert.equal(content.value.y, content.status.y);
+  assert.equal(content.value.x - (content.icon.x + content.icon.width), 4);
+  assert.equal(content.status.x - (content.value.x + content.value.width), 4);
+  assert.equal(content.width <= STAMINA_LAYOUT.homeBar.width - 16, true);
+  assert.equal(content.height <= STAMINA_LAYOUT.homeBar.height - 8, true);
+  assert.equal(content.icon.x + content.width / 2, 0);
+  assert.equal(content.status.x + content.status.width / 2, 37);
+});
+
+test('stamina dialog rows keep balanced vertical breathing room', () => {
+  const rows = [
+    { y: STAMINA_LAYOUT.dialogRows.title, height: 43.2 },
+    { y: STAMINA_LAYOUT.dialogRows.icon, height: 64 },
+    { y: STAMINA_LAYOUT.dialogRows.value, height: 38.4 },
+    { y: STAMINA_LAYOUT.dialogRows.status, height: 28 },
+    { y: STAMINA_LAYOUT.dialogRows.note, height: 28 },
+    { y: STAMINA_LAYOUT.adButton.y, height: STAMINA_LAYOUT.adButton.height },
+    { y: STAMINA_LAYOUT.dialogRows.message, height: 28 },
+  ];
+  const gaps = rows.slice(0, -1).map((row, index) =>
+    Number(Math.abs(row.y - row.height / 2 - rows[index + 1].y - rows[index + 1].height / 2).toFixed(1)));
+
+  assert.deepEqual(gaps, [8.4, 5.2, 6.8, 6, 8, 6]);
+  assert.equal(gaps.every((gap) => gap >= 5 && gap <= 9), true);
+});
+
+test('exit dialog keeps the cancel button inside its decorated bottom edge', () => {
+  const dialogBottom = STAMINA_LAYOUT.exitDialog.y - STAMINA_LAYOUT.exitDialog.height / 2;
+  const cancelBottom = STAMINA_LAYOUT.exitCancel.y - STAMINA_LAYOUT.exitCancel.height / 2;
+
+  assert.ok(cancelBottom - dialogBottom >= 24);
 });
 
 test('launch progress fill grows from the left edge and clamps to the track', () => {
@@ -167,22 +203,57 @@ test('collection overview fits ten cards in a two-column scroll content', () => 
   assert.throws(() => collectionCardLayout(10), RangeError);
 });
 
-test('locked collection cards use nine distinct code-native potion silhouettes', () => {
-  const visuals = Array.from({ length: 9 }, (_, index) => mysteryPotionVisual(index));
-  assert.deepEqual(visuals.map((visual) => visual.body), [
-    'round', 'heart', 'crystal', 'winged', 'star', 'cauldron', 'square', 'gourd', 'moon',
+test('locked collection cards select all nine cells from one approved sprite sheet', () => {
+  const sheetCell = (presentationLayout as unknown as {
+    mysteryPotionSheetCell?: (index: number) => Readonly<{
+      path: string; size: number; x: number; y: number;
+    }>;
+  }).mysteryPotionSheetCell;
+  assert.equal(typeof sheetCell, 'function');
+  if (!sheetCell) return;
+
+  assert.deepEqual(Array.from({ length: 9 }, (_, index) => sheetCell(index)), [
+    { path: 'game/chibi/collection/mystery-potions/spriteFrame', size: 288, x: 96, y: -96 },
+    { path: 'game/chibi/collection/mystery-potions/spriteFrame', size: 288, x: 0, y: -96 },
+    { path: 'game/chibi/collection/mystery-potions/spriteFrame', size: 288, x: -96, y: -96 },
+    { path: 'game/chibi/collection/mystery-potions/spriteFrame', size: 288, x: 96, y: 0 },
+    { path: 'game/chibi/collection/mystery-potions/spriteFrame', size: 288, x: 0, y: 0 },
+    { path: 'game/chibi/collection/mystery-potions/spriteFrame', size: 288, x: -96, y: 0 },
+    { path: 'game/chibi/collection/mystery-potions/spriteFrame', size: 288, x: 96, y: 96 },
+    { path: 'game/chibi/collection/mystery-potions/spriteFrame', size: 288, x: 0, y: 96 },
+    { path: 'game/chibi/collection/mystery-potions/spriteFrame', size: 288, x: -96, y: 96 },
   ]);
-  assert.equal(new Set(visuals.map((visual) => visual.body)).size, 9);
-  for (const visual of visuals) {
-    assert.ok(visual.width <= 92);
-    assert.ok(visual.height <= 92);
-  }
-  assert.throws(() => mysteryPotionVisual(9), RangeError);
+  assert.throws(() => sheetCell(9), RangeError);
+});
+
+test('collection lock uses the compact magical seal proportions and palette', () => {
+  const visual = (presentationLayout as unknown as {
+    COLLECTION_LOCK_VISUAL?: Readonly<{
+      width: number; height: number; bodyWidth: number; bodyHeight: number;
+      bodyColor: string; rimColor: string; glowColor: string;
+    }>;
+  }).COLLECTION_LOCK_VISUAL;
+  assert.ok(visual);
+  assert.deepEqual(visual, {
+    width: 30,
+    height: 36,
+    bodyWidth: 24,
+    bodyHeight: 20,
+    bodyColor: '#2A1538',
+    rimColor: '#F2C76E',
+    glowColor: '#D8A84E',
+  });
 });
 
 test('home layout preserves the accepted prototype hierarchy without a progress card', () => {
-  assert.deepEqual(HOME_LAYOUT.header, { x: -86, y: 326, width: 176, align: 'left' });
-  assert.deepEqual(HOME_LAYOUT.titleBadge, { x: 0, y: 137, width: 168, height: 84 });
+  assert.deepEqual(HOME_LAYOUT.header, {
+    x: 0,
+    eyebrowY: 278,
+    levelY: 238,
+    width: 260,
+    align: 'center',
+  });
+  assert.deepEqual(HOME_LAYOUT.titleBadge, { x: 0, y: 101, width: 168, height: 84 });
   assert.deepEqual(HOME_LAYOUT.titleFloat, { distance: 6, duration: 1.6 });
   assert.deepEqual(HOME_LAYOUT.settingsButton, { x: 150, y: 270, width: 48, height: 48 });
   assert.deepEqual(HOME_LAYOUT.collectionButton, { x: 150, y: 198, width: 64, height: 64 });
@@ -193,10 +264,6 @@ test('home layout preserves the accepted prototype hierarchy without a progress 
 
   assert.equal(HOME_LAYOUT.settingsButton.x, HOME_LAYOUT.collectionButton.x);
   assert.ok(HOME_LAYOUT.settingsButton.y > HOME_LAYOUT.collectionButton.y);
-  const titleBottom = HOME_LAYOUT.titleBadge.y - HOME_LAYOUT.titleBadge.height / 2;
-  const witchFit = squareBottomFit(HOME_LAYOUT.witch);
-  const witchTop = HOME_LAYOUT.witch.y + witchFit.y + witchFit.height / 2;
-  assert.ok(titleBottom > witchTop);
 });
 
 test('level layout keeps the witch, board, message, and controls in the accepted 393 by 852 frame', () => {
@@ -206,6 +273,8 @@ test('level layout keeps the witch, board, message, and controls in the accepted
   assert.deepEqual(LEVEL_LAYOUT.message, { x: 0, y: -270, width: 321, height: 46 });
   assert.deepEqual(LEVEL_LAYOUT.controlCenters, [-122, 0, 122]);
   assert.equal(LEVEL_LAYOUT.controlY, -338);
+  assert.equal(LEVEL_LAYOUT.controlLabelY, -18);
+  assert.ok(LEVEL_LAYOUT.controlLabelY - 14 >= -36);
 });
 
 test('witch artwork keeps square proportions and aligns to the bottom of each prototype stage', () => {
@@ -318,14 +387,13 @@ test('selected bottle aura reproduces the prototype cyan drop shadow with three 
 });
 
 test('bottle-only session changes never require rebuilding the full production surface', () => {
-  const mode = (presentationLayout as unknown as {
-    levelInteractionRefreshMode?: (gameChanged: boolean) => 'feedback' | 'content';
-  }).levelInteractionRefreshMode;
-  assert.equal(typeof mode, 'function');
-  if (!mode) return;
+  const initial = createDemoState();
+  const poured = pour(initial, 0, 1).state;
+  const vanished = vanishBottle(poured, 1);
 
-  assert.equal(mode(false), 'feedback');
-  assert.equal(mode(true), 'content');
+  assert.deepEqual(levelInteractionRefreshMode(initial, initial), { mode: 'feedback', indices: [] });
+  assert.deepEqual(levelInteractionRefreshMode(initial, poured), { mode: 'bottles', indices: [0, 1] });
+  assert.deepEqual(levelInteractionRefreshMode(poured, vanished), { mode: 'bottles', indices: [1] });
 });
 
 test('potion particles reproduce the prototype deterministic two-motif layout', () => {
@@ -530,11 +598,23 @@ test('production copy and art-font contract match the approved prototype', () =>
 });
 
 test('completion and collection copy follows chapter boundaries and potion catalog', () => {
+  assert.equal(chapterLabel(1), '第一章');
+  assert.equal(chapterLabel(2), '第二章');
+  assert.equal(chapterLabel(3), '第三章');
+  assert.equal(chapterLabel(4), '第四章');
   assert.equal(completionPrimaryLabel(30, 31), '进入第二章');
   assert.equal(completionPrimaryLabel(59, 60), '下一关');
-  assert.equal(completionPrimaryLabel(60, null), '返回选关');
+  assert.equal(completionPrimaryLabel(60, 61), '进入第三章');
+  assert.equal(completionPrimaryLabel(89, 90), '下一关');
+  assert.equal(completionPrimaryLabel(90, 91), '进入第四章');
+  assert.equal(completionPrimaryLabel(119, 120), '下一关');
+  assert.equal(completionPrimaryLabel(120, null), '返回选关');
   assert.equal(collectionRewardLabel(2, 1), '获得森林药水拼图 1/6');
   assert.equal(collectionCompleteLabel(2), '森林药水已收入图鉴');
+  assert.equal(collectionRewardLabel(3, 1), '获得月辉药水拼图 1/6');
+  assert.equal(collectionCompleteLabel(3), '月辉药水已收入图鉴');
+  assert.equal(collectionRewardLabel(4, 1), '获得火焰药水拼图 1/6');
+  assert.equal(collectionCompleteLabel(4), '火焰药水已收入图鉴');
 });
 
 test('non-home settings trigger stays in the top-left safe area without overlapping chapter navigation', () => {
@@ -552,4 +632,19 @@ test('settings layout uses the accepted raster-backed dialog geometry', () => {
   assert.deepEqual(SETTINGS_LAYOUT.close, { x: 110, y: 138, width: 48, height: 48 });
   assert.deepEqual(SETTINGS_LAYOUT.soundButton, { x: 0, y: 14, width: 224, height: 72 });
   assert.deepEqual(SETTINGS_LAYOUT.homeButton, { x: 0, y: -81, width: 224, height: 72 });
+  assert.deepEqual(SETTINGS_LAYOUT.qaButton, { x: -58, y: -146, width: 108, height: 48 });
+  assert.deepEqual(SETTINGS_LAYOUT.qaBottleButton, { x: 58, y: -146, width: 108, height: 48 });
+});
+
+test('free reward bottles bypass ads only when the development switch is enabled', () => {
+  const rewardBottleFlow = (presentationLayout as unknown as {
+    rewardBottleFlow?: (qaAvailable: boolean, directEnabled: boolean) => 'rewarded' | 'direct';
+  }).rewardBottleFlow;
+  assert.equal(typeof rewardBottleFlow, 'function');
+  if (!rewardBottleFlow) return;
+
+  assert.equal(rewardBottleFlow(false, false), 'rewarded');
+  assert.equal(rewardBottleFlow(false, true), 'rewarded');
+  assert.equal(rewardBottleFlow(true, false), 'rewarded');
+  assert.equal(rewardBottleFlow(true, true), 'direct');
 });

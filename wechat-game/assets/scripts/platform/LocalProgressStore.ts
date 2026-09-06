@@ -16,6 +16,7 @@ import type { LevelConfig } from '../core/level-config.ts';
 import type { KeyValueStorage } from './storage-port.ts';
 
 const PROGRESS_KEY = 'witch-water-sort:progress:v2';
+const PROGRESS_V2_BACKUP_KEY = 'witch-water-sort:progress:v2-backup';
 const QA_MODE_KEY = 'witch-water-sort:qa-mode:v1';
 const QA_BACKUP_KEY = 'witch-water-sort:qa-backup:v1';
 const LEGACY_LEVEL_12_KEY = 'witch-water-sort:level-012:v1';
@@ -51,7 +52,16 @@ export class LocalProgressStore {
   }
 
   loadProgress(): PlayerProgress {
-    return decodePlayerProgress(this.storage.getItem(PROGRESS_KEY)) ?? createDefaultProgress();
+    const serialized = this.storage.getItem(PROGRESS_KEY);
+    const progress = decodePlayerProgress(serialized);
+    if (!progress) return createDefaultProgress();
+    if (serialized && JSON.parse(serialized).schemaVersion === 2) {
+      if (this.storage.getItem(PROGRESS_V2_BACKUP_KEY) === null) {
+        this.storage.setItem(PROGRESS_V2_BACKUP_KEY, serialized);
+      }
+      this.saveProgress(progress);
+    }
+    return progress;
   }
 
   saveProgress(progress: PlayerProgress): void {
@@ -76,8 +86,7 @@ export class LocalProgressStore {
       ...previous,
       revision: previous.revision + 1,
       currentLevel: lastLevel.id,
-      highestUnlockedLevel: lastLevel.id,
-      completedLevels: PUBLISHED_LEVELS.map((level) => level.id),
+      completedThrough: lastLevel.number,
       bestMoves: {},
     };
     this.saveProgress(qaProgress);
@@ -146,8 +155,9 @@ export class LocalProgressStore {
 
     const existing = decodePlayerProgress(this.storage.getItem(PROGRESS_KEY));
     if (existing) {
+      const migrated = this.loadProgress();
       this.storage.setItem(MIGRATION_MARKER_KEY, 'done');
-      return existing;
+      return migrated;
     }
 
     const level12 = getLevelConfig('level-012');
@@ -165,7 +175,7 @@ export class LocalProgressStore {
       ...createDefaultProgress(),
       revision: 1,
       currentLevel: level12.id,
-      highestUnlockedLevel: level12.id,
+      completedThrough: level12.number - 1,
     };
     this.saveProgress(migrated);
     this.storage.setItem(MIGRATION_MARKER_KEY, 'done');

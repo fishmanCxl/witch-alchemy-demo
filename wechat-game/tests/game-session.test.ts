@@ -41,6 +41,32 @@ test('a valid pour records history and queues a completed bottle for departure',
   assert.deepEqual(completed.pendingCompletion, []);
 });
 
+test('other bottles remain fully interactive while a completed bottle departs', () => {
+  let session = createGameSession(DEMO_LEVEL_CONFIG);
+  session = pressBottle(session, 0).session;
+  session = pressBottle(session, 1).session;
+  assert.deepEqual(session.pendingCompletion, [1]);
+
+  const selected = pressBottle(session, 2);
+  const poured = pressBottle(selected.session, 9);
+
+  assert.equal(selected.session.selected, 2);
+  assert.equal(poured.session.game.moves, 2);
+  assert.deepEqual(poured.session.pendingCompletion, [1]);
+  assert.deepEqual(poured.pouring, [2, 9]);
+});
+
+test('the completed bottle itself cannot be selected while it departs', () => {
+  let session = createGameSession(DEMO_LEVEL_CONFIG);
+  session = pressBottle(session, 0).session;
+  session = pressBottle(session, 1).session;
+
+  const result = pressBottle(session, 1);
+
+  assert.equal(result.session, session);
+  assert.equal(result.cue, null);
+});
+
 test('invalid starts and targets return an oops state without adding history', () => {
   const emptyStart = pressBottle(createGameSession(DEMO_LEVEL_CONFIG), 9);
   assert.equal(emptyStart.session.witchMood, 'oops');

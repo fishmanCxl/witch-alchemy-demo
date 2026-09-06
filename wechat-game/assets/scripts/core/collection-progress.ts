@@ -22,15 +22,11 @@ export interface CompletionReward {
   readonly titleChanged: boolean;
 }
 
-function completedLevelNumbers(progress: PlayerProgress): ReadonlySet<number> {
-  return new Set(progress.completedLevels
-    .map(levelNumber)
-    .filter((number): number is number => number !== null && number <= 300));
-}
-
-function completedInChapter(completed: ReadonlySet<number>, chapter: ChapterConfig): number {
-  const lastLevel = chapter.firstLevel + chapter.levelCount - 1;
-  return [...completed].filter((number) => number >= chapter.firstLevel && number <= lastLevel).length;
+function completedInChapter(completedThrough: number, chapter: ChapterConfig): number {
+  return Math.min(
+    chapter.levelCount,
+    Math.max(0, completedThrough - chapter.firstLevel + 1),
+  );
 }
 
 export function deriveCollectionProgress(
@@ -40,7 +36,7 @@ export function deriveCollectionProgress(
   const chapter = getChapter(chapterId);
   if (chapter === null) throw new RangeError('chapter ID must be an integer from 1 to 10');
 
-  const completedLevels = completedInChapter(completedLevelNumbers(progress), chapter);
+  const completedLevels = completedInChapter(progress.completedThrough, chapter);
   const revealedPieces = Math.floor(completedLevels / 5);
   const collected = revealedPieces === 6;
   return {
@@ -54,10 +50,9 @@ export function deriveCollectionProgress(
 }
 
 export function deriveHighestTitle(progress: PlayerProgress): HighestTitle {
-  const completed = completedLevelNumbers(progress);
   let completedChapters = 0;
   for (const chapter of CHAPTERS) {
-    if (completedInChapter(completed, chapter) !== chapter.levelCount) break;
+    if (completedInChapter(progress.completedThrough, chapter) !== chapter.levelCount) break;
     completedChapters += 1;
   }
   const titleChapter = CHAPTERS[Math.min(completedChapters, CHAPTERS.length - 1)];

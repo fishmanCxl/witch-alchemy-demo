@@ -8,14 +8,16 @@ import {
   publishedChapters,
 } from '../assets/scripts/core/chapter-catalog.ts';
 
-test('catalog defines ten non-overlapping thirty-level chapters and publishes the first two', () => {
+test('catalog defines ten non-overlapping thirty-level chapters and publishes the first four', () => {
   assert.equal(CHAPTERS.length, 10);
   assert.deepEqual(CHAPTERS.map((chapter) => chapter.firstLevel), [
     1, 31, 61, 91, 121, 151, 181, 211, 241, 271,
   ]);
-  assert.deepEqual(publishedChapters().map((chapter) => chapter.id), [1, 2]);
+  assert.deepEqual(publishedChapters().map((chapter) => chapter.id), [1, 2, 3, 4]);
   assert.equal(chapterForLevel(30)?.id, 1);
   assert.equal(chapterForLevel(31)?.id, 2);
+  assert.equal(chapterForLevel(61)?.id, 3);
+  assert.equal(chapterForLevel(91)?.id, 4);
 });
 
 test('title order follows the approved reference', () => {
@@ -35,6 +37,31 @@ test('chapter two keeps its approved herb theme and forest collection identity',
     collectionId: 'forest-potion',
     releaseState: 'available',
   });
+});
+
+test('chapter three publishes the approved moonlight theme and potion identity', () => {
+  assert.deepEqual(getChapter(3), {
+    id: 3,
+    stageTitle: '熟练魔女',
+    themeTitle: '月光魔法',
+    firstLevel: 61,
+    levelCount: 30,
+    collectionId: 'moon-glow-potion',
+    releaseState: 'available',
+  });
+});
+
+test('chapter four publishes the approved elemental theme and flame potion identity', () => {
+  assert.deepEqual(getChapter(4), {
+    id: 4,
+    stageTitle: '高级魔女',
+    themeTitle: '元素炼金',
+    firstLevel: 91,
+    levelCount: 30,
+    collectionId: 'flame-potion',
+    releaseState: 'available',
+  });
+  assert.equal(getChapter(5)?.releaseState, 'coming-soon');
 });
 
 test('catalog lookup rejects out-of-range chapter and level values', () => {

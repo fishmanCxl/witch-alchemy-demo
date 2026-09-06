@@ -156,6 +156,11 @@ export class PlatformRuntime {
   isWeChat(): boolean { return this.api !== null; }
   isOnline(): boolean { return this.online; }
 
+  isQaAvailable(): boolean {
+    const envVersion = this.api?.getAccountInfoSync?.().miniProgram?.envVersion;
+    return envVersion === 'develop' || envVersion === 'trial';
+  }
+
   createRewardedPorts(adUnitId: string): { ad: RewardedAdPort; claims: RewardClaimPort } {
     if (!this.api) return { ad: new FakeRewardedAd(), claims: new FakeRewardClaimClient() };
     return {
@@ -169,8 +174,7 @@ export class PlatformRuntime {
   }
 
   registerQaActions(actions: QaActions): void {
-    const envVersion = this.api?.getAccountInfoSync?.().miniProgram?.envVersion;
-    if (envVersion !== 'develop' && envVersion !== 'trial') return;
+    if (!this.isQaAvailable()) return;
     runtimeQaGlobal().WitchAlchemyQA = actions;
     this.qaActions = actions;
   }

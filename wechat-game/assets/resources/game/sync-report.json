@@ -1,8 +1,8 @@
 {
   "source": "prototype/public/assets/game",
-  "generatedAt": "2026-09-03T01:42:40.474Z",
-  "files": 194,
-  "bytes": 18932662,
+  "generatedAt": "2026-09-05T14:20:03.114Z",
+  "files": 197,
+  "bytes": 19545098,
   "paths": [
     "audio/audio-manifest.json",
     "audio/bgm/alchemy-room-loop.mp3",
@@ -124,6 +124,9 @@
     "chibi/character/return/return-15.png",
     "chibi/character/return/return-16.png",
     "chibi/character/return/return-17.png",
+    "chibi/collection/forest-potion.png",
+    "chibi/collection/moon-glow-potion.png",
+    "chibi/collection/mystery-potions.png",
     "chibi/collection/star-dew-potion.png",
     "chibi/effects/completion-burst.png",
     "chibi/effects/particle-amber-spark.png",

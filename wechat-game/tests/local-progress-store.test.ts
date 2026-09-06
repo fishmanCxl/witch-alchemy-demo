@@ -105,8 +105,7 @@ test('a changed level snapshot resets only itself and leaves long-term progress 
     ...store.loadProgress(),
     revision: 18,
     currentLevel: level16.id,
-    highestUnlockedLevel: level16.id,
-    completedLevels: ['level-002', 'level-015'],
+    completedThrough: 15,
   } as const;
   const stale = createLocalSnapshot({
     levelId: level16.id,
@@ -149,8 +148,7 @@ test('global progress and sound preference round-trip independently', () => {
     ...store.loadProgress(),
     revision: 3,
     currentLevel: 'level-003',
-    highestUnlockedLevel: 'level-004',
-    completedLevels: ['level-001', 'level-002'],
+    completedThrough: 2,
     bestMoves: { 'level-001': 3, 'level-002': 5 },
   } as const;
 
@@ -163,7 +161,7 @@ test('global progress and sound preference round-trip independently', () => {
   assert.equal(store.loadSoundEnabled(), false);
 });
 
-test('progress persistence strips derived and unknown fields from storage and reload', () => {
+test('loading v2 progress backs it up and persists only normalized v3 fields', () => {
   const storage = new MemoryStorage();
   const store = new LocalProgressStore(storage);
   const polluted = {
@@ -179,22 +177,42 @@ test('progress persistence strips derived and unknown fields from storage and re
     arbitraryUnknown: true,
   } as const;
 
-  store.saveProgress(polluted);
-
-  const stored = JSON.parse(storage.getItem('witch-water-sort:progress:v2')!);
+  storage.setItem('witch-water-sort:progress:v2', JSON.stringify(polluted));
   const loaded = store.loadProgress();
+  const stored = JSON.parse(storage.getItem('witch-water-sort:progress:v2')!);
   const expected = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     revision: 9,
     currentLevel: 'level-003',
-    highestUnlockedLevel: 'level-004',
-    completedLevels: ['level-001', 'level-003'],
+    completedThrough: 3,
     bestMoves: { 'level-001': 5, 'level-003': 9 },
-    configVersion: 'chapters-1-2.2026-08-29.1',
+    configVersion: 'chapters-1-4.2026-09-05.1',
   };
 
   assert.deepEqual(stored, expected);
   assert.deepEqual(loaded, expected);
+  assert.equal(storage.getItem('witch-water-sort:progress:v2-backup'), JSON.stringify(polluted));
+});
+
+test('startup migration also backs up an existing v2 progress record', () => {
+  const storage = new MemoryStorage();
+  const store = new LocalProgressStore(storage);
+  const legacyProgress = JSON.stringify({
+    schemaVersion: 2,
+    revision: 5,
+    currentLevel: 'level-006',
+    highestUnlockedLevel: 'level-006',
+    completedLevels: [],
+    bestMoves: {},
+    configVersion: 'chapters-1-2.2026-08-29.1',
+  });
+  storage.setItem('witch-water-sort:progress:v2', legacyProgress);
+
+  const migrated = store.migrateLegacyLevel12();
+
+  assert.equal(migrated.completedThrough, 5);
+  assert.equal(JSON.parse(storage.getItem('witch-water-sort:progress:v2')!).schemaVersion, 3);
+  assert.equal(storage.getItem('witch-water-sort:progress:v2-backup'), legacyProgress);
 });
 
 test('valid legacy level-12 data migrates once without inventing earlier completions', () => {
@@ -222,8 +240,7 @@ test('valid legacy level-12 data migrates once without inventing earlier complet
   const restored = store.loadSession(level12);
 
   assert.equal(migrated.currentLevel, 'level-012');
-  assert.equal(migrated.highestUnlockedLevel, 'level-012');
-  assert.deepEqual(migrated.completedLevels, []);
+  assert.equal(migrated.completedThrough, 11);
   assert.deepEqual(migrated.bestMoves, {});
   assert.equal(restored.selected, selected.selected);
   assert.deepEqual(restored.history, [level12.initialState]);
@@ -244,7 +261,7 @@ test('invalid legacy data marks migration complete and keeps the new-player fall
   const progress = store.migrateLegacyLevel12();
 
   assert.equal(progress.currentLevel, 'level-001');
-  assert.equal(progress.highestUnlockedLevel, 'level-001');
+  assert.equal(progress.completedThrough, 0);
   assert.equal(storage.getItem('witch-water-sort:migration:level-012:v2'), 'done');
   assert.equal(storage.getItem('witch-water-sort:level-012:v1'), '{bad json');
 });
@@ -256,8 +273,7 @@ test('QA all-level mode backs up progress once and reset restores it exactly', (
     ...store.loadProgress(),
     revision: 8,
     currentLevel: 'level-005',
-    highestUnlockedLevel: 'level-006',
-    completedLevels: ['level-001', 'level-003', 'level-005'],
+    completedThrough: 5,
     bestMoves: { 'level-001': 4, 'level-003': 18, 'level-005': 31 },
   } as const;
   store.saveProgress(original);
@@ -267,9 +283,8 @@ test('QA all-level mode backs up progress once and reset restores it exactly', (
   const qaProgress = store.enableQaAllLevels();
 
   assert.equal(store.isQaMode(), true);
-  assert.equal(qaProgress.currentLevel, 'level-060');
-  assert.equal(qaProgress.highestUnlockedLevel, 'level-060');
-  assert.deepEqual(qaProgress.completedLevels, PUBLISHED_LEVELS.map((level) => level.id));
+  assert.equal(qaProgress.currentLevel, 'level-120');
+  assert.equal(qaProgress.completedThrough, PUBLISHED_LEVELS.length);
 
   store.enableQaAllLevels();
   const restored = store.resetQaMode();
@@ -308,6 +323,7 @@ test('QA console actions attach to the WeChat GameGlobal only in develop and tri
       host.wx = { getAccountInfoSync: () => ({ miniProgram: { envVersion } }) };
       host.GameGlobal = {};
       const runtime = new PlatformRuntime(actions);
+      assert.equal(runtime.isQaAvailable(), true);
       assert.equal(host.GameGlobal.WitchAlchemyQA, actions);
       runtime.dispose();
       assert.equal(host.GameGlobal.WitchAlchemyQA, undefined);
@@ -316,6 +332,7 @@ test('QA console actions attach to the WeChat GameGlobal only in develop and tri
     host.wx = { getAccountInfoSync: () => ({ miniProgram: { envVersion: 'release' } }) };
     host.GameGlobal = {};
     const runtime = new PlatformRuntime(actions);
+    assert.equal(runtime.isQaAvailable(), false);
     assert.equal(host.GameGlobal.WitchAlchemyQA, undefined);
     runtime.dispose();
   } finally {
@@ -331,13 +348,7 @@ test('QA console actions attach to the WeChat GameGlobal only in develop and tri
 test('stamina uses its own key and corrupt data never changes progress or sessions', () => {
   const storage = new MemoryStorage();
   const store = new LocalProgressStore(storage);
-  const progress = {
-    ...store.loadProgress(),
-    revision: 3,
-    currentLevel: 'level-002',
-    highestUnlockedLevel: 'level-002',
-    completedLevels: ['level-001'],
-  };
+  const progress = { ...store.loadProgress(), revision: 3, currentLevel: 'level-003', completedThrough: 2 };
   store.saveProgress(progress);
   storage.setItem('witch-water-sort:stamina:v1', '{bad');
 

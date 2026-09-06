@@ -41,13 +41,14 @@ import {
   updateLaunchProgress, type LaunchLoadingState,
 } from './launch-loading.ts';
 import {
-  ART_FONT_RESOURCE, COLLECTION_LAYOUT, COLLECTION_OVERVIEW_LAYOUT, HEALTHY_GAME_ADVICE_LINES, HOME_LAYOUT, LAUNCH_LAYOUT,
+  ART_FONT_RESOURCE, COLLECTION_LAYOUT, COLLECTION_LOCK_VISUAL, COLLECTION_OVERVIEW_LAYOUT,
+  HEALTHY_GAME_ADVICE_LINES, HOME_LAYOUT, LAUNCH_LAYOUT,
   LEVEL_COMPLETE_LAYOUT, LEVEL_LAYOUT, LEVEL_SELECT_LAYOUT, RESTART_LABEL,
   SETTINGS_LAYOUT, STAMINA_LAYOUT, bottleFeedbackVisual, bottlePlacement, buttonBaseLayout, buttonSpritePath,
-  collectionCardLayout, collectionCompleteLabel, collectionPuzzlePiece, collectionRewardLabel,
+  chapterLabel, collectionCardLayout, collectionCompleteLabel, collectionPuzzlePiece, collectionRewardLabel,
   completionPrimaryLabel, formatRecoveryCountdown, launchProgressFill, levelButtonVisual, levelInteractionRefreshMode,
   levelSelectButton, potionParticleState, potionParticleVisuals, potionProgressLabel,
-  mysteryPotionVisual, selectedBottleAuraVisual, shouldRenderBottle, staminaBarContentLayout,
+  mysteryPotionVisual, mysteryPotionSheetCell, rewardBottleFlow, selectedBottleAuraVisual, shouldRenderBottle, staminaBarContentLayout,
   type ButtonBaseLayout, type ButtonVariant, type LevelButtonState, type PotionParticleState,
   type PotionParticleVisual,
 } from './presentation-layout.ts';
@@ -82,19 +83,24 @@ export class ProductionBootstrap extends Component {
   private invalid = new Set<number>();
   private pouring = new Set<number>();
   private bottleNodes = new Map<number, Node>();
+  private bottleHitTargets = new Map<number, Node>();
   private particleAnimators = new Map<number, PotionParticleAnimator[]>();
   private levelContent: Node | null = null;
   private levelMessageLabel: Label | null = null;
+  private levelMovesLabel: Label | null = null;
+  private levelPotionProgressLabel: Label | null = null;
   private levelWitchAnimator: WitchAnimator | null = null;
   private completionScheduled = false;
   private staminaSpentForActiveLevel = false;
-  private readonly platform = new PlatformRuntime({
+  private qaFreeBottleEnabled = false;
+  private readonly qaActions = {
     unlockAll: () => {
       this.store.saveSession(this.session);
       this.applyQaProgress(this.store.enableQaAllLevels());
     },
     reset: () => this.applyQaProgress(this.store.resetQaMode()),
-  });
+  };
+  private readonly platform = new PlatformRuntime(this.qaActions);
   private rewarded: RewardedBottleCoordinator | null = null;
   private staminaRewarded: RewardedStaminaCoordinator | null = null;
   private progressSync: ProgressSyncCoordinator | null = null;
@@ -339,6 +345,7 @@ export class ProductionBootstrap extends Component {
     this.staminaDialogCountdownLabel = null;
     this.surface?.destroy();
     this.bottleNodes.clear();
+    this.bottleHitTargets.clear();
     this.particleAnimators.clear();
     this.surface = new Node('ProductionSurface');
     this.node.addChild(this.surface);
@@ -356,6 +363,8 @@ export class ProductionBootstrap extends Component {
   private clearLevelReferences(): void {
     this.levelContent = null;
     this.levelMessageLabel = null;
+    this.levelMovesLabel = null;
+    this.levelPotionProgressLabel = null;
     this.levelWitchAnimator = null;
   }
 
@@ -363,9 +372,10 @@ export class ProductionBootstrap extends Component {
     this.addSprite(root, 'game/chibi/background/alchemy-room/spriteFrame', 393, 852, 0, 0, token);
     this.addPanel(root, 393, 852, 0, 0, color('#170D29', 34));
     const title = deriveHighestTitle(this.progress);
-    this.addLabel(root, '暮影炼金室', 12, HOME_LAYOUT.header.x, 350, color('#DDBED2'), HOME_LAYOUT.header.width, Label.HorizontalAlign.LEFT);
-    this.addLabel(root, `第 ${this.currentLevel.number} 关`, 34, HOME_LAYOUT.header.x, 316,
-      color('#FFF4DF'), HOME_LAYOUT.header.width, Label.HorizontalAlign.LEFT);
+    this.addLabel(root, '暮影炼金室', 12, HOME_LAYOUT.header.x, HOME_LAYOUT.header.eyebrowY,
+      color('#DDBED2'), HOME_LAYOUT.header.width);
+    this.addLabel(root, `第 ${this.currentLevel.number} 关`, 34, HOME_LAYOUT.header.x,
+      HOME_LAYOUT.header.levelY, color('#FFF4DF'), HOME_LAYOUT.header.width);
     this.renderStaminaBar(root, token);
     const titleBadge = this.renderTitleBadge(root, title, HOME_LAYOUT.titleBadge, token);
     tween(titleBadge).repeatForever(
@@ -400,9 +410,8 @@ export class ProductionBootstrap extends Component {
     const chapter = getChapter(this.flow.selectedLevelChapterId)!;
     this.addLabel(root, chapter.stageTitle, 26, LEVEL_SELECT_LAYOUT.header.x,
       LEVEL_SELECT_LAYOUT.header.y, color('#FFF4DF'), LEVEL_SELECT_LAYOUT.header.width);
-    const chapterLabel = chapter.id === 1 ? '第一章' : '第二章';
     const lastLevel = chapter.firstLevel + chapter.levelCount - 1;
-    this.addLabel(root, `${chapterLabel} · ${chapter.themeTitle} · ${chapter.firstLevel}–${lastLevel}关`, 12,
+    this.addLabel(root, `${chapterLabel(chapter.id)} · ${chapter.themeTitle} · ${chapter.firstLevel}–${lastLevel}关`, 12,
       0, LEVEL_SELECT_LAYOUT.subtitleY, color('#DCC7E8'), 270);
     const previousChapter = getChapter(chapter.id - 1);
     const nextChapter = getChapter(chapter.id + 1);
@@ -529,112 +538,45 @@ export class ProductionBootstrap extends Component {
   }
 
   private renderCollectionLock(root: Node, x: number, y: number): void {
+    const visual = COLLECTION_LOCK_VISUAL;
     const node = new Node('CollectionLock');
-    node.setPosition(x, y);
-    node.addComponent(UITransform).setContentSize(36, 42);
-    root.addChild(node);
-    const graphics = node.addComponent(Graphics);
-    graphics.strokeColor = color('#F4CF78');
-    graphics.lineWidth = 5;
-    graphics.arc(0, 7, 10, 0, Math.PI, false);
-    graphics.stroke();
-    graphics.fillColor = color('#D49A42');
-    graphics.strokeColor = color('#6C3A54');
-    graphics.lineWidth = 2;
-    graphics.roundRect(-14, -15, 28, 24, 6);
-    graphics.fill();
-    graphics.stroke();
-    graphics.fillColor = color('#4D244C');
-    graphics.circle(0, -4, 3);
-    graphics.fill();
-    graphics.rect(-1.5, -10, 3, 7);
-    graphics.fill();
-  }
-
-  private renderMysteryPotion(root: Node, index: number, x: number, y: number): void {
-    const visual = mysteryPotionVisual(index);
-    const node = new Node(`MysteryPotion-${index + 1}`);
     node.setPosition(x, y);
     node.addComponent(UITransform).setContentSize(visual.width, visual.height);
     root.addChild(node);
     const graphics = node.addComponent(Graphics);
-    graphics.fillColor = color('#25132F');
-    graphics.strokeColor = color('#8F65B1');
-    graphics.lineWidth = 3;
 
-    if (visual.body === 'round') graphics.circle(0, -7, visual.width * 0.36);
-    else if (visual.body === 'heart') {
-      graphics.moveTo(0, -34);
-      graphics.bezierCurveTo(-38, -12, -34, 24, -15, 27);
-      graphics.bezierCurveTo(-7, 28, -2, 22, 0, 17);
-      graphics.bezierCurveTo(2, 22, 7, 28, 15, 27);
-      graphics.bezierCurveTo(34, 24, 38, -12, 0, -34);
-      graphics.close();
-    } else if (visual.body === 'crystal') {
-      graphics.moveTo(0, -38);
-      graphics.lineTo(-30, -14);
-      graphics.lineTo(-22, 28);
-      graphics.lineTo(0, 38);
-      graphics.lineTo(22, 28);
-      graphics.lineTo(30, -14);
-      graphics.close();
-    } else if (visual.body === 'winged') {
-      graphics.moveTo(-21, 12);
-      graphics.lineTo(-45, 27);
-      graphics.lineTo(-36, 1);
-      graphics.lineTo(-45, -18);
-      graphics.lineTo(-18, -9);
-      graphics.close();
-      graphics.moveTo(21, 12);
-      graphics.lineTo(45, 27);
-      graphics.lineTo(36, 1);
-      graphics.lineTo(45, -18);
-      graphics.lineTo(18, -9);
-      graphics.close();
-      graphics.circle(0, -8, 25);
-    } else if (visual.body === 'star') {
-      for (let point = 0; point < 10; point += 1) {
-        const angle = Math.PI / 2 + point * Math.PI / 5;
-        const radius = point % 2 === 0 ? 36 : 19;
-        const px = Math.cos(angle) * radius;
-        const py = Math.sin(angle) * radius - 5;
-        if (point === 0) graphics.moveTo(px, py);
-        else graphics.lineTo(px, py);
-      }
-      graphics.close();
-    } else if (visual.body === 'cauldron') {
-      graphics.roundRect(-42, -30, 84, 52, 18);
-      graphics.roundRect(-36, 18, 72, 9, 4);
-      graphics.roundRect(-32, -38, 10, 12, 3);
-      graphics.roundRect(22, -38, 10, 12, 3);
-    } else if (visual.body === 'square') graphics.roundRect(-31, -34, 62, 64, 12);
-    else if (visual.body === 'gourd') {
-      graphics.circle(0, -17, 25);
-      graphics.circle(0, 20, 17);
-    } else {
-      graphics.moveTo(12, 34);
-      graphics.bezierCurveTo(-20, 34, -34, 0, -20, -28);
-      graphics.bezierCurveTo(-5, -44, 20, -36, 28, -18);
-      graphics.bezierCurveTo(6, -24, -4, -8, -2, 6);
-      graphics.bezierCurveTo(0, 18, 8, 28, 12, 34);
-      graphics.close();
-    }
+    graphics.fillColor = color(visual.glowColor, 28);
+    graphics.circle(0, -2, 17);
+    graphics.fill();
+    graphics.strokeColor = color(visual.glowColor, 56);
+    graphics.lineWidth = 7;
+    graphics.arc(0, 5, 8, 0, Math.PI, false);
+    graphics.stroke();
+
+    graphics.strokeColor = color(visual.rimColor);
+    graphics.lineWidth = 2;
+    graphics.arc(0, 5, 8, 0, Math.PI, false);
+    graphics.stroke();
+    graphics.fillColor = color(visual.bodyColor, 242);
+    graphics.roundRect(-visual.bodyWidth / 2, -14, visual.bodyWidth, visual.bodyHeight, 6);
     graphics.fill();
     graphics.stroke();
 
-    if (visual.body !== 'cauldron') {
-      graphics.roundRect(-10, visual.height / 2 - 25, 20, 21, 5);
-      graphics.fill();
-      graphics.stroke();
-      graphics.fillColor = color('#B28A5E');
-      graphics.roundRect(-13, visual.height / 2 - 9, 26, 8, 3);
-      graphics.fill();
-    }
-    graphics.fillColor = color('#CDA25B');
-    graphics.circle(-visual.width * 0.34, 20, 3);
+    graphics.fillColor = color('#FFF0B8');
+    graphics.circle(0, -5, 2.4);
     graphics.fill();
-    graphics.circle(visual.width * 0.34, -5, 2);
+    graphics.rect(-1, -11, 2, 6);
     graphics.fill();
+  }
+
+  private renderMysteryPotion(root: Node, index: number, x: number, y: number): void {
+    const cell = mysteryPotionSheetCell(index);
+    const node = new Node(`MysteryPotion-${index + 1}`);
+    node.setPosition(x, y);
+    node.addComponent(UITransform).setContentSize(96, 96);
+    node.addComponent(Mask).type = Mask.Type.RECT;
+    root.addChild(node);
+    this.addSprite(node, cell.path, cell.size, cell.size, cell.x, cell.y, this.renderToken);
   }
 
   private renderCollectionDetail(root: Node, chapterId: number, token: number): void {
@@ -763,14 +705,13 @@ export class ProductionBootstrap extends Component {
     const next = nextLevelConfig(this.session.levelId);
     const chapter = chapterForLevel(this.currentLevel.number)!;
     const chapterComplete = this.currentLevel.number === chapter.firstLevel + chapter.levelCount - 1;
-    const chapterLabel = chapter.id === 1 ? '第一章' : '第二章';
     const best = this.progress.bestMoves[this.session.levelId] ?? this.session.game.moves;
     this.addSprite(root, 'game/chibi/background/alchemy-room/spriteFrame', 393, 852, 0, 0, token);
     this.addPanel(root, 393, 852, 0, 0, color('#0C0614', 166));
     this.addSprite(root, 'game/chibi/ui/settings-dialog-panel/spriteFrame',
       LEVEL_COMPLETE_LAYOUT.panel.width, LEVEL_COMPLETE_LAYOUT.panel.height,
       LEVEL_COMPLETE_LAYOUT.panel.x, LEVEL_COMPLETE_LAYOUT.panel.y, token);
-    this.addLabel(root, chapterComplete ? `${chapterLabel}完成！` : '炼金完成！', 30,
+    this.addLabel(root, chapterComplete ? `${chapterLabel(chapter.id)}完成！` : '炼金完成！', 30,
       LEVEL_COMPLETE_LAYOUT.title.x, LEVEL_COMPLETE_LAYOUT.title.y,
       color('#FFF2CF'), LEVEL_COMPLETE_LAYOUT.title.width);
     this.addLabel(root, `本局 ${this.session.game.moves} 步 · 最佳 ${best} 步`, 15,
@@ -810,7 +751,7 @@ export class ProductionBootstrap extends Component {
 
   private levelButtonState(level: LevelConfig): LevelButtonState {
     if (level.id === this.progress.currentLevel) return 'current';
-    if (this.progress.completedLevels.includes(level.id)) return 'completed';
+    if (level.number <= this.progress.completedThrough) return 'completed';
     return isLevelUnlocked(this.progress, level.id) ? 'unlocked' : 'locked';
   }
 
@@ -911,8 +852,11 @@ export class ProductionBootstrap extends Component {
 
   private renderLevelContent(root: Node, token: number): void {
     this.bottleNodes.clear();
+    this.bottleHitTargets.clear();
     this.particleAnimators.clear();
     this.levelMessageLabel = null;
+    this.levelMovesLabel = null;
+    this.levelPotionProgressLabel = null;
     this.levelWitchAnimator = null;
     const content = new Node('LevelContent');
     root.addChild(content);
@@ -925,10 +869,12 @@ export class ProductionBootstrap extends Component {
     this.addLabel(content, `第 ${this.currentLevel.number} 关`, 30, -86, 318,
       color('#FFF4DF'), 176, Label.HorizontalAlign.LEFT);
     this.addPanel(content, 54, 24, -147, 280, color('#221023', 184), color('#DEB5A1', 70), 12);
-    this.addLabel(content, `步数 ${this.session.game.moves}`, 11, -147, 280, color('#EFD9C9'), 52);
+    this.levelMovesLabel = this.addLabel(content, `步数 ${this.session.game.moves}`, 11,
+      -147, 280, color('#EFD9C9'), 52).getComponent(Label);
     this.addPanel(content, 66, 24, -80, 280, color('#221023', 184), color('#DEB5A1', 70), 12);
-    this.addLabel(content, potionProgressLabel(completed, this.targetPotionCount(this.currentLevel)), 11,
-      -80, 280, color('#EFD9C9'), 64);
+    this.levelPotionProgressLabel = this.addLabel(content,
+      potionProgressLabel(completed, this.targetPotionCount(this.currentLevel)), 11,
+      -80, 280, color('#EFD9C9'), 64).getComponent(Label);
     this.levelWitchAnimator = this.addWitch(content, this.session.witchMood, LEVEL_LAYOUT.witch.x, LEVEL_LAYOUT.witch.y,
       LEVEL_LAYOUT.witch.width, LEVEL_LAYOUT.witch.height);
 
@@ -938,18 +884,25 @@ export class ProductionBootstrap extends Component {
       this.addBottle(content, index, placement.x, placement.y, placement.angle, token);
     });
     this.levelMessageLabel = this.addMessage(content, this.session.message, token);
+    this.addLevelControls(content);
+  }
+
+  private addLevelControls(content: Node): Node {
+    const controls = new Node('LevelControls');
+    content.addChild(controls);
     if (this.completionSaveFailed) {
-      this.addRasterButton(content, '重试保存', 'gold', 224, 72, 0, LEVEL_LAYOUT.controlY,
+      this.addRasterButton(controls, '重试保存', 'gold', 224, 72, 0, LEVEL_LAYOUT.controlY,
         () => this.persistCompletion(), false, undefined, 16);
     } else {
-      this.addControlButton(content, '撤销', 'icon-undo', LEVEL_LAYOUT.controlCenters[0], () => this.handleUndo(),
+      this.addControlButton(controls, '撤销', 'icon-undo', LEVEL_LAYOUT.controlCenters[0], () => this.handleUndo(),
         this.session.levelComplete || this.session.history.length === 0);
-      this.addControlButton(content, RESTART_LABEL, 'icon-restart', LEVEL_LAYOUT.controlCenters[1], () => this.handleRestart(),
+      this.addControlButton(controls, RESTART_LABEL, 'icon-restart', LEVEL_LAYOUT.controlCenters[1], () => this.handleRestart(),
         this.session.levelComplete);
-      this.addControlButton(content, this.session.game.rewardBottleUsed ? '已加瓶' : '加空瓶', 'icon-add-bottle',
+      this.addControlButton(controls, this.session.game.rewardBottleUsed ? '已加瓶' : '加空瓶', 'icon-add-bottle',
         LEVEL_LAYOUT.controlCenters[2], () => { void this.handleRewardedBottle(); },
         this.session.levelComplete || this.session.game.rewardBottleUsed || this.rewardBusy);
     }
+    return controls;
   }
 
   private refreshLevelContent(): void {
@@ -957,6 +910,49 @@ export class ProductionBootstrap extends Component {
     this.levelContent?.destroy();
     this.clearLevelReferences();
     this.renderLevelContent(this.surface, this.renderToken);
+  }
+
+  private refreshChangedBottles(indices: readonly number[]): void {
+    if (!this.levelContent?.isValid) {
+      this.refreshLevelContent();
+      return;
+    }
+
+    for (const index of indices) {
+      const oldTarget = this.bottleHitTargets.get(index);
+      const siblingIndex = oldTarget?.getSiblingIndex()
+        ?? this.levelMessageLabel?.node.getSiblingIndex()
+        ?? this.levelContent.children.length;
+      if (oldTarget) {
+        Tween.stopAllByTarget(oldTarget);
+        oldTarget.removeFromParent();
+        oldTarget.destroy();
+      }
+      this.bottleHitTargets.delete(index);
+      this.bottleNodes.delete(index);
+      this.particleAnimators.delete(index);
+
+      const bottle = this.session.game.bottles[index];
+      if (!bottle || !shouldRenderBottle(bottle.status)) continue;
+      const placement = bottlePlacement(this.currentLevel.presentationSeed, index);
+      this.addBottle(this.levelContent, index, placement.x, placement.y, placement.angle, this.renderToken);
+      const newTarget = this.bottleHitTargets.get(index);
+      if (newTarget) newTarget.setSiblingIndex(Math.min(siblingIndex, this.levelContent.children.length - 1));
+    }
+
+    if (this.levelMovesLabel?.node.isValid) this.levelMovesLabel.string = `步数 ${this.session.game.moves}`;
+    if (this.levelPotionProgressLabel?.node.isValid) {
+      const completed = this.session.game.bottles.filter((bottle) => bottle.status === 'vanished').length;
+      this.levelPotionProgressLabel.string = potionProgressLabel(completed, this.targetPotionCount(this.currentLevel));
+    }
+    const oldControls = this.levelContent.getChildByName('LevelControls');
+    const controlsIndex = oldControls?.getSiblingIndex() ?? this.levelContent.children.length;
+    oldControls?.removeFromParent();
+    oldControls?.destroy();
+    this.addLevelControls(this.levelContent).setSiblingIndex(
+      Math.min(controlsIndex, this.levelContent.children.length - 1),
+    );
+    this.refreshLevelFeedback();
   }
 
   private refreshLevelFeedback(): void {
@@ -1020,8 +1016,10 @@ export class ProductionBootstrap extends Component {
     hitTarget.setPosition(x, y);
     hitTarget.addComponent(UITransform).setContentSize(64, 112);
     root.addChild(hitTarget);
+    this.bottleHitTargets.set(index, hitTarget);
 
-    const feedback = bottleFeedbackVisual(this.session.selected === index, this.pouring.has(index));
+    const selected = this.session.selected === index;
+    const feedback = bottleFeedbackVisual(selected, this.pouring.has(index));
     const node = new Node(`BottleVisual-${index + 1}`);
     node.setPosition(0, feedback.yOffset);
     node.angle = angle;
@@ -1060,7 +1058,7 @@ export class ProductionBootstrap extends Component {
     const particleState = potionParticleState(
       this.session.pendingCompletion.includes(index),
       this.pouring.has(index),
-      this.session.selected === index,
+      selected,
     );
     const animators: PotionParticleAnimator[] = [];
     bottle.layers.forEach((layer, layerIndex) => {
@@ -1130,7 +1128,12 @@ export class ProductionBootstrap extends Component {
 
   private async handleRewardedBottle(): Promise<void> {
     this.resumeAudio();
-    if (!this.rewarded || this.rewardBusy || this.session.levelComplete || this.session.game.rewardBottleUsed) return;
+    if (this.rewardBusy || this.session.levelComplete || this.session.game.rewardBottleUsed) return;
+    if (rewardBottleFlow(this.platform.isQaAvailable(), this.qaFreeBottleEnabled) === 'direct') {
+      this.applySessionResult(grantRewardBottle(this.session));
+      return;
+    }
+    if (!this.rewarded) return;
     this.rewardBusy = true;
     this.session = { ...this.session, message: '正在准备激励广告…', witchMood: 'idle' };
     this.render();
@@ -1157,14 +1160,16 @@ export class ProductionBootstrap extends Component {
     if (result.session === this.session && !result.cue) return;
     const previousSession = this.session;
     this.session = result.session;
-    this.invalid = new Set(result.invalid);
-    this.pouring = new Set(result.pouring);
+    if (result.cue) {
+      this.invalid = new Set(result.invalid);
+      this.pouring = new Set(result.pouring);
+    }
     this.audio?.play(result.cue);
     if (this.session.pendingCompletion.length === 0 && !this.session.levelComplete) {
       this.store.saveSession(this.session);
     }
-    const refreshMode = levelInteractionRefreshMode(previousSession.game !== this.session.game);
-    if (refreshMode === 'content') this.refreshLevelContent();
+    const refreshMode = levelInteractionRefreshMode(previousSession.game, this.session.game);
+    if (refreshMode.mode === 'bottles') this.refreshChangedBottles(refreshMode.indices);
     else this.refreshLevelFeedback();
     if (this.invalid.size > 0) this.scheduleOnce(() => { this.invalid.clear(); this.refreshBottleHighlights(); }, 0.52);
     if (this.pouring.size > 0) this.scheduleOnce(() => { this.pouring.clear(); this.refreshBottleHighlights(); }, 0.52);
@@ -1179,12 +1184,15 @@ export class ProductionBootstrap extends Component {
       this.completionScheduled = true;
       this.scheduleOnce(() => this.audio?.play('potion-vanish'), 0.3);
       this.scheduleOnce(() => {
+        const previousGame = this.session.game;
         this.session = completePendingBottles(this.session);
         this.completionScheduled = false;
         if (this.session.levelComplete) this.persistCompletion();
         else {
+          const refreshMode = levelInteractionRefreshMode(previousGame, this.session.game);
+          if (refreshMode.mode === 'bottles') this.refreshChangedBottles(refreshMode.indices);
+          else this.refreshLevelFeedback();
           this.store.saveSession(this.session);
-          this.refreshLevelContent();
         }
       }, 1.08);
     }
@@ -1283,7 +1291,8 @@ export class ProductionBootstrap extends Component {
 
   private refreshBottleHighlights(): void {
     for (const [index, node] of this.bottleNodes) {
-      const feedback = bottleFeedbackVisual(this.session.selected === index, this.pouring.has(index));
+      const selected = this.session.selected === index;
+      const feedback = bottleFeedbackVisual(selected, this.pouring.has(index));
       for (const selectedAura of node.children.filter((child) => child.name.startsWith('SelectedAura-'))) {
         selectedAura.active = true;
         const auraOpacity = selectedAura.getComponent(UIOpacity);
@@ -1303,7 +1312,7 @@ export class ProductionBootstrap extends Component {
       const particleState = potionParticleState(
         this.session.pendingCompletion.includes(index),
         this.pouring.has(index),
-        this.session.selected === index,
+        selected,
       );
       for (const animator of this.particleAnimators.get(index) ?? []) {
         animator.setState(particleState);
@@ -1330,11 +1339,13 @@ export class ProductionBootstrap extends Component {
       .getComponent(Label);
     this.homeStaminaValueLabel.overflow = Label.Overflow.SHRINK;
     this.homeStaminaValueLabel.enableWrapText = false;
+    this.homeStaminaValueLabel.node.getComponent(UITransform)?.setContentSize(content.value.width, content.height);
     this.homeStaminaCountdownLabel = this.addLabel(bar, '', 9,
       content.status.x + content.status.width / 2, content.status.y, color('#D9C3E2'), content.status.width)
       .getComponent(Label);
     this.homeStaminaCountdownLabel.overflow = Label.Overflow.SHRINK;
     this.homeStaminaCountdownLabel.enableWrapText = false;
+    this.homeStaminaCountdownLabel.node.getComponent(UITransform)?.setContentSize(content.status.width, content.height);
     this.refreshStaminaLabels();
   }
 
@@ -1365,23 +1376,24 @@ export class ProductionBootstrap extends Component {
     shield.addChild(panel);
     this.addSprite(panel, 'game/chibi/ui/settings-dialog-panel/spriteFrame',
       STAMINA_LAYOUT.dialog.width, STAMINA_LAYOUT.dialog.height, 0, 0, token);
-    this.addLabel(panel, '体力补给', 27, 0, 148, color('#FFF2CF'), 220);
+    const rows = STAMINA_LAYOUT.dialogRows;
+    this.addLabel(panel, '体力补给', 27, 0, rows.title, color('#FFF2CF'), 220);
     this.addIconButton(panel, '关闭体力补给', 'icon-settings-close', STAMINA_LAYOUT.close, () => {
       this.flow = closeStaminaDialog(this.flow);
       this.render();
     });
-    this.renderStaminaIcon(panel, 0, 0, 82, 64, token);
-    this.staminaDialogValueLabel = this.addLabel(panel, '', 24, 0, 28, color('#FFF0C2'), 150)
+    this.renderStaminaIcon(panel, 0, 0, rows.icon, 64, token);
+    this.staminaDialogValueLabel = this.addLabel(panel, '', 24, 0, rows.value, color('#FFF0C2'), 150)
       .getComponent(Label);
-    this.staminaDialogCountdownLabel = this.addLabel(panel, '', 13, 0, -3, color('#DCC7E8'), 220)
+    this.staminaDialogCountdownLabel = this.addLabel(panel, '', 13, 0, rows.status, color('#DCC7E8'), 220)
       .getComponent(Label);
-    this.addLabel(panel, '每 30 分钟恢复 1 点 · 上限 10 点', 11, 0, -31, color('#BDAFC4'), 250);
+    this.addLabel(panel, '每 30 分钟恢复 1 点 · 上限 10 点', 11, 0, rows.note, color('#BDAFC4'), 250);
     const adButton = this.addRasterButton(panel, '看广告 · 恢复 5 点', 'gold',
       STAMINA_LAYOUT.adButton.width, STAMINA_LAYOUT.adButton.height,
       STAMINA_LAYOUT.adButton.x, STAMINA_LAYOUT.adButton.y,
       () => { void this.handleRewardedStamina(); }, this.rewardBusy, undefined, 16);
     this.renderStaminaIcon(adButton, 1, -92, 0, 34, token);
-    if (this.staminaMessage) this.addLabel(panel, this.staminaMessage, 11, 0, -132, color('#FFE3A0'), 270);
+    if (this.staminaMessage) this.addLabel(panel, this.staminaMessage, 11, 0, rows.message, color('#FFE3A0'), 270);
     this.refreshStaminaLabels();
   }
 
@@ -1501,6 +1513,18 @@ export class ProductionBootstrap extends Component {
         this.render();
       } else this.returnToHome();
     }, false, 'icon-settings-home', 16);
+    if (this.platform.isQaAvailable()) {
+      const qaMode = this.store.isQaMode();
+      this.addRasterButton(panel, qaMode ? 'QA · 恢复' : 'QA · 解锁', qaMode ? 'gold' : 'purple',
+        SETTINGS_LAYOUT.qaButton.width, SETTINGS_LAYOUT.qaButton.height,
+        SETTINGS_LAYOUT.qaButton.x, SETTINGS_LAYOUT.qaButton.y,
+        () => qaMode ? this.qaActions.reset() : this.qaActions.unlockAll(), false, undefined, 11);
+      this.addRasterButton(panel, this.qaFreeBottleEnabled ? '空瓶直加 · 开' : '空瓶直加 · 关',
+        this.qaFreeBottleEnabled ? 'gold' : 'purple',
+        SETTINGS_LAYOUT.qaBottleButton.width, SETTINGS_LAYOUT.qaBottleButton.height,
+        SETTINGS_LAYOUT.qaBottleButton.x, SETTINGS_LAYOUT.qaBottleButton.y,
+        () => { this.qaFreeBottleEnabled = !this.qaFreeBottleEnabled; this.render(); }, false, undefined, 11);
+    }
   }
 
   private addMessage(root: Node, text: string, token: number): Label {
@@ -1523,10 +1547,7 @@ export class ProductionBootstrap extends Component {
     const variant = icon === 'icon-add-bottle' ? 'gold' : 'purple';
     this.decorateRasterButton(node, variant, disabled, action, buttonBaseLayout(stage, 'contain'));
     this.addSprite(node, `game/chibi/ui/${icon}/spriteFrame`, 31, 31, 0, 8, this.renderToken);
-    this.addLabel(node, label, 10, 0, -25, color('#FFF9ED'), 96);
-    if (icon === 'icon-add-bottle' && !this.session.game.rewardBottleUsed) {
-      this.addSprite(node, 'game/chibi/ui/badge-plus/spriteFrame', 22, 22, 44, -24, this.renderToken);
-    }
+    this.addLabel(node, label, 10, 0, LEVEL_LAYOUT.controlLabelY, color('#FFF9ED'), 96);
   }
 
   private addRasterButton(root: Node, text: string, variant: ButtonVariant, width: number, height: number,

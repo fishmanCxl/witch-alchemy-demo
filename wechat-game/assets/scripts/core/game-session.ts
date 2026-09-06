@@ -70,12 +70,16 @@ function completesAfterVanish(session: GameSession, game: GameState): boolean {
 }
 
 export function pressBottle(session: GameSession, index: number): SessionResult {
-  if (session.levelComplete || session.pendingCompletion.length > 0) {
+  if (session.levelComplete) {
     return { session, cue: null, ...NO_EFFECTS };
   }
 
   const bottle = session.game.bottles[index];
   if (!bottle || bottle.status !== 'active') {
+    return { session, cue: null, ...NO_EFFECTS };
+  }
+
+  if (session.pendingCompletion.includes(index)) {
     return { session, cue: null, ...NO_EFFECTS };
   }
 
@@ -128,7 +132,9 @@ export function pressBottle(session: GameSession, index: number): SessionResult 
       game: result.state,
       history: [...session.history, session.game],
       selected: null,
-      pendingCompletion: result.completed,
+      pendingCompletion: result.completed.length > 0
+        ? [...session.pendingCompletion, ...result.completed]
+        : session.pendingCompletion,
       levelComplete,
       witchMood: completed ? 'celebrate' : 'cast',
       message: levelComplete

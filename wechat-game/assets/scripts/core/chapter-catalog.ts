@@ -16,13 +16,13 @@ const TITLES = [
 export const CHAPTERS: readonly ChapterConfig[] = Object.freeze(TITLES.map((stageTitle, index) => Object.freeze({
   id: index + 1,
   stageTitle,
-  themeTitle: index === 0 ? '基础炼金' : index === 1 ? '草药与自然' : `第 ${index + 1} 章`,
+  themeTitle: index === 0 ? '基础炼金' : index === 1 ? '草药与自然' : index === 2 ? '月光魔法' : index === 3 ? '元素炼金' : `第 ${index + 1} 章`,
   firstLevel: index * 30 + 1,
   levelCount: 30 as const,
   collectionId: index === 0
     ? 'star-dew-potion'
-    : index === 1 ? 'forest-potion' : `chapter-${String(index + 1).padStart(2, '0')}-potion`,
-  releaseState: index <= 1 ? 'available' : 'coming-soon' as const,
+    : index === 1 ? 'forest-potion' : index === 2 ? 'moon-glow-potion' : index === 3 ? 'flame-potion' : `chapter-${String(index + 1).padStart(2, '0')}-potion`,
+  releaseState: index <= 3 ? 'available' : 'coming-soon' as const,
 })));
 
 export function getChapter(id: number): ChapterConfig | null {

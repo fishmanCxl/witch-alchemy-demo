@@ -6,22 +6,20 @@ import {
 } from './level-catalog.ts';
 
 export interface PlayerProgress {
-  readonly schemaVersion: 2;
+  readonly schemaVersion: 3;
   readonly revision: number;
   readonly currentLevel: string;
-  readonly highestUnlockedLevel: string;
-  readonly completedLevels: readonly string[];
+  readonly completedThrough: number;
   readonly bestMoves: Readonly<Record<string, number>>;
   readonly configVersion: string;
 }
 
 export function createDefaultProgress(): PlayerProgress {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     revision: 0,
     currentLevel: 'level-001',
-    highestUnlockedLevel: 'level-001',
-    completedLevels: [],
+    completedThrough: 0,
     bestMoves: {},
     configVersion: GAME_CONFIG_VERSION,
   };
@@ -29,11 +27,10 @@ export function createDefaultProgress(): PlayerProgress {
 
 export function encodePlayerProgress(progress: PlayerProgress): string {
   return JSON.stringify({
-    schemaVersion: 2,
+    schemaVersion: 3,
     revision: progress.revision,
     currentLevel: progress.currentLevel,
-    highestUnlockedLevel: progress.highestUnlockedLevel,
-    completedLevels: progress.completedLevels,
+    completedThrough: progress.completedThrough,
     bestMoves: progress.bestMoves,
     configVersion: GAME_CONFIG_VERSION,
   });
@@ -45,8 +42,8 @@ function publishedNumber(id: string): number | null {
 
 export function isLevelUnlocked(progress: PlayerProgress, id: string): boolean {
   const requested = publishedNumber(id);
-  const highest = publishedNumber(progress.highestUnlockedLevel);
-  return requested !== null && highest !== null && requested <= highest;
+  const highest = Math.min(progress.completedThrough + 1, PUBLISHED_LEVELS.length);
+  return requested !== null && requested <= highest;
 }
 
 export function selectCurrentLevel(
@@ -59,7 +56,7 @@ export function selectCurrentLevel(
 }
 
 function sortedPublishedIds(ids: Iterable<string>): readonly string[] {
-  return [...new Set(ids)]
+  return Array.from(new Set(ids))
     .filter((id) => getLevelConfig(id) !== null)
     .sort((left, right) => (
       (publishedNumber(left) ?? 0) - (publishedNumber(right) ?? 0)
@@ -76,8 +73,9 @@ export function completeLevel(
   if (!Number.isInteger(moves) || moves < 1) return null;
 
   const next = nextLevelConfig(id);
-  const highestNumber = publishedNumber(progress.highestUnlockedLevel) ?? 1;
-  const unlocked = next && next.number > highestNumber ? next : null;
+  const completedThrough = level.number === progress.completedThrough + 1
+    ? level.number
+    : progress.completedThrough;
   const previousBest = progress.bestMoves[id];
   const bestMoves = {
     ...progress.bestMoves,
@@ -88,20 +86,10 @@ export function completeLevel(
     ...progress,
     revision: progress.revision + 1,
     currentLevel: next?.id ?? id,
-    highestUnlockedLevel: unlocked?.id ?? progress.highestUnlockedLevel,
-    completedLevels: sortedPublishedIds([...progress.completedLevels, id]),
+    completedThrough,
     bestMoves,
     configVersion: GAME_CONFIG_VERSION,
   };
-}
-
-function legalHighest(...ids: readonly string[]): string {
-  let highest = PUBLISHED_LEVELS[0];
-  for (const id of ids) {
-    const level = getLevelConfig(id);
-    if (level && level.number > highest.number) highest = level;
-  }
-  return highest.id;
 }
 
 function mergedBestMoves(
@@ -123,10 +111,7 @@ export function mergePlayerProgress(
   local: PlayerProgress,
   remote: PlayerProgress,
 ): PlayerProgress {
-  const highestUnlockedLevel = legalHighest(
-    local.highestUnlockedLevel,
-    remote.highestUnlockedLevel,
-  );
+  const completedThrough = Math.max(local.completedThrough, remote.completedThrough);
   const preferredCurrent = remote.revision > local.revision
     ? remote.currentLevel
     : local.currentLevel;
@@ -135,23 +120,19 @@ export function mergePlayerProgress(
     : remote.currentLevel;
   const boundary: PlayerProgress = {
     ...local,
-    highestUnlockedLevel,
+    completedThrough,
   };
   const currentLevel = isLevelUnlocked(boundary, preferredCurrent)
     ? preferredCurrent
     : isLevelUnlocked(boundary, fallbackCurrent)
       ? fallbackCurrent
-      : highestUnlockedLevel;
+      : PUBLISHED_LEVELS[Math.min(completedThrough, PUBLISHED_LEVELS.length - 1)].id;
 
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     revision: Math.max(local.revision, remote.revision) + 1,
     currentLevel,
-    highestUnlockedLevel,
-    completedLevels: sortedPublishedIds([
-      ...local.completedLevels,
-      ...remote.completedLevels,
-    ]),
+    completedThrough,
     bestMoves: mergedBestMoves(local.bestMoves, remote.bestMoves),
     configVersion: GAME_CONFIG_VERSION,
   };
@@ -165,27 +146,37 @@ export function decodePlayerProgress(serialized: string | null | undefined): Pla
   if (!serialized) return null;
   try {
     const value: unknown = JSON.parse(serialized);
-    if (!isRecord(value) || value.schemaVersion !== 2) return null;
+    if (!isRecord(value) || (value.schemaVersion !== 2 && value.schemaVersion !== 3)) return null;
     if (!Number.isInteger(value.revision) || Number(value.revision) < 0) return null;
-    if (typeof value.currentLevel !== 'string' || typeof value.highestUnlockedLevel !== 'string') {
-      return null;
-    }
-    if (!getLevelConfig(value.currentLevel) || !getLevelConfig(value.highestUnlockedLevel)) return null;
-    if (!Array.isArray(value.completedLevels) || !value.completedLevels.every((id) => (
-      typeof id === 'string' && getLevelConfig(id) !== null
-    ))) return null;
-    if (new Set(value.completedLevels).size !== value.completedLevels.length) return null;
+    if (typeof value.currentLevel !== 'string' || !getLevelConfig(value.currentLevel)) return null;
     if (!isRecord(value.bestMoves) || !Object.entries(value.bestMoves).every(([id, moves]) => (
       getLevelConfig(id) !== null && Number.isInteger(moves) && Number(moves) > 0
     ))) return null;
     if (typeof value.configVersion !== 'string' || value.configVersion.length === 0) return null;
 
+    let completedThrough: number;
+    if (value.schemaVersion === 3) {
+      if (!Number.isInteger(value.completedThrough)) return null;
+      completedThrough = Number(value.completedThrough);
+      if (completedThrough < 0 || completedThrough > PUBLISHED_LEVELS.length) return null;
+    } else {
+      if (typeof value.highestUnlockedLevel !== 'string') return null;
+      const highest = getLevelConfig(value.highestUnlockedLevel);
+      if (!highest || !Array.isArray(value.completedLevels) || !value.completedLevels.every((id) => (
+        typeof id === 'string' && getLevelConfig(id) !== null
+      ))) return null;
+      if (new Set(value.completedLevels).size !== value.completedLevels.length) return null;
+      completedThrough = highest.number - 1;
+      if (value.completedLevels.includes(highest.id)) {
+        completedThrough = highest.number;
+      }
+    }
+
     const progress: PlayerProgress = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       revision: Number(value.revision),
       currentLevel: value.currentLevel,
-      highestUnlockedLevel: value.highestUnlockedLevel,
-      completedLevels: sortedPublishedIds(value.completedLevels as string[]),
+      completedThrough,
       bestMoves: mergedBestMoves(value.bestMoves as Record<string, number>, {}),
       configVersion: GAME_CONFIG_VERSION,
     };

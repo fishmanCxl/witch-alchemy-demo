@@ -164,6 +164,108 @@ test('chapter two generation gates start hard and rise at the peak', async () =>
   assert.throws(() => generator.chapterTwoGeneratorSeed(61), RangeError);
 });
 
+test('chapter three difficulty follows the approved moonlight anchors and interpolation', async () => {
+  const generator = await import('../tools/generate-chapter-three.ts').catch(() => ({}));
+  assert.equal(typeof generator.chapterThreeDifficultyTarget, 'function');
+  const target = generator.chapterThreeDifficultyTarget as (level: number) => number;
+
+  assert.deepEqual(
+    [61, 62, 63, 65, 70, 80, 85, 87, 88, 89, 90].map(target),
+    [0.95, 1.03, 1.04, 1.06, 1.08, 1.11, 1.12, 1.12, 1.097, 1.073, 1.05],
+  );
+  assert.throws(() => target(60), RangeError);
+  assert.throws(() => target(91), RangeError);
+});
+
+test('chapter three generation gates rise above chapter two without changing board rules', async () => {
+  const generator = await import('../tools/generate-chapter-three.ts').catch(() => ({}));
+  assert.equal(typeof generator.chapterThreeGenerationSpec, 'function');
+  assert.equal(typeof generator.chapterThreeGeneratorSeed, 'function');
+
+  assert.deepEqual(generator.chapterThreeGenerationSpec(61), {
+    number: 61,
+    colorCount: 8,
+    emptyBottleCount: 2,
+    reverseMoves: 25,
+    targetDifficulty: 0.95,
+    minimumOptimalMoves: 23,
+    maximumOptimalMoves: 37,
+    minimumSegments: 27,
+    minimumExploredStates: 2_607,
+    minimumOpeningMoves: 2,
+    maximumOpeningMoves: 17,
+    minimumMisleadingBranchRatio: 0.2691780821917808,
+    maxAttempts: 25_000,
+  });
+
+  const peak = generator.chapterThreeGenerationSpec(85);
+  assert.equal(peak.colorCount, 9);
+  assert.equal(peak.reverseMoves, 27);
+  assert.equal(peak.targetDifficulty, 1);
+  assert.equal(peak.minimumOptimalMoves, 25);
+  assert.equal(peak.maximumOptimalMoves, 39);
+  assert.equal(peak.minimumSegments, 29);
+  assert.equal(peak.minimumExploredStates, 4_961);
+  assert.equal(peak.minimumOpeningMoves, 2);
+  assert.equal(peak.maximumOpeningMoves, 18);
+  assert.equal(peak.minimumMisleadingBranchRatio, 0.31575342465753425);
+  assert.equal(peak.maxAttempts, 25_000);
+  assert.equal(generator.chapterThreeGeneratorSeed(61), (0x2609_0000 + Math.imul(61, 104_729)) >>> 0);
+  assert.throws(() => generator.chapterThreeGenerationSpec(60), RangeError);
+  assert.throws(() => generator.chapterThreeGeneratorSeed(91), RangeError);
+});
+
+test('chapter four difficulty follows the approved elemental anchors and interpolation', async () => {
+  const generator = await import('../tools/generate-chapter-four.ts').catch(() => ({}));
+  assert.equal(typeof generator.chapterFourDifficultyTarget, 'function');
+  const target = generator.chapterFourDifficultyTarget as (level: number) => number;
+
+  assert.deepEqual(
+    [91, 92, 93, 95, 100, 110, 115, 117, 118, 119, 120].map(target),
+    [1.02, 1.1, 1.11, 1.13, 1.15, 1.18, 1.19, 1.19, 1.167, 1.143, 1.12],
+  );
+  assert.throws(() => target(90), RangeError);
+  assert.throws(() => target(121), RangeError);
+});
+
+test('chapter four generation gates rise above chapter three without changing board rules', async () => {
+  const generator = await import('../tools/generate-chapter-four.ts').catch(() => ({}));
+  assert.equal(typeof generator.chapterFourGenerationSpec, 'function');
+  assert.equal(typeof generator.chapterFourGeneratorSeed, 'function');
+
+  assert.deepEqual(generator.chapterFourGenerationSpec(91), {
+    number: 91,
+    colorCount: 9,
+    emptyBottleCount: 2,
+    reverseMoves: 26,
+    targetDifficulty: 1,
+    minimumOptimalMoves: 24,
+    maximumOptimalMoves: 38,
+    minimumSegments: 28,
+    minimumExploredStates: 3_398,
+    minimumOpeningMoves: 2,
+    maximumOpeningMoves: 18,
+    minimumMisleadingBranchRatio: 0.28835616438356165,
+    maxAttempts: 25_000,
+  });
+
+  const peak = generator.chapterFourGenerationSpec(115);
+  assert.equal(peak.colorCount, 10);
+  assert.equal(peak.reverseMoves, 28);
+  assert.equal(peak.targetDifficulty, 1);
+  assert.equal(peak.minimumOptimalMoves, 26);
+  assert.equal(peak.maximumOptimalMoves, 40);
+  assert.equal(peak.minimumSegments, 30);
+  assert.equal(peak.minimumExploredStates, 6_466);
+  assert.equal(peak.minimumOpeningMoves, 2);
+  assert.equal(peak.maximumOpeningMoves, 20);
+  assert.equal(peak.minimumMisleadingBranchRatio, 0.33493150684931505);
+  assert.equal(peak.maxAttempts, 25_000);
+  assert.equal(generator.chapterFourGeneratorSeed(91), (0x260A_0000 + Math.imul(91, 104_729)) >>> 0);
+  assert.throws(() => generator.chapterFourGenerationSpec(90), RangeError);
+  assert.throws(() => generator.chapterFourGeneratorSeed(121), RangeError);
+});
+
 test('chapter one generation curve and range table match the published design', async () => {
   const {
     chapterOneDifficultyTarget,
@@ -372,6 +474,76 @@ test('chapter two report records thirty generated levels without exemptions', ()
   for (const entry of report.levels) {
     assert.equal(entry.source, 'generated');
     assert.equal(entry.compatibilityExemption, null);
+  }
+});
+
+test('chapter three report records thirty solved levels and every approved coefficient', async () => {
+  const reportUrl = new URL(
+    '../assets/scripts/core/level-generation-report.chapter-03.json',
+    import.meta.url,
+  );
+  assert.equal(existsSync(reportUrl), true);
+  const report = JSON.parse(readFileSync(reportUrl, 'utf8'));
+  const { chapterThreeDifficultyTarget, chapterThreeGenerationSpec } = await import(
+    '../tools/generate-chapter-three.ts'
+  );
+
+  assert.equal(report.schemaVersion, 1);
+  assert.equal(report.chapterId, 3);
+  assert.equal(report.configVersion, 'chapter-3.2026-09-05.1');
+  assert.equal(report.levels.length, 30);
+  assert.deepEqual(
+    report.levels.map((entry: { id: string }) => entry.id),
+    Array.from({ length: 30 }, (_, index) => `level-${String(index + 61).padStart(3, '0')}`),
+  );
+  for (const entry of report.levels) {
+    const number = Number(entry.id.slice(-3));
+    const spec = chapterThreeGenerationSpec(number);
+    assert.equal(entry.source, 'generated');
+    assert.equal(entry.compatibilityExemption, null);
+    assert.equal(entry.targetCoefficient, chapterThreeDifficultyTarget(number));
+    assert.ok(entry.metrics.optimalMoves >= spec.minimumOptimalMoves, entry.id);
+    assert.ok(entry.metrics.optimalMoves <= spec.maximumOptimalMoves, entry.id);
+    assert.ok(entry.metrics.segmentCount >= spec.minimumSegments, entry.id);
+    assert.ok(entry.metrics.exploredStates >= spec.minimumExploredStates, entry.id);
+    assert.ok(entry.metrics.openingMoves >= spec.minimumOpeningMoves, entry.id);
+    assert.ok(entry.metrics.openingMoves <= spec.maximumOpeningMoves, entry.id);
+    assert.ok(entry.metrics.misleadingBranchRatio >= spec.minimumMisleadingBranchRatio, entry.id);
+  }
+});
+
+test('chapter four report records thirty solved levels and every approved coefficient', async () => {
+  const reportUrl = new URL(
+    '../assets/scripts/core/level-generation-report.chapter-04.json',
+    import.meta.url,
+  );
+  assert.equal(existsSync(reportUrl), true);
+  const report = JSON.parse(readFileSync(reportUrl, 'utf8'));
+  const { chapterFourDifficultyTarget, chapterFourGenerationSpec } = await import(
+    '../tools/generate-chapter-four.ts'
+  );
+
+  assert.equal(report.schemaVersion, 1);
+  assert.equal(report.chapterId, 4);
+  assert.equal(report.configVersion, 'chapter-4.2026-09-05.1');
+  assert.equal(report.levels.length, 30);
+  assert.deepEqual(
+    report.levels.map((entry: { id: string }) => entry.id),
+    Array.from({ length: 30 }, (_, index) => `level-${String(index + 91).padStart(3, '0')}`),
+  );
+  for (const entry of report.levels) {
+    const number = Number(entry.id.slice(-3));
+    const spec = chapterFourGenerationSpec(number);
+    assert.equal(entry.source, 'generated');
+    assert.equal(entry.compatibilityExemption, null);
+    assert.equal(entry.targetCoefficient, chapterFourDifficultyTarget(number));
+    assert.ok(entry.metrics.optimalMoves >= spec.minimumOptimalMoves, entry.id);
+    assert.ok(entry.metrics.optimalMoves <= spec.maximumOptimalMoves, entry.id);
+    assert.ok(entry.metrics.segmentCount >= spec.minimumSegments, entry.id);
+    assert.ok(entry.metrics.exploredStates >= spec.minimumExploredStates, entry.id);
+    assert.ok(entry.metrics.openingMoves >= spec.minimumOpeningMoves, entry.id);
+    assert.ok(entry.metrics.openingMoves <= spec.maximumOpeningMoves, entry.id);
+    assert.ok(entry.metrics.misleadingBranchRatio >= spec.minimumMisleadingBranchRatio, entry.id);
   }
 });
 

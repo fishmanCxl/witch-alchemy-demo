@@ -75,7 +75,7 @@ test('snapshot decoder enforces the selected level, fixed board, capacity, and h
   assert.equal(decodeLocalSnapshot(JSON.stringify({ ...snapshot, updatedAt: -1 }), DEMO_LEVEL_CONFIG), null);
 });
 
-test('shared progress schema exposes the same v2 progress field names as the core contract', () => {
+test('shared progress schema exposes the constant-size v3 progress contract', () => {
   const schema = JSON.parse(readFileSync(
     new URL('../../shared-contracts/progress.schema.json', import.meta.url),
     'utf8',
@@ -85,13 +85,12 @@ test('shared progress schema exposes the same v2 progress field names as the cor
     'schemaVersion',
     'revision',
     'currentLevel',
-    'highestUnlockedLevel',
-    'completedLevels',
+    'completedThrough',
     'bestMoves',
     'configVersion',
   ]);
-  assert.equal(schema.properties.schemaVersion.const, 2);
-  assert.equal(schema.properties.highestUnlockedLevel.pattern, '^level-[0-9]{3}$');
+  assert.equal(schema.properties.schemaVersion.const, 3);
+  assert.equal(schema.properties.completedThrough.maximum, 300);
   assert.equal(schema.additionalProperties, false);
 });
 
@@ -114,6 +113,9 @@ test('collection and title artwork is synchronized as loadable SpriteFrames', ()
     'ui/icon-alchemy-book.png',
     'collection/star-dew-potion.png',
     'collection/forest-potion.png',
+    'collection/moon-glow-potion.png',
+    'collection/flame-potion.png',
+    'collection/mystery-potions.png',
     'titles/title-badge-novice.png',
     'titles/title-badge-junior.png',
     'effects/particle-scarlet-flame.png',
@@ -123,6 +125,11 @@ test('collection and title artwork is synchronized as loadable SpriteFrames', ()
   ];
 
   for (const relative of collectionAssets) {
+    assert.equal(
+      existsSync(new URL(`../../prototype/public/assets/game/chibi/${relative}`, import.meta.url)),
+      true,
+      `prototype ${relative}`,
+    );
     assert.equal(
       existsSync(new URL(`../assets/resources/game/chibi/${relative}`, import.meta.url)),
       true,
@@ -192,6 +199,7 @@ test('production buttons use sliced wide bases and contained square control base
   assert.match(bootstrap, /buttonBaseLayout\(stage, 'contain'\)/);
   assert.match(bootstrap, /sprite\.type = Sprite\.Type\.SLICED/);
   assert.doesNotMatch(bootstrap, /decorateRasterButton\(node, variant, disabled, action\)/);
+  assert.doesNotMatch(bootstrap, /badge-plus/);
 });
 
 test('production bottle feedback uses prototype transforms and deterministic particles', () => {
@@ -212,13 +220,14 @@ test('production bottle interactions refresh level nodes without rebuilding the 
     bootstrap.indexOf('private persistCompletion'),
   );
   const refreshBody = bootstrap.slice(
-    bootstrap.indexOf('private refreshLevelContent'),
+    bootstrap.indexOf('private refreshChangedBottles'),
     bootstrap.indexOf('private addWitch'),
   );
 
   assert.match(applyBody, /levelInteractionRefreshMode\(/);
   assert.match(applyBody, /this\.refreshLevelFeedback\(\)/);
-  assert.match(applyBody, /this\.refreshLevelContent\(\)/);
+  assert.match(applyBody, /this\.refreshChangedBottles\(/);
+  assert.doesNotMatch(applyBody, /this\.refreshLevelContent\(\)/);
   assert.doesNotMatch(applyBody, /this\.render\(\)/);
   assert.doesNotMatch(refreshBody, /this\.surface\?\.destroy\(\)/);
   assert.doesNotMatch(refreshBody, /new Node\('ProductionSurface'\)/);
@@ -249,6 +258,8 @@ test('production presentation derives level copy, targets, seeds, and reward ids
   assert.match(bootstrap, /selectLevelChapter\(/);
   assert.doesNotMatch(bootstrap, /FIRST_CHAPTER_LEVELS\.forEach/);
   assert.doesNotMatch(bootstrap, /'第一章 · 1–30 关'/);
+  assert.match(bootstrap, /chapterLabel\(chapter\.id\)/);
+  assert.doesNotMatch(bootstrap, /chapter\.id === 1 \? '第一章' : '第二章'/);
   assert.match(bootstrap, /renderLevelComplete/);
   assert.match(bootstrap, /switchLevel/);
   assert.match(bootstrap, /persistCompletion/);
@@ -268,7 +279,7 @@ test('production renders one collection entry, a scroll overview, and the select
   assert.match(bootstrap, /private renderMysteryPotion\(/);
   assert.match(bootstrap, /addComponent\(ScrollView\)/);
   assert.match(bootstrap, /POTION_COLLECTIONS/);
-  assert.match(bootstrap, /mysteryPotionVisual\(/);
+  assert.match(bootstrap, /mysteryPotionSheetCell\(/);
   assert.match(bootstrap, /openCollectionDetail\(/);
   assert.match(bootstrap, /closeCollectionDetail\(/);
   assert.match(bootstrap, /deriveHighestTitle\(this\.progress\)/);
@@ -376,18 +387,25 @@ test('production launch ignores stale preload callbacks before UI work and clear
   assert.match(bootstrap, /private clearLaunchNodeReferences\(\): void \{\s+this\.launchProgressFill = null;\s+this\.launchPercentLabel = null;\s+this\.launchStatusLabel = null;\s+this\.launchRetryButton = null;\s+\}/);
 });
 
+test('home stamina labels stay single-line and shrink within the flex row', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const render = bootstrap.slice(bootstrap.indexOf('private renderStaminaBar'), bootstrap.indexOf('private staminaRecoveryText'));
+  assert.match(render, /homeStaminaValueLabel = this\.addLabel\([\s\S]*?\.getComponent\(Label\);\s+this\.homeStaminaValueLabel\.overflow = Label\.Overflow\.SHRINK;\s+this\.homeStaminaValueLabel\.enableWrapText = false;/);
+  assert.match(render, /homeStaminaCountdownLabel = this\.addLabel\([\s\S]*?\.getComponent\(Label\);\s+this\.homeStaminaCountdownLabel\.overflow = Label\.Overflow\.SHRINK;\s+this\.homeStaminaCountdownLabel\.enableWrapText = false;/);
+  assert.match(render, /homeStaminaValueLabel\.node\.getComponent\(UITransform\)\?\.setContentSize\(content\.value\.width, content\.height\)/);
+  assert.match(render, /homeStaminaCountdownLabel\.node\.getComponent\(UITransform\)\?\.setContentSize\(content\.status\.width, content\.height\)/);
+});
 test('home stamina labels explicitly shrink without wrapping', () => {
   const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
   const render = bootstrap.slice(
     bootstrap.indexOf('private renderStaminaBar'),
     bootstrap.indexOf('private staminaRecoveryText'),
   );
-  assert.match(render, /homeStaminaValueLabel\\.overflow = Label\\.Overflow\\.SHRINK/);
-  assert.match(render, /homeStaminaValueLabel\\.enableWrapText = false/);
-  assert.match(render, /homeStaminaCountdownLabel\\.overflow = Label\\.Overflow\\.SHRINK/);
-  assert.match(render, /homeStaminaCountdownLabel\\.enableWrapText = false/);
+  assert.match(render, /homeStaminaValueLabel\.overflow = Label\.Overflow\.SHRINK/);
+  assert.match(render, /homeStaminaValueLabel\.enableWrapText = false/);
+  assert.match(render, /homeStaminaCountdownLabel\.overflow = Label\.Overflow\.SHRINK/);
+  assert.match(render, /homeStaminaCountdownLabel\.enableWrapText = false/);
 });
-
 test('production integrates stamina startup, refill, countdown labels, and zero-value entry guard', () => {
   const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
   const switchLevel = bootstrap.slice(

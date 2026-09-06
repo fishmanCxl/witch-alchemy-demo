@@ -54,7 +54,10 @@ test('selector changes only to a published chapter that the player has unlocked'
   assert.equal(selector.selectedLevelChapterId, 1);
   assert.equal(selectLevelChapter(selector, 2, false), selector);
   assert.equal(selectLevelChapter(selector, 2, true).selectedLevelChapterId, 2);
-  assert.equal(selectLevelChapter(selector, 3, true), selector);
+  assert.equal(selectLevelChapter(selector, 3, true).selectedLevelChapterId, 3);
+  assert.equal(selectLevelChapter(selector, 4, true).selectedLevelChapterId, 4);
+  assert.equal(selectLevelChapter(selector, 5, true), selector);
+});
 
 test('selecting an unlocked chapter closes the stamina dialog', () => {
   const selector = openStaminaDialog(openLevelSelect(createSceneFlow(), 1));
@@ -63,7 +66,6 @@ test('selecting an unlocked chapter closes the stamina dialog', () => {
   assert.equal(selected.selectedLevelChapterId, 2);
   assert.equal(selected.staminaDialogOpen, false);
   assert.equal(selected.exitConfirmOpen, false);
-});
 });
 
 test('home, selector, unlocked level, completion, and next level form a legal flow', () => {
@@ -87,7 +89,8 @@ test('selector rejects locked and unpublished level ids without changing state',
   const selector = openLevelSelect(createSceneFlow());
 
   assert.equal(enterSelectedLevel(selector, 'level-004', false), selector);
-  assert.equal(enterSelectedLevel(selector, 'level-061', true), selector);
+  assert.equal(enterSelectedLevel(selector, 'level-091', true).selectedLevelId, 'level-091');
+  assert.equal(enterSelectedLevel(selector, 'level-121', true), selector);
   assert.equal(enterSelectedLevel(selector, 'not-a-level', true), selector);
 });
 
@@ -100,6 +103,16 @@ test('level 30 completion returns to selector when the chapter has no next level
   assert.equal(completed.nextLevelId, null);
   assert.equal(selector.scene, 'levelSelect');
   assert.equal(selector.selectedLevelId, 'level-030');
+});
+
+test('level 120 completion returns to the fourth chapter selector', () => {
+  const playing = enterSelectedLevel(openLevelSelect(createSceneFlow(), 4), 'level-120', true);
+  const completed = showLevelComplete(playing, null);
+  const selector = continueFromLevelComplete(completed);
+
+  assert.equal(selector.scene, 'levelSelect');
+  assert.equal(selector.selectedLevelChapterId, 4);
+  assert.equal(selector.selectedLevelId, 'level-120');
 });
 
 test('collection returns to the scene that opened it', () => {
@@ -126,7 +139,9 @@ test('collection detail requires a published chapter that the player has unlocke
   const overview = openCollection(createSceneFlow());
   assert.equal(openCollectionDetail(overview, 2, false), overview);
   assert.equal(openCollectionDetail(overview, 2, true).selectedCollectionChapterId, 2);
-  assert.equal(openCollectionDetail(overview, 3, true), overview);
+  assert.equal(openCollectionDetail(overview, 3, true).selectedCollectionChapterId, 3);
+  assert.equal(openCollectionDetail(overview, 4, true).selectedCollectionChapterId, 4);
+  assert.equal(openCollectionDetail(overview, 5, true), overview);
   assert.equal(openCollectionDetail(overview, 11, true), overview);
 });
 

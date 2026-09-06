@@ -42,12 +42,12 @@
         "trimType": "auto",
         "trimThreshold": 1,
         "rotated": false,
-        "offsetX": 0,
-        "offsetY": 0,
-        "trimX": 0,
-        "trimY": 0,
-        "width": 512,
-        "height": 512,
+        "offsetX": 0.5,
+        "offsetY": 2,
+        "trimX": 100,
+        "trimY": 32,
+        "width": 313,
+        "height": 444,
         "rawWidth": 512,
         "rawHeight": 512,
         "borderTop": 0,
@@ -59,12 +59,58 @@
         "atlasUuid": "",
         "packable": true,
         "vertices": {
-          "rawPosition": [-256, -256, 0, 256, -256, 0, -256, 256, 0, 256, 256, 0],
-          "indexes": [0, 1, 2, 2, 1, 3],
-          "uv": [0, 512, 512, 512, 0, 0, 512, 0],
-          "nuv": [0, 0, 1, 0, 0, 1, 1, 1],
-          "minPos": [-256, -256, 0],
-          "maxPos": [256, 256, 0]
+          "rawPosition": [
+            -156.5,
+            -222,
+            0,
+            156.5,
+            -222,
+            0,
+            -156.5,
+            222,
+            0,
+            156.5,
+            222,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            100,
+            480,
+            413,
+            480,
+            100,
+            36,
+            413,
+            36
+          ],
+          "nuv": [
+            0.1953125,
+            0.0703125,
+            0.806640625,
+            0.0703125,
+            0.1953125,
+            0.9375,
+            0.806640625,
+            0.9375
+          ],
+          "minPos": [
+            -156.5,
+            -222,
+            0
+          ],
+          "maxPos": [
+            156.5,
+            222,
+            0
+          ]
         },
         "pixelsToUnit": 100,
         "pivotX": 0.5,
@@ -73,7 +119,9 @@
       },
       "ver": "1.0.12",
       "imported": true,
-      "files": [".json"],
+      "files": [
+        ".json"
+      ],
       "subMetas": {}
     }
   },

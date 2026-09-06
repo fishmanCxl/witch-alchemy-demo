@@ -3,17 +3,12 @@
   "$id": "witch-water-sort/progress.schema.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "revision", "currentLevel", "highestUnlockedLevel", "completedLevels", "bestMoves", "configVersion"],
+  "required": ["schemaVersion", "revision", "currentLevel", "completedThrough", "bestMoves", "configVersion"],
   "properties": {
-    "schemaVersion": { "const": 2 },
+    "schemaVersion": { "const": 3 },
     "revision": { "type": "integer", "minimum": 0 },
     "currentLevel": { "type": "string", "pattern": "^level-[0-9]{3}$" },
-    "highestUnlockedLevel": { "type": "string", "pattern": "^level-[0-9]{3}$" },
-    "completedLevels": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": { "type": "string", "pattern": "^level-[0-9]{3}$" }
-    },
+    "completedThrough": { "type": "integer", "minimum": 0, "maximum": 300 },
     "bestMoves": {
       "type": "object",
       "propertyNames": { "pattern": "^level-[0-9]{3}$" },

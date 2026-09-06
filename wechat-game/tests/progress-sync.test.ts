@@ -50,8 +50,7 @@ test('remote progress is validated before legal union and minimum merge', async 
     ...local,
     revision: 5,
     currentLevel: 'level-003',
-    highestUnlockedLevel: 'level-003',
-    completedLevels: ['level-001', 'level-002'],
+    completedThrough: 2,
     bestMoves: { 'level-001': 5, 'level-002': 9 },
   };
   const coordinator = new ProgressSyncCoordinator({
@@ -63,15 +62,14 @@ test('remote progress is validated before legal union and minimum merge', async 
   assert.equal(result.status, 'synced');
   assert.equal(result.progress.revision, 6);
   assert.equal(result.progress.currentLevel, 'level-003');
-  assert.equal(result.progress.highestUnlockedLevel, 'level-003');
-  assert.deepEqual(result.progress.completedLevels, ['level-001', 'level-002']);
+  assert.equal(result.progress.completedThrough, 2);
   assert.deepEqual(result.progress.bestMoves, { 'level-001': 5, 'level-002': 9 });
 });
 
 test('malformed remote data and cloud failures preserve the exact local object', async () => {
   const local = createDefaultProgress();
   const invalid = new ProgressSyncCoordinator({
-    sync: async () => ({ ...local, highestUnlockedLevel: 'level-061' }),
+    sync: async () => ({ ...local, completedThrough: 121 }),
     submitLevelResult: async () => undefined,
   });
   const failing = new ProgressSyncCoordinator({
@@ -113,7 +111,5 @@ test('a stale cloud sync result cannot erase newer local completions', () => {
   const stale = createDefaultProgress();
   const applied = applyProgressSyncResult(current, { status: 'synced', progress: stale });
 
-  assert.deepEqual(applied.completedLevels, [
-    'level-001', 'level-002', 'level-003', 'level-004', 'level-005',
-  ]);
+  assert.equal(applied.completedThrough, 5);
 });

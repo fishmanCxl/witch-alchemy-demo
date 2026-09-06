@@ -1,4 +1,5 @@
-import type { BottleStatus } from '../core/types.ts';
+import type { BottleStatus, GameState } from '../core/types.ts';
+import { chapterForLevel, getChapter } from '../core/chapter-catalog.ts';
 import { getPotionCollection } from '../core/potion-collection-catalog.ts';
 
 export interface RectLayout {
@@ -53,9 +54,21 @@ export interface PotionParticleFrame {
 export const ART_FONT_RESOURCE = 'game/fonts/noto-serif-sc-ui';
 export const RESTART_LABEL = '重来';
 
+const CHAPTER_NUMERALS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'] as const;
+
+export function chapterLabel(chapterId: number): string {
+  const chapter = getChapter(chapterId);
+  if (!chapter) throw new RangeError('chapter ID must be an integer from 1 to 10');
+  return `第${CHAPTER_NUMERALS[chapter.id - 1]}章`;
+}
+
 export function completionPrimaryLabel(currentLevel: number, nextLevel: number | null): string {
   if (nextLevel === null) return '返回选关';
-  return currentLevel === 30 && nextLevel === 31 ? '进入第二章' : '下一关';
+  const currentChapter = chapterForLevel(currentLevel);
+  const nextChapter = chapterForLevel(nextLevel);
+  return currentChapter && nextChapter && currentChapter.id !== nextChapter.id
+    ? `进入${chapterLabel(nextChapter.id)}`
+    : '下一关';
 }
 
 export function collectionRewardLabel(chapterId: number, piece: number): string {
@@ -93,8 +106,8 @@ export function launchProgressFill(progress: number): Readonly<{ x: number; widt
 }
 
 export const HOME_LAYOUT = Object.freeze({
-  header: Object.freeze({ x: -86, y: 326, width: 176, align: 'left' as const }),
-  titleBadge: Object.freeze({ x: 0, y: 137, width: 168, height: 84 }),
+  header: Object.freeze({ x: 0, eyebrowY: 278, levelY: 238, width: 260, align: 'center' as const }),
+  titleBadge: Object.freeze({ x: 0, y: 101, width: 168, height: 84 }),
   titleFloat: Object.freeze({ distance: 6, duration: 1.6 }),
   settingsButton: Object.freeze({ x: 150, y: 270, width: 48, height: 48 }),
   collectionButton: Object.freeze({ x: 150, y: 198, width: 64, height: 64 }),
@@ -105,16 +118,23 @@ export const HOME_LAYOUT = Object.freeze({
 });
 
 export const STAMINA_LAYOUT = Object.freeze({
-  homeBar: Object.freeze({ x: 80, y: 330, width: 148, height: 46, padding: Object.freeze({ horizontal: 8, vertical: 4 }), gap: 4 }),
+  homeBar: Object.freeze({ x: -112, y: 365, width: 148, height: 46, padding: Object.freeze({ horizontal: 8, vertical: 4 }), gap: 4 }),
   dialog: Object.freeze({ x: 0, y: -8, width: 321, height: 430 }),
+  dialogRows: Object.freeze({ title: 148, icon: 86, value: 40, status: 0, note: -34, message: -148 }),
   close: Object.freeze({ x: 118, y: 166, width: 48, height: 48 }),
-  adButton: Object.freeze({ x: 0, y: -72, width: 240, height: 72 }),
-  exitDialog: Object.freeze({ x: 0, y: -12, width: 304, height: 310 }),
+  adButton: Object.freeze({ x: 0, y: -92, width: 240, height: 72 }),
+  exitDialog: Object.freeze({ x: 0, y: -12, width: 304, height: 350 }),
   exitConfirm: Object.freeze({ x: 0, y: -48, width: 224, height: 64 }),
   exitCancel: Object.freeze({ x: 0, y: -120, width: 224, height: 56 }),
 });
 
-export function staminaBarContentLayout(): Readonly<{ width: number; height: number; icon: RectLayout; value: RectLayout; status: RectLayout; }> {
+export function staminaBarContentLayout(): Readonly<{
+  width: number;
+  height: number;
+  icon: RectLayout;
+  value: RectLayout;
+  status: RectLayout;
+}> {
   const { homeBar } = STAMINA_LAYOUT;
   const height = 30;
   const iconWidth = 30;
@@ -141,6 +161,7 @@ export const LEVEL_LAYOUT = Object.freeze({
   message: Object.freeze({ x: 0, y: -270, width: 321, height: 46 }),
   controlCenters: Object.freeze([-122, 0, 122] as const),
   controlY: -338,
+  controlLabelY: -18,
 });
 
 export const LEVEL_SELECT_LAYOUT = Object.freeze({
@@ -180,6 +201,16 @@ export const COLLECTION_OVERVIEW_LAYOUT = Object.freeze({
   backButton: Object.freeze({ x: 0, y: -374, width: 224, height: 48 }),
 });
 
+export const COLLECTION_LOCK_VISUAL = Object.freeze({
+  width: 30,
+  height: 36,
+  bodyWidth: 24,
+  bodyHeight: 20,
+  bodyColor: '#2A1538',
+  rimColor: '#F2C76E',
+  glowColor: '#D8A84E',
+});
+
 export const LEVEL_COMPLETE_LAYOUT = Object.freeze({
   panel: Object.freeze({ x: 0, y: -5, width: 321, height: 470 }),
   title: Object.freeze({ x: 0, y: 142, width: 260, height: 52 }),
@@ -194,7 +225,13 @@ export const SETTINGS_LAYOUT = Object.freeze({
   close: Object.freeze({ x: 110, y: 138, width: 48, height: 48 }),
   soundButton: Object.freeze({ x: 0, y: 14, width: 224, height: 72 }),
   homeButton: Object.freeze({ x: 0, y: -81, width: 224, height: 72 }),
+  qaButton: Object.freeze({ x: -58, y: -146, width: 108, height: 48 }),
+  qaBottleButton: Object.freeze({ x: 58, y: -146, width: 108, height: 48 }),
 });
+
+export function rewardBottleFlow(qaAvailable: boolean, directEnabled: boolean): 'rewarded' | 'direct' {
+  return qaAvailable && directEnabled ? 'direct' : 'rewarded';
+}
 
 export function levelSelectButton(index: number): RectLayout {
   const total = LEVEL_SELECT_LAYOUT.columns * LEVEL_SELECT_LAYOUT.rows;
@@ -270,32 +307,25 @@ export function collectionCardLayout(index: number): CollectionCardLayout {
   });
 }
 
-export type MysteryPotionBody =
-  'round' | 'heart' | 'crystal' | 'winged' | 'star' | 'cauldron' | 'square' | 'gourd' | 'moon';
-
-export interface MysteryPotionVisual {
-  readonly body: MysteryPotionBody;
-  readonly width: number;
-  readonly height: number;
+export interface MysteryPotionSheetCell {
+  readonly path: string;
+  readonly size: number;
+  readonly x: number;
+  readonly y: number;
 }
 
-const MYSTERY_POTION_VISUALS: readonly MysteryPotionVisual[] = Object.freeze([
-  { body: 'round', width: 76, height: 86 },
-  { body: 'heart', width: 72, height: 88 },
-  { body: 'crystal', width: 68, height: 90 },
-  { body: 'winged', width: 90, height: 80 },
-  { body: 'star', width: 80, height: 88 },
-  { body: 'cauldron', width: 88, height: 76 },
-  { body: 'square', width: 72, height: 88 },
-  { body: 'gourd', width: 76, height: 90 },
-  { body: 'moon', width: 72, height: 86 },
-].map((visual) => Object.freeze(visual)));
-
-export function mysteryPotionVisual(index: number): MysteryPotionVisual {
-  if (!Number.isInteger(index) || index < 0 || index >= MYSTERY_POTION_VISUALS.length) {
-    throw new RangeError(`mystery potion index must be from 0 to ${MYSTERY_POTION_VISUALS.length - 1}`);
+export function mysteryPotionSheetCell(index: number): MysteryPotionSheetCell {
+  if (!Number.isInteger(index) || index < 0 || index >= 9) {
+    throw new RangeError('mystery potion index must be from 0 to 8');
   }
-  return MYSTERY_POTION_VISUALS[index];
+  const column = index % 3;
+  const row = Math.floor(index / 3);
+  return Object.freeze({
+    path: 'game/chibi/collection/mystery-potions/spriteFrame',
+    size: 288,
+    x: (1 - column) * 96,
+    y: (row - 1) * 96,
+  });
 }
 function hash32(value: number): number {
   let hash = value | 0;
@@ -318,8 +348,16 @@ export function selectedBottleAuraVisual(): readonly SelectedBottleAuraVisual[] 
   ]);
 }
 
-export function levelInteractionRefreshMode(gameChanged: boolean): 'feedback' | 'content' {
-  return gameChanged ? 'content' : 'feedback';
+export interface LevelInteractionRefreshPlan {
+  readonly mode: 'feedback' | 'bottles';
+  readonly indices: readonly number[];
+}
+
+export function levelInteractionRefreshMode(before: GameState, after: GameState): LevelInteractionRefreshPlan {
+  const indices = before.bottles.flatMap((bottle, index) => (
+    bottle === after.bottles[index] ? [] : [index]
+  ));
+  return indices.length > 0 ? { mode: 'bottles', indices } : { mode: 'feedback', indices };
 }
 
 const POTION_PARTICLE_STYLE = Object.freeze({
