@@ -20,7 +20,13 @@ if (existsSync(sourceBundle)) {
   mkdirSync(dirname(targetBundle), { recursive: true });
   renameSync(sourceBundle, targetBundle);
 }
-writeFileSync(join(targetBundle, 'game.js'), "require('./index.js');\n");
+const bundleEntry = join(targetBundle, 'index.js');
+const subpackageEntry = join(targetBundle, 'game.js');
+if (existsSync(bundleEntry)) {
+  if (existsSync(subpackageEntry)) rmSync(subpackageEntry);
+  renameSync(bundleEntry, subpackageEntry);
+}
+if (!existsSync(subpackageEntry)) throw new Error('missing resources bundle entry');
 
 const gamePath = join(outputRoot, 'game.json');
 const game = JSON.parse(readFileSync(gamePath, 'utf8'));

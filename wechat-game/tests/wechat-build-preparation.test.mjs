@@ -98,7 +98,7 @@ function loadCompiledLevelProgress() {
   return compiledExports;
 }
 
-test('prepared resources subpackage exposes a WeChat game.js entry that loads its Cocos bundle', () => {
+test('prepared resources subpackage executes the Cocos bundle directly from game.js', () => {
   const prepared = spawnSync(process.execPath, ['tools/prepare-wechat-build.mjs'], {
     cwd: projectRoot,
     encoding: 'utf8',
@@ -107,13 +107,18 @@ test('prepared resources subpackage exposes a WeChat game.js entry that loads it
   assert.equal(prepared.status, 0, prepared.stderr || prepared.stdout);
   assert.equal(existsSync(entryPath), true, 'resources subpackage is missing the WeChat-required game.js');
 
-  const required = [];
+  const registered = [];
   vm.runInNewContext(readFileSync(entryPath, 'utf8'), {
-    require(specifier) {
-      required.push(specifier);
+    System: {
+      register(name) {
+        registered.push(name);
+      },
     },
   });
-  assert.deepEqual(required, ['./index.js']);
+  assert.deepEqual(registered, [
+    'chunks:///_virtual/resources',
+    'virtual:///prerequisite-imports/resources',
+  ]);
 });
 test('prepared WeChat project keeps dynamically loaded Cocos bundle files in previews', () => {
   const expectedAppId = 'wx-local-preview-test';
