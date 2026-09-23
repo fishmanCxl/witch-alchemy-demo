@@ -210,3 +210,16 @@ test('five sequential completions reveal one piece even after selecting level 1 
   assert.equal(progress.currentLevel, 'level-001');
   assert.equal(deriveCollectionProgress(progress, 1).revealedPieces, 1);
 });
+
+test('chapter nine reveals moon goddess pieces and promotes to legendary alchemist', () => {
+  for (const [level, piece] of [[245, 1], [250, 2], [255, 3], [260, 4], [265, 5], [270, 6]] as const) {
+    const before = progressWithCompleted(level - 1);
+    const after = progressWithCompleted(level);
+    assert.equal(deriveCollectionProgress(after, 9).revealedPieces, piece);
+    assert.equal(
+      deriveCompletionReward(before, after, levelId(level)).puzzlePiece,
+      piece,
+    );
+  }
+  assert.equal(deriveHighestTitle(progressWithCompleted(270)).title, '传奇炼金师');
+});

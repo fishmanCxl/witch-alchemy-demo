@@ -21,7 +21,7 @@ test('first chapter publishes exactly thirty consecutive validated levels', () =
 
 test('only level one is tutorial and level two starts at seven to ten optimal moves', () => {
   assert.deepEqual(getLevelConfig('level-001')?.completionRule, { type: 'first-bottle-complete' });
-  for (let number = 2; number <= 240; number += 1) {
+  for (let number = 2; number <= 270; number += 1) {
     const level = getLevelConfig(levelId(number));
     assert.equal(level?.completionRule.type, 'all-colors');
     if (level?.completionRule.type === 'all-colors') {
@@ -52,7 +52,7 @@ test('levels 25 to 27 satisfy peak metric envelopes and actual ratings ease from
   assert.deepEqual(getLevelConfig('level-012')?.initialState, createDemoState());
 });
 
-test('all published boards are unique across all eight chapters', async () => {
+test('all published boards are unique across all nine chapters', async () => {
   const catalog = await import('../assets/scripts/core/level-catalog.ts');
   assert.equal(Array.isArray(catalog.PUBLISHED_LEVELS), true);
   const boardKeys = catalog.PUBLISHED_LEVELS.map((level) => JSON.stringify(
@@ -61,13 +61,13 @@ test('all published boards are unique across all eight chapters', async () => {
       status: bottle.status,
     })),
   ));
-  assert.equal(new Set(boardKeys).size, 240);
+  assert.equal(new Set(boardKeys).size, 270);
 });
 
-test('chapters two through eight publish levels 31 to 240 and next-level lookup crosses every boundary', async () => {
+test('chapters two through nine publish levels 31 to 270 and next-level lookup crosses every boundary', async () => {
   const catalog = await import('../assets/scripts/core/level-catalog.ts');
-  assert.equal(catalog.GAME_CONFIG_VERSION, 'chapters-1-8.2026-09-22.1');
-  assert.equal(catalog.PUBLISHED_LEVELS?.length, 240);
+  assert.equal(catalog.GAME_CONFIG_VERSION, 'chapters-1-9.2026-09-23.1');
+  assert.equal(catalog.PUBLISHED_LEVELS?.length, 270);
   assert.deepEqual(
     catalog.levelsForChapter?.(2).map((level) => level.number),
     Array.from({ length: 30 }, (_, index) => index + 31),
@@ -96,6 +96,10 @@ test('chapters two through eight publish levels 31 to 240 and next-level lookup 
     catalog.levelsForChapter?.(8).map((level) => level.number),
     Array.from({ length: 30 }, (_, index) => index + 211),
   );
+  assert.deepEqual(
+    catalog.levelsForChapter?.(9).map((level) => level.number),
+    Array.from({ length: 30 }, (_, index) => index + 241),
+  );
   assert.equal(getLevelConfig('level-031')?.completionRule.type, 'all-colors');
   assert.equal(getLevelConfig('level-060')?.number, 60);
   assert.equal(getLevelConfig('level-061')?.completionRule.type, 'all-colors');
@@ -110,6 +114,8 @@ test('chapters two through eight publish levels 31 to 240 and next-level lookup 
   assert.equal(getLevelConfig('level-210')?.number, 210);
   assert.equal(getLevelConfig('level-211')?.completionRule.type, 'all-colors');
   assert.equal(getLevelConfig('level-240')?.number, 240);
+  assert.equal(getLevelConfig('level-241')?.completionRule.type, 'all-colors');
+  assert.equal(getLevelConfig('level-270')?.number, 270);
   assert.equal(nextLevelConfig('level-030')?.id, 'level-031');
   assert.equal(nextLevelConfig('level-060')?.id, 'level-061');
   assert.equal(nextLevelConfig('level-090')?.id, 'level-091');
@@ -117,10 +123,11 @@ test('chapters two through eight publish levels 31 to 240 and next-level lookup 
   assert.equal(nextLevelConfig('level-150')?.id, 'level-151');
   assert.equal(nextLevelConfig('level-180')?.id, 'level-181');
   assert.equal(nextLevelConfig('level-210')?.id, 'level-211');
-  assert.equal(nextLevelConfig('level-240'), null);
+  assert.equal(nextLevelConfig('level-240')?.id, 'level-241');
+  assert.equal(nextLevelConfig('level-270'), null);
 });
 
-test('catalog lookup rejects unpublished ids after chapter eight', () => {
+test('catalog lookup rejects unpublished ids after chapter nine', () => {
   assert.equal(getLevelConfig('level-000'), null);
   assert.equal(getLevelConfig('level-121')?.number, 121);
   assert.equal(getLevelConfig('level-151')?.number, 151);
@@ -128,7 +135,9 @@ test('catalog lookup rejects unpublished ids after chapter eight', () => {
   assert.equal(getLevelConfig('level-210')?.number, 210);
   assert.equal(getLevelConfig('level-211')?.number, 211);
   assert.equal(getLevelConfig('level-240')?.number, 240);
-  assert.equal(getLevelConfig('level-241'), null);
+  assert.equal(getLevelConfig('level-241')?.number, 241);
+  assert.equal(getLevelConfig('level-270')?.number, 270);
+  assert.equal(getLevelConfig('level-271'), null);
   assert.equal(nextLevelConfig('level-001')?.id, 'level-002');
   assert.equal(nextLevelConfig('level-029')?.id, 'level-030');
   assert.equal(nextLevelConfig('level-030')?.id, 'level-031');
@@ -138,12 +147,13 @@ test('catalog lookup rejects unpublished ids after chapter eight', () => {
   assert.equal(nextLevelConfig('level-150')?.id, 'level-151');
   assert.equal(nextLevelConfig('level-180')?.id, 'level-181');
   assert.equal(nextLevelConfig('level-210')?.id, 'level-211');
-  assert.equal(nextLevelConfig('level-240'), null);
+  assert.equal(nextLevelConfig('level-240')?.id, 'level-241');
+  assert.equal(nextLevelConfig('level-270'), null);
   assert.equal(nextLevelConfig('not-a-level'), null);
 });
 
-test('chapters six through eight publish eleven colors with exactly two initial active empty bottles', () => {
-  for (let number = 151; number <= 240; number += 1) {
+test('chapters six through nine publish eleven colors with exactly two initial active empty bottles', () => {
+  for (let number = 151; number <= 270; number += 1) {
     const level = getLevelConfig(levelId(number));
     assert.ok(level, levelId(number));
     assert.equal(level.metrics.colorCount, 11, level.id);

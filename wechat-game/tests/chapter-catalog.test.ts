@@ -8,12 +8,12 @@ import {
   publishedChapters,
 } from '../assets/scripts/core/chapter-catalog.ts';
 
-test('catalog defines ten non-overlapping thirty-level chapters and publishes the first eight', () => {
+test('catalog defines ten non-overlapping thirty-level chapters and publishes the first nine', () => {
   assert.equal(CHAPTERS.length, 10);
   assert.deepEqual(CHAPTERS.map((chapter) => chapter.firstLevel), [
     1, 31, 61, 91, 121, 151, 181, 211, 241, 271,
   ]);
-  assert.deepEqual(publishedChapters().map((chapter) => chapter.id), [1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.deepEqual(publishedChapters().map((chapter) => chapter.id), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
   assert.equal(chapterForLevel(30)?.id, 1);
   assert.equal(chapterForLevel(31)?.id, 2);
   assert.equal(chapterForLevel(61)?.id, 3);
@@ -22,6 +22,7 @@ test('catalog defines ten non-overlapping thirty-level chapters and publishes th
   assert.equal(chapterForLevel(151)?.id, 6);
   assert.equal(chapterForLevel(181)?.id, 7);
   assert.equal(chapterForLevel(211)?.id, 8);
+  assert.equal(chapterForLevel(241)?.id, 9);
 });
 
 test('title order follows the approved reference', () => {
@@ -113,7 +114,19 @@ test('chapter eight publishes stellar alchemy and the stellar potion identity', 
     collectionId: 'stellar-potion',
     releaseState: 'available',
   });
-  assert.equal(getChapter(9)?.releaseState, 'coming-soon');
+});
+
+test('chapter nine publishes moon goddess mysticism and keeps chapter ten coming soon', () => {
+  assert.deepEqual(getChapter(9), {
+    id: 9,
+    stageTitle: '月之魔女',
+    themeTitle: '月神秘术',
+    firstLevel: 241,
+    levelCount: 30,
+    collectionId: 'moon-goddess-potion',
+    releaseState: 'available',
+  });
+  assert.equal(getChapter(10)?.releaseState, 'coming-soon');
 });
 
 test('catalog lookup rejects out-of-range chapter and level values', () => {

@@ -238,7 +238,7 @@ test('loading v2 progress backs it up and persists only normalized v3 fields', (
     currentLevel: 'level-003',
     completedThrough: 3,
     bestMoves: { 'level-001': 5, 'level-003': 9 },
-    configVersion: 'chapters-1-8.2026-09-22.1',
+    configVersion: 'chapters-1-9.2026-09-23.1',
   };
 
   assert.deepEqual(stored, expected);
@@ -335,7 +335,7 @@ test('QA all-level mode backs up progress once and reset restores it exactly', (
   const qaProgress = store.enableQaAllLevels();
 
   assert.equal(store.isQaMode(), true);
-  assert.equal(qaProgress.currentLevel, 'level-240');
+  assert.equal(qaProgress.currentLevel, 'level-270');
   assert.equal(qaProgress.completedThrough, PUBLISHED_LEVELS.length);
 
   store.enableQaAllLevels();
