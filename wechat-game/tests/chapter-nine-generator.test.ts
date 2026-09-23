@@ -4,7 +4,9 @@ import {
   chapterNineDifficultyProfile,
   chapterNineDifficultyTarget,
   chapterNineGenerationSpec,
+  chapterNineGeneratorSeed,
   chapterNineMode,
+  chapterNineParentLevel,
   searchChapterNineLevel,
 } from '../tools/generate-chapter-nine.ts';
 
@@ -34,9 +36,24 @@ test('chapter nine hard gates never substitute colors or impossible segments', (
     [241, 242, 243, 244, 265, 266, 267, 268, 269, 270].map(chapterNineDifficultyProfile),
     ['baseline', 'deep', 'deceptive', 'tangled', 'deep', 'deceptive', 'tangled', 'baseline', 'baseline', 'baseline'],
   );
+  assert.deepEqual(
+    [241, 242, 243, 244, 268, 269, 270].map(chapterNineParentLevel),
+    [null, 235, 236, 237, 240, 240, 240],
+  );
+  assert.equal(chapterNineGenerationSpec(242).minimumMisleadingBranchRatio, 2 / 11);
+  assert.equal(chapterNineGenerationSpec(250).minimumOptimalMoves, 38);
+  assert.equal(chapterNineGenerationSpec(250).minimumExploredStates, 90_294);
+  assert.equal(chapterNineGenerationSpec(255).minimumMisleadingBranchRatio, 2 / 11);
+  assert.equal(chapterNineGenerationSpec(264).minimumMisleadingBranchRatio, 2 / 11);
+  assert.equal(chapterNineGenerationSpec(257).minimumOptimalMoves, 39);
   assert.equal(chapterNineGenerationSpec(265).minimumOptimalMoves, 40);
-  assert.equal(chapterNineGenerationSpec(266).minimumMisleadingBranchRatio, 7 / 11);
+  assert.equal(chapterNineGenerationSpec(265).minimumMisleadingBranchRatio, 1 / 11);
+  assert.equal(chapterNineGenerationSpec(266).minimumMisleadingBranchRatio, 4 / 11);
+  assert.equal(chapterNineGeneratorSeed(266), 4_151_867_415);
   assert.equal(chapterNineGenerationSpec(267).minimumExploredStates, 100_000);
+  assert.equal(chapterNineGenerationSpec(268).minimumOptimalMoves, 38);
+  assert.equal(chapterNineGenerationSpec(267).minimumMisleadingBranchRatio, 2 / 11);
+  assert.equal(chapterNineGeneratorSeed(267), 96_355_240);
 });
 
 test('chapter nine modes are explicit and bounded search validates attempt limits', () => {

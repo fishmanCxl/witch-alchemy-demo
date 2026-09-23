@@ -161,6 +161,15 @@ export function chapterNineDifficultyProfile(
   }
   return (['deep', 'deceptive', 'tangled'] as const)[(levelNumber - 242) % 3];
 }
+export function chapterNineParentLevel(levelNumber: number): 235 | 236 | 237 | 240 | null {
+  const profile = chapterNineDifficultyProfile(levelNumber);
+  if (levelNumber >= 268) return 240;
+  if (profile === 'baseline') return null;
+  if (profile === 'deep') return 235;
+  if (profile === 'deceptive') return 236;
+  return 237;
+}
+
 
 export function chapterNineGenerationSpec(
   levelNumber: number,
@@ -174,32 +183,38 @@ export function chapterNineGenerationSpec(
   let minimumMisleadingBranchRatio = 4 / 11;
 
   if (difficultyProfile === 'deep') {
-    minimumOptimalMoves += 1;
     minimumSegments = 44;
+    minimumMisleadingBranchRatio = 2 / 11;
   }
   if (difficultyProfile === 'deceptive') {
     minimumSegments = 44;
-    minimumMisleadingBranchRatio = 6 / 11;
+    minimumMisleadingBranchRatio = 2 / 11;
   }
   if (difficultyProfile === 'tangled') {
     minimumSegments = 44;
+    minimumOptimalMoves -= 1;
     minimumExploredStates += 30_000;
+  }
+  if (levelNumber === 268) {
+    minimumOptimalMoves = 38;
   }
   if (levelNumber === 265) {
     minimumOptimalMoves = 40;
     minimumSegments = 44;
     minimumExploredStates = 70_000;
+    minimumMisleadingBranchRatio = 1 / 11;
   }
   if (levelNumber === 266) {
     minimumOptimalMoves = 39;
     minimumSegments = 44;
     minimumExploredStates = 70_000;
-    minimumMisleadingBranchRatio = 7 / 11;
+    minimumMisleadingBranchRatio = 4 / 11;
   }
   if (levelNumber === 267) {
     minimumOptimalMoves = 39;
     minimumSegments = 44;
     minimumExploredStates = 100_000;
+    minimumMisleadingBranchRatio = 2 / 11;
   }
 
   return {
@@ -223,6 +238,8 @@ export function chapterNineGenerationSpec(
 
 export function chapterNineGeneratorSeed(levelNumber: number): number {
   assertChapterNineLevel(levelNumber);
+  if (levelNumber === 266) return 4_151_867_415;
+  if (levelNumber === 267) return 96_355_240;
   return (0x260F_0000 + Math.imul(levelNumber, 104_729)) >>> 0;
 }
 
@@ -284,20 +301,14 @@ function stateFromLayers(layers: readonly PotionColor[]): GameState {
 function generationStrategy(
   spec: ChapterNineGenerationSpec,
 ): ReportLevel['generationStrategy'] {
-  if (spec.number === 268 || spec.number === 269) return 'deterministic-easing-mutation';
-  return spec.difficultyProfile === 'baseline'
-    ? 'deterministic-shuffle'
-    : 'deterministic-profile-mutation';
+  const parentLevel = chapterNineParentLevel(spec.number);
+  if (parentLevel === 240) return 'deterministic-easing-mutation';
+  return parentLevel === null ? 'deterministic-shuffle' : 'deterministic-profile-mutation';
 }
 
 function candidateState(seed: number, spec: ChapterNineGenerationSpec): GameState {
-  const easingMutation = spec.number === 268 || spec.number === 269;
-  if (spec.difficultyProfile === 'baseline' && !easingMutation) return randomState(seed);
-  const sourceLevel = easingMutation
-    ? 240
-    : spec.difficultyProfile === 'deep'
-    ? 235
-    : spec.difficultyProfile === 'deceptive' ? 236 : 237;
+  const sourceLevel = chapterNineParentLevel(spec.number);
+  if (sourceLevel === null) return randomState(seed);
   const source = CHAPTER_EIGHT_LEVEL_DATA[sourceLevel - 211].initialState;
   const sourceLayers = source.bottles.slice(0, 11).flatMap((bottle) => bottle.layers);
   const random = randomSource(seed);

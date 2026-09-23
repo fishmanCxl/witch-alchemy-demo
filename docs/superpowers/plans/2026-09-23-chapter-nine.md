@@ -52,7 +52,7 @@
 **Interfaces:**
 
 - Consumes: `countColorSegments`、`validateLevelConfig`、`solveStateCandidate`、`completeStateAnalysis` 和第八章 235/236/237/240 的静态状态。
-- Produces: `chapterNineDifficultyTarget(number)`、`chapterNineDifficultyProfile(number)`、`chapterNineGenerationSpec(number)`、`chapterNineGeneratorSeed(number)`、`chapterNineMode(args)`、`searchChapterNineLevel(number, maxAttempts)`。
+- Produces: `chapterNineDifficultyTarget(number)`、`chapterNineDifficultyProfile(number)`、`chapterNineGenerationSpec(number)`、`chapterNineGeneratorSeed(number)`、`chapterNineParentLevel(number)`、`chapterNineMode(args)`、`searchChapterNineLevel(number, maxAttempts)`。
 
 - [ ] **Step 1: 写生成器契约失败测试**
 
@@ -63,7 +63,9 @@ import {
   chapterNineDifficultyProfile,
   chapterNineDifficultyTarget,
   chapterNineGenerationSpec,
+  chapterNineGeneratorSeed,
   chapterNineMode,
+  chapterNineParentLevel,
   searchChapterNineLevel,
 } from '../tools/generate-chapter-nine.ts';
 
@@ -93,9 +95,20 @@ test('chapter nine hard gates never substitute colors or impossible segments', (
     [241, 242, 243, 244, 265, 266, 267, 268, 269, 270].map(chapterNineDifficultyProfile),
     ['baseline', 'deep', 'deceptive', 'tangled', 'deep', 'deceptive', 'tangled', 'baseline', 'baseline', 'baseline'],
   );
+  assert.deepEqual(
+    [241, 242, 243, 244, 268, 269, 270].map(chapterNineParentLevel),
+    [null, 235, 236, 237, 240, 240, 240],
+  );
+  assert.equal(chapterNineGenerationSpec(255).minimumMisleadingBranchRatio, 2 / 11);
+  assert.equal(chapterNineGenerationSpec(264).minimumMisleadingBranchRatio, 2 / 11);
+  assert.equal(chapterNineGenerationSpec(257).minimumOptimalMoves, 39);
   assert.equal(chapterNineGenerationSpec(265).minimumOptimalMoves, 40);
-  assert.equal(chapterNineGenerationSpec(266).minimumMisleadingBranchRatio, 7 / 11);
+  assert.equal(chapterNineGenerationSpec(266).minimumMisleadingBranchRatio, 4 / 11);
+  assert.equal(chapterNineGeneratorSeed(266), 4_151_867_415);
   assert.equal(chapterNineGenerationSpec(267).minimumExploredStates, 100_000);
+  assert.equal(chapterNineGenerationSpec(267).minimumMisleadingBranchRatio, 2 / 11);
+  assert.equal(chapterNineGeneratorSeed(267), 96_355_240);
+  assert.equal(chapterNineGenerationSpec(268).minimumOptimalMoves, 38);
 });
 
 test('chapter nine modes are explicit and bounded search validates attempt limits', () => {
@@ -160,43 +173,46 @@ let minimumExploredStates = Math.round(45_000 + 20_000 * progress);
 let minimumMisleadingBranchRatio = 4 / 11;
 
 if (difficultyProfile === 'deep') {
-  minimumOptimalMoves += 1;
   minimumSegments = 44;
+  minimumMisleadingBranchRatio = 2 / 11;
 }
 if (difficultyProfile === 'deceptive') {
   minimumSegments = 44;
-  minimumMisleadingBranchRatio = 6 / 11;
+  minimumMisleadingBranchRatio = 2 / 11;
 }
 if (difficultyProfile === 'tangled') {
   minimumSegments = 44;
+  minimumOptimalMoves -= 1;
   minimumExploredStates += 30_000;
+}
+if (levelNumber === 268) {
+  minimumOptimalMoves = 38;
 }
 if (levelNumber === 265) {
   minimumOptimalMoves = 40;
   minimumSegments = 44;
   minimumExploredStates = 70_000;
+  minimumMisleadingBranchRatio = 1 / 11;
 }
 if (levelNumber === 266) {
   minimumOptimalMoves = 39;
   minimumSegments = 44;
   minimumExploredStates = 70_000;
-  minimumMisleadingBranchRatio = 7 / 11;
+  minimumMisleadingBranchRatio = 4 / 11;
 }
 if (levelNumber === 267) {
   minimumOptimalMoves = 39;
   minimumSegments = 44;
   minimumExploredStates = 100_000;
+  minimumMisleadingBranchRatio = 2 / 11;
 }
 ```
 
 候选父级映射必须是：
 
 ```ts
-const sourceLevel = easingMutation
-  ? 240
-  : spec.difficultyProfile === 'deep'
-    ? 235
-    : spec.difficultyProfile === 'deceptive' ? 236 : 237;
+const sourceLevel = chapterNineParentLevel(spec.number);
+if (sourceLevel === null) return randomState(seed);
 const source = CHAPTER_EIGHT_LEVEL_DATA[sourceLevel - 211].initialState;
 ```
 
