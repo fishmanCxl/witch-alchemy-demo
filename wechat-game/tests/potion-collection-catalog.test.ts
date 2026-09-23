@@ -20,7 +20,7 @@ test('collection catalog maps all ten chapters to stable collection identities',
   assert.equal(Object.isFrozen(POTION_COLLECTIONS[0]), true);
 });
 
-test('the first six collections expose approved artwork while later chapters use distinct silhouettes', () => {
+test('the first eight collections expose approved artwork while later chapters use distinct silhouettes', () => {
   assert.equal(POTION_COLLECTIONS[0].name, '星露药水');
   assert.equal(POTION_COLLECTIONS[0].artworkKey, 'star-dew-potion');
   assert.equal(POTION_COLLECTIONS[0].silhouetteIndex, null);
@@ -64,10 +64,26 @@ test('the first six collections expose approved artwork while later chapters use
     artworkKey: 'wind-spirit-potion',
     silhouetteIndex: 4,
   });
-  assert.deepEqual(POTION_COLLECTIONS.slice(6).map((item) => item.name), Array(4).fill('???'));
+  assert.deepEqual(getPotionCollection(7), {
+    chapterId: 7,
+    collectionId: 'shadow-potion',
+    name: '暗影药水',
+    description: '凝聚禁忌暗影与幽紫秘雾的稀有药水',
+    artworkKey: 'shadow-potion',
+    silhouetteIndex: 5,
+  });
+  assert.deepEqual(getPotionCollection(8), {
+    chapterId: 8,
+    collectionId: 'stellar-potion',
+    name: '星辰药水',
+    description: '凝聚星辰辉光与靛蓝星轨的稀有药水',
+    artworkKey: 'stellar-potion',
+    silhouetteIndex: 6,
+  });
+  assert.deepEqual(POTION_COLLECTIONS.slice(8).map((item) => item.name), Array(2).fill('???'));
   assert.equal(
-    new Set(POTION_COLLECTIONS.slice(6).map((item) => item.silhouetteIndex)).size,
-    4,
+    new Set(POTION_COLLECTIONS.slice(8).map((item) => item.silhouetteIndex)).size,
+    2,
   );
 });
 

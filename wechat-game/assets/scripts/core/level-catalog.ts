@@ -4,11 +4,13 @@ import { CHAPTER_THREE_LEVEL_DATA } from './level-data.chapter-03.generated.ts';
 import { CHAPTER_FOUR_LEVEL_DATA } from './level-data.chapter-04.generated.ts';
 import { CHAPTER_FIVE_LEVEL_DATA } from './level-data.chapter-05.generated.ts';
 import { CHAPTER_SIX_LEVEL_DATA } from './level-data.chapter-06.generated.ts';
+import { CHAPTER_SEVEN_LEVEL_DATA } from './level-data.chapter-07.generated.ts';
+import { CHAPTER_EIGHT_LEVEL_DATA } from './level-data.chapter-08.generated.ts';
 import type { BottleState, GameState } from './types.ts';
 import type { LevelConfig } from './level-config.ts';
 
 export const FIRST_CHAPTER_CONFIG_VERSION = 'chapter-1.2026-08-25.1' as const;
-export const GAME_CONFIG_VERSION = 'chapters-1-6.2026-09-19.1' as const;
+export const GAME_CONFIG_VERSION = 'chapters-1-8.2026-09-22.1' as const;
 
 function freezeState(state: GameState): GameState {
   const bottles = state.bottles.map((bottle): BottleState => Object.freeze({
@@ -51,6 +53,12 @@ export const CHAPTER_FIVE_LEVELS: readonly LevelConfig[] = Object.freeze(
 export const CHAPTER_SIX_LEVELS: readonly LevelConfig[] = Object.freeze(
   CHAPTER_SIX_LEVEL_DATA.map(freezeLevel),
 );
+export const CHAPTER_SEVEN_LEVELS: readonly LevelConfig[] = Object.freeze(
+  CHAPTER_SEVEN_LEVEL_DATA.map(freezeLevel),
+);
+export const CHAPTER_EIGHT_LEVELS: readonly LevelConfig[] = Object.freeze(
+  CHAPTER_EIGHT_LEVEL_DATA.map(freezeLevel),
+);
 
 export const PUBLISHED_LEVELS: readonly LevelConfig[] = Object.freeze([
   ...FIRST_CHAPTER_LEVELS,
@@ -59,6 +67,8 @@ export const PUBLISHED_LEVELS: readonly LevelConfig[] = Object.freeze([
   ...CHAPTER_FOUR_LEVELS,
   ...CHAPTER_FIVE_LEVELS,
   ...CHAPTER_SIX_LEVELS,
+  ...CHAPTER_SEVEN_LEVELS,
+  ...CHAPTER_EIGHT_LEVELS,
 ]);
 
 const BOARD_KEYS = PUBLISHED_LEVELS.map((level) => JSON.stringify(
@@ -80,6 +90,8 @@ export function levelsForChapter(chapterId: number): readonly LevelConfig[] {
   if (chapterId === 4) return CHAPTER_FOUR_LEVELS;
   if (chapterId === 5) return CHAPTER_FIVE_LEVELS;
   if (chapterId === 6) return CHAPTER_SIX_LEVELS;
+  if (chapterId === 7) return CHAPTER_SEVEN_LEVELS;
+  if (chapterId === 8) return CHAPTER_EIGHT_LEVELS;
   return Object.freeze([]);
 }
 

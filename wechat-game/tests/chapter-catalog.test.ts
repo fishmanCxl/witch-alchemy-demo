@@ -8,18 +8,20 @@ import {
   publishedChapters,
 } from '../assets/scripts/core/chapter-catalog.ts';
 
-test('catalog defines ten non-overlapping thirty-level chapters and publishes the first six', () => {
+test('catalog defines ten non-overlapping thirty-level chapters and publishes the first eight', () => {
   assert.equal(CHAPTERS.length, 10);
   assert.deepEqual(CHAPTERS.map((chapter) => chapter.firstLevel), [
     1, 31, 61, 91, 121, 151, 181, 211, 241, 271,
   ]);
-  assert.deepEqual(publishedChapters().map((chapter) => chapter.id), [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(publishedChapters().map((chapter) => chapter.id), [1, 2, 3, 4, 5, 6, 7, 8]);
   assert.equal(chapterForLevel(30)?.id, 1);
   assert.equal(chapterForLevel(31)?.id, 2);
   assert.equal(chapterForLevel(61)?.id, 3);
   assert.equal(chapterForLevel(91)?.id, 4);
   assert.equal(chapterForLevel(121)?.id, 5);
   assert.equal(chapterForLevel(151)?.id, 6);
+  assert.equal(chapterForLevel(181)?.id, 7);
+  assert.equal(chapterForLevel(211)?.id, 8);
 });
 
 test('title order follows the approved reference', () => {
@@ -87,6 +89,31 @@ test('chapter six publishes the approved wind theme and wind spirit potion ident
     collectionId: 'wind-spirit-potion',
     releaseState: 'available',
   });
+});
+
+test('chapter seven publishes forbidden alchemy and the shadow potion identity', () => {
+  assert.deepEqual(getChapter(7), {
+    id: 7,
+    stageTitle: '大魔女',
+    themeTitle: '禁忌炼金',
+    firstLevel: 181,
+    levelCount: 30,
+    collectionId: 'shadow-potion',
+    releaseState: 'available',
+  });
+});
+
+test('chapter eight publishes stellar alchemy and the stellar potion identity', () => {
+  assert.deepEqual(getChapter(8), {
+    id: 8,
+    stageTitle: '星辉魔女',
+    themeTitle: '星辰炼金',
+    firstLevel: 211,
+    levelCount: 30,
+    collectionId: 'stellar-potion',
+    releaseState: 'available',
+  });
+  assert.equal(getChapter(9)?.releaseState, 'coming-soon');
 });
 
 test('catalog lookup rejects out-of-range chapter and level values', () => {

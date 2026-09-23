@@ -47,6 +47,20 @@ export interface GeneratedCandidate {
   readonly scoreComponents: GenerationScoreComponents;
 }
 
+export interface BaseStateAnalysis {
+  readonly metrics: Pick<
+    LevelMetrics,
+    'optimalMoves' | 'segmentCount' | 'exploredStates' | 'openingMoves'
+  >;
+  readonly solution: readonly Move[];
+}
+
+export interface FullStateAnalysis {
+  readonly metrics: LevelMetrics;
+  readonly scoreComponents: GenerationScoreComponents;
+  readonly solution: readonly Move[];
+}
+
 export function generatedOutputMatches(actual: string, expected: string): boolean {
   const normalizeLineEndings = (value: string): string => value.replace(/\r\n?/g, '\n');
   return normalizeLineEndings(actual) === normalizeLineEndings(expected);
@@ -236,55 +250,83 @@ export function scoreCandidate(
   };
 }
 
-export function analyzeState(
+export function solveStateCandidate(
+  state: GameState,
+  completionRule: CompletionRule,
+  maxExploredStates: number,
+): BaseStateAnalysis | null {
+  const result = solveLevel(state, { completionRule, maxExploredStates });
+  if (!result.solved) return null;
+  return {
+    metrics: {
+      optimalMoves: result.moves.length,
+      segmentCount: countColorSegments(state),
+      exploredStates: result.exploredStates,
+      openingMoves: result.openingMoves,
+    },
+    solution: result.moves,
+  };
+}
+
+export function completeStateAnalysis(
   state: GameState,
   colorCount: number,
   completionRule: CompletionRule,
-  maxExploredStates = 250_000,
-): {
-  readonly metrics: LevelMetrics;
-  readonly scoreComponents: GenerationScoreComponents;
-  readonly solution: readonly Move[];
-} | null {
-  const result = solveLevel(state, { completionRule, maxExploredStates });
-  if (!result.solved) return null;
-  const segments = countColorSegments(state);
+  base: BaseStateAnalysis,
+  maxExploredStates: number,
+  minimumMisleadingBranchRatio: number,
+): FullStateAnalysis | null {
   const openingAnalysis = analyzeOpeningBranches(
     state,
     completionRule,
-    result.moves.length,
+    base.metrics.optimalMoves,
     maxExploredStates,
+    minimumMisleadingBranchRatio,
   );
+  if (!openingAnalysis) return null;
+  const { optimalMoves, segmentCount, exploredStates, openingMoves } = base.metrics;
   const rating = difficultyRating({
     colorCount,
-    optimalMoves: result.moves.length,
-    segmentCount: segments,
-    exploredStates: result.exploredStates,
-    openingMoves: result.openingMoves,
+    optimalMoves,
+    segmentCount,
+    exploredStates,
+    openingMoves,
     misleadingBranchRatio: openingAnalysis.ratio,
   });
   const score = scoreCandidate(
     colorCount,
-    result.moves.length,
-    segments,
-    result.exploredStates,
-    result.openingMoves,
+    optimalMoves,
+    segmentCount,
+    exploredStates,
+    openingMoves,
     openingAnalysis.ratio,
   );
   return {
     metrics: {
       colorCount,
-      optimalMoves: result.moves.length,
-      segmentCount: segments,
-      exploredStates: result.exploredStates,
-      openingMoves: result.openingMoves,
+      optimalMoves,
+      segmentCount,
+      exploredStates,
+      openingMoves,
       misleadingBranchRatio: openingAnalysis.ratio,
       difficultyRating: rating,
       difficultyScore: Math.round(rating * 10_000),
     },
     scoreComponents: score.components,
-    solution: result.moves,
+    solution: base.solution,
   };
+}
+
+export function analyzeState(
+  state: GameState,
+  colorCount: number,
+  completionRule: CompletionRule,
+  maxExploredStates = 250_000,
+): FullStateAnalysis | null {
+  const base = solveStateCandidate(state, completionRule, maxExploredStates);
+  return base
+    ? completeStateAnalysis(state, colorCount, completionRule, base, maxExploredStates, 0)
+    : null;
 }
 
 function validShape(state: GameState, spec: GenerationSpec): boolean {

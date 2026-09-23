@@ -264,25 +264,39 @@ export function analyzeOpeningBranches(
   rule: CompletionRule,
   optimalMoves: number,
   maxExploredStates: number,
-): OpeningBranchAnalysis {
+  minimumRatio = 0,
+): OpeningBranchAnalysis | null {
+  if (!Number.isFinite(minimumRatio) || minimumRatio < 0 || minimumRatio > 1) {
+    throw new RangeError('minimumRatio must be finite and from 0 to 1');
+  }
   const openings = legalMoves(state);
   let misleadingBranches = 0;
+  let processedBranches = 0;
 
   for (const move of openings) {
-    if (rule.type === 'first-valid-pour') continue;
-    const child = applyMoveAndVanish(state, move);
-    const result = solveLevel(child, {
-      completionRule: rule,
-      maxExploredStates,
-    });
-    if (!result.solved || 1 + result.moves.length > optimalMoves) {
-      misleadingBranches += 1;
+    if (rule.type !== 'first-valid-pour') {
+      const child = applyMoveAndVanish(state, move);
+      const result = solveLevel(child, {
+        completionRule: rule,
+        maxExploredStates,
+      });
+      if (!result.solved || 1 + result.moves.length > optimalMoves) {
+        misleadingBranches += 1;
+      }
     }
+    processedBranches += 1;
+    const remainingBranches = openings.length - processedBranches;
+    if (
+      openings.length > 0
+      && (misleadingBranches + remainingBranches) / openings.length < minimumRatio
+    ) return null;
   }
 
+  const ratio = openings.length === 0 ? 0 : misleadingBranches / openings.length;
+  if (ratio < minimumRatio) return null;
   return {
     totalBranches: openings.length,
     misleadingBranches,
-    ratio: openings.length === 0 ? 0 : misleadingBranches / openings.length,
+    ratio,
   };
 }
