@@ -109,7 +109,7 @@ test('validation derives WAV duration from the PCM data chunk', (t) => {
 
   assert.throws(
     () => validateAudioAssets(fixture),
-    /ui\.tap: WAV duration .* differs from manifest 70ms/,
+    /ui\.tap: WAV duration .* differs from manifest 120ms/,
   );
 });
 
@@ -151,4 +151,11 @@ test('the generated audio pack satisfies the runtime asset contract', () => {
   assert.deepEqual(result.hashMismatches, []);
   assert.deepEqual(result.runtimeMasterReferences, []);
   assert.ok(result.bgmDurationSeconds >= 45 && result.bgmDurationSeconds <= 60);
+});
+
+test('the UI tap keeps enough tail for the approved magic droplet sound', () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'public', 'assets', 'game', 'audio', 'audio-manifest.json'), 'utf8'));
+  const uiTap = manifest.entries.find((entry) => entry.id === 'ui.tap');
+
+  assert.ok(uiTap.durationMs >= 100 && uiTap.durationMs <= 140);
 });

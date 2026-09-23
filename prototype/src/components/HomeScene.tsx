@@ -10,9 +10,9 @@ interface HomeSceneProps {
 
 export function HomeScene({ completedCount, onContinue, settings }: HomeSceneProps) {
   return (
-    <main className="home-scene" aria-label="暮影炼金室首页">
+    <main className="home-scene" aria-label="魔女炼金屋首页">
       <header className="home-header">
-        <p>暮影炼金室</p>
+        <p>魔女炼金屋</p>
         <h1>第 12 关</h1>
         <span>魔药 {completedCount}/8</span>
       </header>

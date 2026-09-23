@@ -14,8 +14,13 @@ interface RewardedVideoAdLike {
 
 interface WeChatApiLike {
   createRewardedVideoAd(options: { adUnitId: string }): RewardedVideoAdLike;
+  getMenuButtonBoundingClientRect?(): { readonly top: number; readonly bottom: number };
+  getWindowInfo?(): { readonly windowHeight: number };
+  showShareMenu?(options: { menus: string[] }): void;
+  shareAppMessage?(options: ShareMessage): void;
   getAccountInfoSync?(): { miniProgram?: { envVersion?: string } };
   getNetworkType?(options: { success: (result: { networkType: string }) => void }): void;
+  vibrateShort?(options: { type: 'light' }): void;
   onNetworkStatusChange?(callback: (result: { isConnected: boolean }) => void): void;
   offNetworkStatusChange?(callback: (result: { isConnected: boolean }) => void): void;
   onShow?(callback: () => void): void;
@@ -27,6 +32,23 @@ interface WeChatApiLike {
     callFunction(options: { name: string; data: Record<string, unknown> }): Promise<{ result?: unknown }>;
   };
 }
+
+export interface ShareMessage {
+  readonly title: string;
+  readonly query?: string;
+}
+
+export interface RewardedAdConfig {
+  readonly mode: 'mock' | 'wechat';
+  readonly mockResult: RewardedAdResult;
+  readonly adUnitId: string;
+}
+
+export const REWARDED_AD_CONFIG: RewardedAdConfig = Object.freeze({
+  mode: 'mock',
+  mockResult: 'completed',
+  adUnitId: '',
+});
 
 function runtimeWx(): WeChatApiLike | null {
   return (globalThis as typeof globalThis & { wx?: WeChatApiLike }).wx ?? null;
@@ -76,9 +98,11 @@ export class UnavailableRewardedAd implements RewardedAdPort {
 }
 
 export class FakeRewardedAd implements RewardedAdPort {
-  private readonly result: RewardedAdResult;
-  constructor(result: RewardedAdResult = 'completed') { this.result = result; }
-  async show(): Promise<RewardedAdResult> { return this.result; }
+  private readonly result: RewardedAdResult | (() => RewardedAdResult);
+  constructor(result: RewardedAdResult | (() => RewardedAdResult) = 'completed') { this.result = result; }
+  async show(): Promise<RewardedAdResult> {
+    return typeof this.result === 'function' ? this.result() : this.result;
+  }
 }
 
 export class WeChatRewardClaimClient implements RewardClaimPort {
@@ -150,21 +174,50 @@ export class PlatformRuntime {
   constructor(qaActions?: QaActions) {
     this.api?.getNetworkType?.({ success: ({ networkType }) => { this.online = networkType !== 'none'; } });
     this.api?.onNetworkStatusChange?.(this.networkListener);
+    this.api?.showShareMenu?.({ menus: ['shareAppMessage'] });
     if (qaActions) this.registerQaActions(qaActions);
   }
 
   isWeChat(): boolean { return this.api !== null; }
   isOnline(): boolean { return this.online; }
 
+  menuButtonCenterRatio(): number | null {
+    try {
+      const rect = this.api?.getMenuButtonBoundingClientRect?.();
+      const windowHeight = this.api?.getWindowInfo?.().windowHeight;
+      if (!rect || !Number.isFinite(rect.top) || !Number.isFinite(rect.bottom)
+        || !Number.isFinite(windowHeight) || windowHeight! <= 0 || rect.bottom < rect.top) return null;
+      return ((rect.top + rect.bottom) / 2) / windowHeight!;
+    } catch {
+      return null;
+    }
+  }
+
+  share(message: ShareMessage): void {
+    this.api?.shareAppMessage?.(message);
+  }
+
+  vibrateShort(): void {
+    this.api?.vibrateShort?.({ type: 'light' });
+  }
+
   isQaAvailable(): boolean {
     const envVersion = this.api?.getAccountInfoSync?.().miniProgram?.envVersion;
     return envVersion === 'develop' || envVersion === 'trial';
   }
 
-  createRewardedPorts(adUnitId: string): { ad: RewardedAdPort; claims: RewardClaimPort } {
-    if (!this.api) return { ad: new FakeRewardedAd(), claims: new FakeRewardClaimClient() };
+  createRewardedPorts(
+    config: RewardedAdConfig = REWARDED_AD_CONFIG,
+    qaResult: () => RewardedAdResult = () => config.mockResult,
+  ): { ad: RewardedAdPort; claims: RewardClaimPort } {
+    if (this.isQaAvailable()) {
+      return { ad: new FakeRewardedAd(qaResult), claims: new FakeRewardClaimClient() };
+    }
+    if (config.mode === 'mock' || !this.api) {
+      return { ad: new FakeRewardedAd(config.mockResult), claims: new FakeRewardClaimClient() };
+    }
     return {
-      ad: adUnitId ? new WeChatRewardedAd(this.api, adUnitId) : new UnavailableRewardedAd(),
+      ad: config.adUnitId ? new WeChatRewardedAd(this.api, config.adUnitId) : new UnavailableRewardedAd(),
       claims: new WeChatRewardClaimClient(this.api),
     };
   }

@@ -157,6 +157,49 @@ test('chapter four completion collects flame potion and promotes to alchemy mast
   assert.deepEqual(deriveHighestTitle(after), { chapterId: 5, title: '炼金大师' });
 });
 
+test('chapter five reveals ice crystal pieces and promotes to alchemy mentor at level 150', () => {
+  const beforePiece = progressWithCompleted(124);
+  const afterPiece = progressWithCompleted(125);
+  assert.equal(deriveCollectionProgress(afterPiece, 5).revealedPieces, 1);
+  assert.deepEqual(deriveCompletionReward(beforePiece, afterPiece, 'level-125'), {
+    puzzlePiece: 1,
+    collectionCompleted: false,
+    titleChanged: false,
+  });
+
+  const beforeComplete = progressWithCompleted(149);
+  const afterComplete = progressWithCompleted(150);
+  assert.equal(deriveCollectionProgress(afterComplete, 5).collected, true);
+  assert.deepEqual(deriveCompletionReward(beforeComplete, afterComplete, 'level-150'), {
+    puzzlePiece: 6,
+    collectionCompleted: true,
+    titleChanged: true,
+  });
+  assert.deepEqual(deriveHighestTitle(afterComplete), { chapterId: 6, title: '炼金导师' });
+});
+
+test('chapter six reveals wind spirit pieces and promotes to great witch at level 180', () => {
+  for (const [level, piece] of [[155, 1], [160, 2], [165, 3], [170, 4], [175, 5], [180, 6]]) {
+    const before = progressWithCompleted(level - 1);
+    const after = progressWithCompleted(level);
+    assert.equal(deriveCollectionProgress(after, 6).revealedPieces, piece);
+    assert.deepEqual(deriveCompletionReward(before, after, levelId(level)), {
+      puzzlePiece: piece,
+      collectionCompleted: level === 180,
+      titleChanged: level === 180,
+    });
+  }
+
+  assert.deepEqual(deriveHighestTitle(progressWithCompleted(150)), {
+    chapterId: 6,
+    title: '炼金导师',
+  });
+  assert.deepEqual(deriveHighestTitle(progressWithCompleted(180)), {
+    chapterId: 7,
+    title: '大魔女',
+  });
+});
+
 test('five sequential completions reveal one piece even after selecting level 1 again', () => {
   let progress = createDefaultProgress();
   for (let number = 1; number <= 5; number += 1) {

@@ -8,7 +8,7 @@
 - Repacked tarball SHA-256: `ab48c59fe29b7bfbd72dcc3515b04393dbe11459d165ecb85dd0547f3abd223c`
 - Encoding: BGM 80kbps; SFX 96kbps
 - BGM seam: four 12-second phrases are rendered with a 2-second continuation and equal-power wrap crossfade; the exported 48-second loop starts after the two-second pre-roll so its final head blend meets the same musical position at loop start.
-- Runtime total: 536504 bytes
+- Runtime total: 537131 bytes
 
 | Cue | Duration (ms) | MP3 bytes | MP3 SHA-256 | WAV SHA-256 |
 | --- | ---: | ---: | --- | --- |
@@ -22,4 +22,4 @@
 | `pour.invalid` | 310 | 4075 | `ae8209ca846fe6255334fad7d5b6d906a8a04912d9c24a6b5b18ce07f0a45373` | `c16e8fcd2ca866ccd6d7ddc5c6eafebc0d3178cab6054283668d3ce0ff618cab` |
 | `pour.valid` | 500 | 6583 | `f49e2617380f82e6ba09235a124ad7d57c8021e7ec1cf40f936b51b053659544` | `d18ed04a651165ad5c3c2af2bed4e00b69b22555ab0aa7423672d80234226d09` |
 | `reward.empty_bottle` | 850 | 10658 | `0f5844c51e2f3fa56582b3c505008ceaa2ae7990186fc84d3735457c97919799` | `96e5241bb3f15ca01488682b37e676cfcdc1e6427e8a3ac7cff8ee6338f3084f` |
-| `ui.tap` | 70 | 1254 | `7aa7152bfdf81d6f5c0eefb80849e6e398512f4a21025360ac6004660f55ac82` | `686e305d5baa8401d874c7ef082e6688e8c1079720e3c2d14a1a46b392b8de4f` |
+| `ui.tap` | 120 | 1881 | `cb3be3148e813fa72a82d353a1d2ac6edc851e8f4a785b4bf1dfff813b532cd4` | `66156fcd91c9f58340beb2673cf494081a1c8850405460134e52bd9831c1b2a3` |

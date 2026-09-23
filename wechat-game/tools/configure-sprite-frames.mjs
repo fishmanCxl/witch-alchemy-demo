@@ -1,8 +1,9 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../assets/resources/game/chibi/', import.meta.url));
+const requested = new Set(process.argv.slice(2).map((path) => path.replaceAll('\\', '/')));
 
 function pngSize(path) {
   const header = readFileSync(path).subarray(0, 24);
@@ -50,6 +51,8 @@ while (pending.length > 0) {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) pending.push(path);
     if (!entry.isFile() || !entry.name.endsWith('.png')) continue;
+    const relativePath = relative(root, path).replaceAll('\\', '/');
+    if (requested.size > 0 && !requested.has(relativePath)) continue;
     pngCount += 1;
 
     const metaPath = `${path}.meta`;

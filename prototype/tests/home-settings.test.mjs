@@ -8,6 +8,7 @@ const homeUrl = new URL('../src/components/HomeScene.tsx', import.meta.url);
 const settingsUrl = new URL('../src/components/GameSettings.tsx', import.meta.url);
 const cssUrl = new URL('../src/prototype.css', import.meta.url);
 const publicUiUrl = new URL('../public/assets/game/chibi/ui/', import.meta.url);
+const publicTitlesUrl = new URL('../public/assets/game/chibi/titles/', import.meta.url);
 
 function sourceOrEmpty(fileUrl) {
   return existsSync(fileUrl) ? readFileSync(fileUrl, 'utf8') : '';
@@ -127,6 +128,8 @@ test('settings raster assets have exact RGBA dimensions and transparent outer ed
     'settings-dialog-panel.png': { width: 600, height: 720 },
     'icon-settings-close.png': { width: 96, height: 96 },
     'icon-settings-home.png': { width: 96, height: 96 },
+    'home-collection-button.png': { width: 128, height: 128 },
+    'home-share-button.png': { width: 128, height: 128 },
   };
 
   for (const [name, dimensions] of Object.entries(expected)) {
@@ -142,6 +145,25 @@ test('settings raster assets have exact RGBA dimensions and transparent outer ed
     for (let y = 0; y < height; y += 1) {
       assert.equal(pixels[(y * width) * 4 + 3], 0, `${name} left edge must be transparent`);
       assert.equal(pixels[(y * width + width - 1) * 4 + 3], 0, `${name} right edge must be transparent`);
+    }
+  }
+});
+
+test('title badge sheet contains ten transparent double-resolution cells', () => {
+  const fileUrl = new URL('title-badges.png', publicTitlesUrl);
+  assert.equal(existsSync(fileUrl), true, 'title-badges.png must exist');
+  const { width, height, pixels } = parseRgbaPng(fileUrl);
+  assert.deepEqual({ width, height }, { width: 672, height: 450 });
+
+  for (let row = 0; row < 5; row += 1) {
+    for (let column = 0; column < 2; column += 1) {
+      let opaquePixels = 0;
+      for (let y = row * 90; y < (row + 1) * 90; y += 1) {
+        for (let x = column * 336; x < (column + 1) * 336; x += 1) {
+          if (pixels[(y * width + x) * 4 + 3] > 0) opaquePixels += 1;
+        }
+      }
+      assert.ok(opaquePixels > 500, `title cell ${row * 2 + column + 1} must contain artwork`);
     }
   }
 });

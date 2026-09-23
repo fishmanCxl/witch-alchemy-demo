@@ -1,5 +1,6 @@
 import type { BottleState, BottleStatus, GameState, PotionColor } from './types.ts';
 import type { LevelConfig } from './level-config.ts';
+import { RESTART_ALLOWANCE, UNDO_ALLOWANCE } from './game-session.ts';
 
 export const CURRENT_SNAPSHOT_VERSION = 2 as const;
 
@@ -11,14 +12,19 @@ export interface LocalSnapshotInput {
   readonly history: readonly GameState[];
   readonly selected: number | null;
   readonly updatedAt: number;
+  readonly undoRemaining?: number;
+  readonly restartRemaining?: number;
 }
 
 export interface LocalSnapshot extends LocalSnapshotInput {
   readonly schemaVersion: typeof CURRENT_SNAPSHOT_VERSION;
+  readonly undoRemaining: number;
+  readonly restartRemaining: number;
 }
 
 const POTION_COLORS = new Set<PotionColor>([
   'rose', 'violet', 'amber', 'cyan', 'mint', 'blue', 'gold', 'lilac',
+  'scarlet', 'chartreuse', 'indigo', 'pearl',
 ]);
 const BOTTLE_STATUSES = new Set<BottleStatus>(['active', 'inactive', 'reserved', 'vanished']);
 
@@ -42,7 +48,12 @@ function isGameState(value: unknown): value is GameState {
 }
 
 export function createLocalSnapshot(input: LocalSnapshotInput): LocalSnapshot {
-  return { schemaVersion: CURRENT_SNAPSHOT_VERSION, ...input };
+  return {
+    schemaVersion: CURRENT_SNAPSHOT_VERSION,
+    ...input,
+    undoRemaining: input.undoRemaining ?? UNDO_ALLOWANCE,
+    restartRemaining: input.restartRemaining ?? RESTART_ALLOWANCE,
+  };
 }
 
 export function decodeLocalSnapshot(
@@ -57,13 +68,23 @@ export function decodeLocalSnapshot(
     if (value.levelId !== level.id || value.configVersion !== level.configVersion) return null;
     if (!Number.isInteger(value.revision) || Number(value.revision) < 0) return null;
     if (!Number.isFinite(value.updatedAt) || Number(value.updatedAt) < 0) return null;
+    if (value.undoRemaining !== undefined
+      && (!Number.isInteger(value.undoRemaining) || Number(value.undoRemaining) < 0
+        || Number(value.undoRemaining) > UNDO_ALLOWANCE)) return null;
+    if (value.restartRemaining !== undefined
+      && (!Number.isInteger(value.restartRemaining) || Number(value.restartRemaining) < 0
+        || Number(value.restartRemaining) > RESTART_ALLOWANCE)) return null;
     if (!isGameState(value.state)) return null;
     if (!Array.isArray(value.history) || !value.history.every(isGameState)) return null;
     if (
       value.selected !== null
       && (!Number.isInteger(value.selected) || Number(value.selected) < 0 || Number(value.selected) >= 15)
     ) return null;
-    return value as unknown as LocalSnapshot;
+    return {
+      ...(value as unknown as LocalSnapshot),
+      undoRemaining: value.undoRemaining === undefined ? UNDO_ALLOWANCE : Number(value.undoRemaining),
+      restartRemaining: value.restartRemaining === undefined ? RESTART_ALLOWANCE : Number(value.restartRemaining),
+    };
   } catch {
     return null;
   }

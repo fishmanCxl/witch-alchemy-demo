@@ -1,5 +1,17 @@
 import { createGameSession, type GameSession } from '../core/game-session.ts';
+import {
+  decodeEndlessState,
+  encodeEndlessState,
+  type EndlessState,
+} from '../core/endless-mode.ts';
 import { decodeStamina, encodeStamina, type StaminaState } from '../core/stamina.ts';
+import {
+  createDailyCommission,
+  decodeDailyCommission,
+  encodeDailyCommission,
+  reconcileDailyCommission,
+  type DailyCommissionState,
+} from '../core/daily-commission.ts';
 import { getLevelConfig, PUBLISHED_LEVELS } from '../core/level-catalog.ts';
 import {
   createDefaultProgress,
@@ -23,6 +35,8 @@ const LEGACY_LEVEL_12_KEY = 'witch-water-sort:level-012:v1';
 const MIGRATION_MARKER_KEY = 'witch-water-sort:migration:level-012:v2';
 const SOUND_KEY = 'witch-water-sort:sound-enabled';
 const STAMINA_KEY = 'witch-water-sort:stamina:v1';
+const DAILY_COMMISSION_KEY = 'witch-water-sort:daily-commission:v1';
+const ENDLESS_KEY = 'witch-water-sort:endless:v1';
 
 function sessionKey(levelId: string): string {
   return `witch-water-sort:session:${levelId}:v2`;
@@ -126,6 +140,8 @@ export class LocalProgressStore {
       ...createGameSession(level, snapshot.state),
       history: snapshot.history,
       selected: snapshot.selected,
+      undoRemaining: snapshot.undoRemaining,
+      restartRemaining: snapshot.restartRemaining,
       message: snapshot.selected === null ? '进度已恢复' : '法杖已锁定，再点目标瓶',
     };
   }
@@ -142,6 +158,8 @@ export class LocalProgressStore {
       history: session.history,
       selected: session.selected,
       updatedAt: Date.now(),
+      undoRemaining: session.undoRemaining,
+      restartRemaining: session.restartRemaining,
     });
     this.storage.setItem(sessionKey(session.levelId), JSON.stringify(snapshot));
   }
@@ -196,5 +214,26 @@ export class LocalProgressStore {
 
   saveStamina(state: StaminaState): void {
     this.storage.setItem(STAMINA_KEY, encodeStamina(state));
+  }
+
+  loadDailyCommission(now: number, completedThrough: number): DailyCommissionState {
+    const stored = decodeDailyCommission(this.storage.getItem(DAILY_COMMISSION_KEY));
+    const state = stored
+      ? reconcileDailyCommission(stored, now, completedThrough)
+      : createDailyCommission(now, completedThrough);
+    if (state !== stored) this.saveDailyCommission(state);
+    return state;
+  }
+
+  saveDailyCommission(state: DailyCommissionState): void {
+    this.storage.setItem(DAILY_COMMISSION_KEY, encodeDailyCommission(state));
+  }
+
+  loadEndlessState(): EndlessState {
+    return decodeEndlessState(this.storage.getItem(ENDLESS_KEY));
+  }
+
+  saveEndlessState(state: EndlessState): void {
+    this.storage.setItem(ENDLESS_KEY, encodeEndlessState(state));
   }
 }

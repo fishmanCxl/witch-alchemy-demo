@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import test from 'node:test';
@@ -8,8 +8,18 @@ import { fileURLToPath } from 'node:url';
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const entryPath = resolve(projectRoot, 'build', 'wechatgame', 'subpackages', 'resources', 'game.js');
+const resourcesConfigPath = resolve(projectRoot, 'build', 'wechatgame', 'subpackages', 'resources', 'config.json');
 const projectConfigPath = resolve(projectRoot, 'build', 'wechatgame', 'project.config.json');
 const mainBundlePath = resolve(projectRoot, 'build', 'wechatgame', 'assets', 'main', 'index.js');
+const firstScreenPath = resolve(projectRoot, 'build', 'wechatgame', 'first-screen.js');
+const launchBackgroundPath = resolve(projectRoot, 'build', 'wechatgame', 'launch-background.png');
+const launchWitchPath = resolve(projectRoot, 'build', 'wechatgame', 'launch-witch.png');
+const launchLogoPath = resolve(projectRoot, 'build', 'wechatgame', 'launch-logo.png');
+
+function pngSize(path) {
+  const header = readFileSync(path).subarray(16, 24);
+  return { width: header.readUInt32BE(0), height: header.readUInt32BE(4) };
+}
 
 function loadCompiledCollectionProgress() {
   const bundle = readFileSync(mainBundlePath, 'utf8');
@@ -106,6 +116,11 @@ test('prepared resources subpackage executes the Cocos bundle directly from game
 
   assert.equal(prepared.status, 0, prepared.stderr || prepared.stdout);
   assert.equal(existsSync(entryPath), true, 'resources subpackage is missing the WeChat-required game.js');
+  assert.equal(
+    readFileSync(resourcesConfigPath, 'utf8').includes('game/chibi/ui/home-endless-mode-button/spriteFrame'),
+    true,
+    'resources config is missing the endless-mode button SpriteFrame',
+  );
 
   const registered = [];
   vm.runInNewContext(readFileSync(entryPath, 'utf8'), {
@@ -122,22 +137,66 @@ test('prepared resources subpackage executes the Cocos bundle directly from game
 });
 test('prepared WeChat project keeps dynamically loaded Cocos bundle files in previews', () => {
   const expectedAppId = 'wx-local-preview-test';
+  const originalProjectConfig = readFileSync(projectConfigPath, 'utf8');
+  try {
+    const prepared = spawnSync(process.execPath, ['tools/prepare-wechat-build.mjs'], {
+      cwd: projectRoot,
+      encoding: 'utf8',
+      env: { ...process.env, WECHAT_APPID: expectedAppId },
+    });
+
+    assert.equal(prepared.status, 0, prepared.stderr || prepared.stdout);
+
+    const projectConfig = JSON.parse(readFileSync(projectConfigPath, 'utf8'));
+    assert.equal(projectConfig.appid, expectedAppId);
+    assert.equal(projectConfig.setting.useIsolateContext, false);
+    assert.equal(projectConfig.setting.ignoreDevUnusedFiles, false);
+    assert.equal(projectConfig.setting.ignoreUploadUnusedFiles, false);
+    assert.equal(
+      projectConfig.packOptions?.include?.some((rule) => rule.type === 'folder' && rule.value === 'subpackages/resources/'),
+      true,
+    );
+    assert.equal(
+      projectConfig.packOptions?.include?.some((rule) => rule.type === 'file' && rule.value === 'subpackages/resources/config.json'),
+      true,
+    );
+  } finally {
+    writeFileSync(projectConfigPath, originalProjectConfig);
+  }
+});
+
+test('preparation rejects a resources subpackage without its config manifest', () => {
+  const originalConfig = readFileSync(resourcesConfigPath);
+  try {
+    rmSync(resourcesConfigPath);
+    const prepared = spawnSync(process.execPath, ['tools/prepare-wechat-build.mjs'], {
+      cwd: projectRoot,
+      encoding: 'utf8',
+    });
+
+    assert.notEqual(prepared.status, 0);
+    assert.match(prepared.stderr, /missing resources bundle config/);
+  } finally {
+    writeFileSync(resourcesConfigPath, originalConfig);
+  }
+});
+
+test('prepared WeChat build installs the branded pre-engine loading screen', () => {
   const prepared = spawnSync(process.execPath, ['tools/prepare-wechat-build.mjs'], {
     cwd: projectRoot,
     encoding: 'utf8',
-    env: { ...process.env, WECHAT_APPID: expectedAppId },
   });
 
   assert.equal(prepared.status, 0, prepared.stderr || prepared.stdout);
+  assert.equal(existsSync(firstScreenPath), true, 'branded first-screen.js is missing');
+  assert.equal(existsSync(launchBackgroundPath), true, 'launch background is missing');
+  assert.equal(existsSync(launchWitchPath), true, 'launch witch is missing');
+  assert.equal(existsSync(launchLogoPath), true, 'launch logo is missing');
+  assert.deepEqual(pngSize(launchLogoPath), { width: 612, height: 222 });
 
-  const projectConfig = JSON.parse(readFileSync(projectConfigPath, 'utf8'));
-  assert.equal(projectConfig.appid, expectedAppId);
-  assert.equal(projectConfig.setting.ignoreDevUnusedFiles, false);
-  assert.equal(projectConfig.setting.ignoreUploadUnusedFiles, false);
-  assert.equal(
-    projectConfig.packOptions?.include?.some((rule) => rule.type === 'folder' && rule.value === 'subpackages/resources/'),
-    true,
-  );
+  const module = { exports: {} };
+  vm.runInNewContext(readFileSync(firstScreenPath, 'utf8'), { module, exports: module.exports });
+  assert.deepEqual(Object.keys(module.exports).sort(), ['end', 'setProgress', 'start']);
 });
 
 test('compiled WeChat collection progress derives pieces from the continuous boundary', () => {

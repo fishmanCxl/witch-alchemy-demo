@@ -262,13 +262,16 @@ function synthesizeBgm(seed) {
   return finalize(output);
 }
 
-function synthesizeUiTap(seed) {
-  const random = xorshift32(seed);
-  const output = new Float64Array(sampleCount(0.070));
-  const click = adsr(lowPass(noise(0.070, random), 1_600), 0.001, 0.012, 0.10, 0.045);
-  mixAt(output, click, 0, 0.60);
-  mixAt(output, adsr(sine(0.070, 220, 0.55), 0.001, 0.008, 0.08, 0.050));
-  mixAt(output, adsr(sine(0.070, 330, 0.32), 0.001, 0.006, 0.05, 0.044));
+function synthesizeUiTap() {
+  const duration = 0.120;
+  const output = new Float64Array(sampleCount(duration));
+  const droplet = adsr(sine(duration, (time) => 680 + 320 * (time / duration), 0.58),
+    0.002, 0.018, 0.20, 0.078);
+  const body = adsr(sine(duration, (time) => 420 + 180 * (time / duration), 0.18),
+    0.003, 0.024, 0.12, 0.072);
+  mixAt(output, droplet);
+  mixAt(output, body);
+  addBell(output, 0.020, 0.100, 1_174, 0.24);
   return finalize(output);
 }
 
@@ -383,7 +386,7 @@ function synthesizeReward() {
 
 const recipes = Object.freeze({
   'bgm.alchemy_room': { durationMs: 48_000, synthesize: synthesizeBgm },
-  'ui.tap': { durationMs: 70, synthesize: synthesizeUiTap },
+  'ui.tap': { durationMs: 120, synthesize: synthesizeUiTap },
   'bottle.select': { durationMs: 160, synthesize: synthesizeBottleSelect },
   'bottle.deselect': { durationMs: 140, synthesize: synthesizeBottleDeselect },
   'pour.valid': { durationMs: 500, synthesize: synthesizePourValid },

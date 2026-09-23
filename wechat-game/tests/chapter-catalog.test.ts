@@ -8,16 +8,18 @@ import {
   publishedChapters,
 } from '../assets/scripts/core/chapter-catalog.ts';
 
-test('catalog defines ten non-overlapping thirty-level chapters and publishes the first four', () => {
+test('catalog defines ten non-overlapping thirty-level chapters and publishes the first six', () => {
   assert.equal(CHAPTERS.length, 10);
   assert.deepEqual(CHAPTERS.map((chapter) => chapter.firstLevel), [
     1, 31, 61, 91, 121, 151, 181, 211, 241, 271,
   ]);
-  assert.deepEqual(publishedChapters().map((chapter) => chapter.id), [1, 2, 3, 4]);
+  assert.deepEqual(publishedChapters().map((chapter) => chapter.id), [1, 2, 3, 4, 5, 6]);
   assert.equal(chapterForLevel(30)?.id, 1);
   assert.equal(chapterForLevel(31)?.id, 2);
   assert.equal(chapterForLevel(61)?.id, 3);
   assert.equal(chapterForLevel(91)?.id, 4);
+  assert.equal(chapterForLevel(121)?.id, 5);
+  assert.equal(chapterForLevel(151)?.id, 6);
 });
 
 test('title order follows the approved reference', () => {
@@ -61,7 +63,30 @@ test('chapter four publishes the approved elemental theme and flame potion ident
     collectionId: 'flame-potion',
     releaseState: 'available',
   });
-  assert.equal(getChapter(5)?.releaseState, 'coming-soon');
+});
+
+test('chapter five publishes the approved frost theme and ice crystal potion identity', () => {
+  assert.deepEqual(getChapter(5), {
+    id: 5,
+    stageTitle: '炼金大师',
+    themeTitle: '冰霜炼金',
+    firstLevel: 121,
+    levelCount: 30,
+    collectionId: 'ice-crystal-potion',
+    releaseState: 'available',
+  });
+});
+
+test('chapter six publishes the approved wind theme and wind spirit potion identity', () => {
+  assert.deepEqual(getChapter(6), {
+    id: 6,
+    stageTitle: '炼金导师',
+    themeTitle: '风灵炼金',
+    firstLevel: 151,
+    levelCount: 30,
+    collectionId: 'wind-spirit-potion',
+    releaseState: 'available',
+  });
 });
 
 test('catalog lookup rejects out-of-range chapter and level values', () => {

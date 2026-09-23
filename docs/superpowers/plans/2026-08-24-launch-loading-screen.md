@@ -1,4 +1,4 @@
-# 《暮影炼金室》启动加载页实施计划
+# 《魔女炼金屋》启动加载页实施计划
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -514,7 +514,7 @@ private renderLaunch(): void {
     color('#271034', 224), color('#E9C477'), 12);
   this.addLabel(root, '8+', 14, LAUNCH_LAYOUT.ageBadge.x, LAUNCH_LAYOUT.ageBadge.y,
     color('#FFF0C2'), LAUNCH_LAYOUT.ageBadge.width);
-  this.addLabel(root, '暮影炼金室', 36, LAUNCH_LAYOUT.title.x, LAUNCH_LAYOUT.title.y,
+  this.addLabel(root, '魔女炼金屋', 36, LAUNCH_LAYOUT.title.x, LAUNCH_LAYOUT.title.y,
     color('#FFE2A0'), LAUNCH_LAYOUT.title.width);
   this.addLaunchWitch(root);
 

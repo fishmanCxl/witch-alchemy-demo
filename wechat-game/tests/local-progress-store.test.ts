@@ -1,14 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { createEndlessState, startEndlessRun } from '../assets/scripts/core/endless-mode.ts';
 import {
+  completePendingBottles,
   createGameSession,
   pressBottle,
+  restartSession,
+  undoSession,
 } from '../assets/scripts/core/game-session.ts';
 import { getLevelConfig, PUBLISHED_LEVELS } from '../assets/scripts/core/level-catalog.ts';
+import { createDefaultProgress } from '../assets/scripts/core/level-progress.ts';
 import { createLocalSnapshot } from '../assets/scripts/core/save-schema.ts';
 import { LocalProgressStore } from '../assets/scripts/platform/LocalProgressStore.ts';
-import { PlatformRuntime } from '../assets/scripts/platform/WeChatPlatform.ts';
+import { PlatformRuntime, REWARDED_AD_CONFIG } from '../assets/scripts/platform/WeChatPlatform.ts';
+import type { RewardedAdResult } from '../assets/scripts/platform/rewarded-bottle.ts';
 import type { KeyValueStorage } from '../assets/scripts/platform/storage-port.ts';
 
 class MemoryStorage implements KeyValueStorage {
@@ -49,6 +55,47 @@ test('per-level session keys isolate stable state and restore selected bottles',
   assert.equal(store.loadSession(level5).selected, selected5.selected);
   assert.equal(storage.values.has('witch-water-sort:session:level-004:v2'), true);
   assert.equal(storage.values.has('witch-water-sort:session:level-005:v2'), true);
+});
+
+test('per-level snapshots preserve remaining undo and restart uses', () => {
+  const storage = new MemoryStorage();
+  const store = new LocalProgressStore(storage);
+  const level = getLevelConfig('level-004')!;
+  let session = createGameSession(level);
+  const source = session.game.bottles.findIndex((bottle) => bottle.layers.length > 0);
+  const target = session.game.bottles.findIndex((bottle) => bottle.layers.length === 0);
+  session = pressBottle(session, source).session;
+  session = pressBottle(session, target).session;
+  session = undoSession(session).session;
+  session = restartSession(session).session;
+
+  store.saveSession(session);
+  const restored = store.loadSession(level);
+
+  assert.equal(restored.undoRemaining, 2);
+  assert.equal(restored.restartRemaining, 0);
+});
+
+test('legacy v2 snapshots without allowances restore the full defaults', () => {
+  const storage = new MemoryStorage();
+  const store = new LocalProgressStore(storage);
+  const level = getLevelConfig('level-004')!;
+  const snapshot = createLocalSnapshot({
+    levelId: level.id,
+    configVersion: level.configVersion,
+    revision: 0,
+    state: level.initialState,
+    history: [],
+    selected: null,
+    updatedAt: 10,
+  }) as ReturnType<typeof createLocalSnapshot> & { undoRemaining?: number; restartRemaining?: number };
+  const { undoRemaining: _undo, restartRemaining: _restart, ...legacy } = snapshot;
+  storage.setItem('witch-water-sort:session:level-004:v2', JSON.stringify(legacy));
+
+  const restored = store.loadSession(level);
+
+  assert.equal(restored.undoRemaining, 3);
+  assert.equal(restored.restartRemaining, 1);
 });
 
 test('corrupt or config-mismatched snapshots fall back only to that level initial state', () => {
@@ -131,7 +178,12 @@ test('pending and completed sessions never overwrite the last stable snapshot', 
   const stable = selectFirstFilled(level1.id);
   store.saveSession(stable);
 
-  const completed = pressBottle(stable, 1).session;
+  const pending = pressBottle(stable, 1).session;
+  assert.deepEqual(pending.pendingCompletion, [1]);
+  assert.equal(pending.levelComplete, false);
+  store.saveSession(pending);
+
+  const completed = completePendingBottles(pending);
   assert.equal(completed.levelComplete, true);
   store.saveSession(completed);
 
@@ -186,7 +238,7 @@ test('loading v2 progress backs it up and persists only normalized v3 fields', (
     currentLevel: 'level-003',
     completedThrough: 3,
     bestMoves: { 'level-001': 5, 'level-003': 9 },
-    configVersion: 'chapters-1-4.2026-09-05.1',
+    configVersion: 'chapters-1-6.2026-09-19.1',
   };
 
   assert.deepEqual(stored, expected);
@@ -283,7 +335,7 @@ test('QA all-level mode backs up progress once and reset restores it exactly', (
   const qaProgress = store.enableQaAllLevels();
 
   assert.equal(store.isQaMode(), true);
-  assert.equal(qaProgress.currentLevel, 'level-120');
+  assert.equal(qaProgress.currentLevel, 'level-180');
   assert.equal(qaProgress.completedThrough, PUBLISHED_LEVELS.length);
 
   store.enableQaAllLevels();
@@ -345,6 +397,103 @@ test('QA console actions attach to the WeChat GameGlobal only in develop and tri
   }
 });
 
+test('global mock ad config grants every reward and the QA result changes live', async () => {
+  const host = globalThis as typeof globalThis & { wx?: unknown };
+  const previousWx = host.wx;
+  let qaResult: RewardedAdResult = 'completed';
+
+  try {
+    host.wx = { getAccountInfoSync: () => ({ miniProgram: { envVersion: 'trial' } }) };
+    const runtime = new PlatformRuntime();
+    const ports = runtime.createRewardedPorts(REWARDED_AD_CONFIG, () => qaResult);
+
+    assert.equal(REWARDED_AD_CONFIG.mode, 'mock');
+    assert.equal(await ports.ad.show(), 'completed');
+    assert.equal(await ports.claims.claim('level-001', 'qa-claim'), 'granted');
+    qaResult = 'failed';
+    assert.equal(await ports.ad.show(), 'failed');
+    runtime.dispose();
+  } finally {
+    if (previousWx === undefined) delete host.wx;
+    else host.wx = previousWx;
+  }
+});
+
+test('platform UI feedback requests a light vibration only when WeChat supports it', () => {
+  const host = globalThis as typeof globalThis & { wx?: unknown };
+  const previousWx = host.wx;
+  const vibrationTypes: string[] = [];
+
+  try {
+    host.wx = {
+      vibrateShort: ({ type }: { type: string }) => { vibrationTypes.push(type); },
+    };
+    const runtime = new PlatformRuntime();
+    runtime.vibrateShort();
+    runtime.dispose();
+    assert.deepEqual(vibrationTypes, ['light']);
+
+    host.wx = {};
+    const unavailable = new PlatformRuntime();
+    assert.doesNotThrow(() => unavailable.vibrateShort());
+    unavailable.dispose();
+  } finally {
+    if (previousWx === undefined) delete host.wx;
+    else host.wx = previousWx;
+  }
+});
+
+test('platform reports the WeChat menu capsule center as a window-height ratio', () => {
+  const host = globalThis as typeof globalThis & { wx?: unknown };
+  const previousWx = host.wx;
+
+  try {
+    host.wx = {
+      getMenuButtonBoundingClientRect: () => ({ top: 30, bottom: 60 }),
+      getWindowInfo: () => ({ windowHeight: 852 }),
+    };
+    const runtime = new PlatformRuntime();
+    assert.equal(runtime.menuButtonCenterRatio(), 45 / 852);
+    runtime.dispose();
+
+    host.wx = {};
+    const unavailable = new PlatformRuntime();
+    assert.equal(unavailable.menuButtonCenterRatio(), null);
+    unavailable.dispose();
+  } finally {
+    if (previousWx === undefined) delete host.wx;
+    else host.wx = previousWx;
+  }
+});
+
+test('platform sharing opens the WeChat share menu and forwards the requested card', () => {
+  const host = globalThis as typeof globalThis & { wx?: unknown };
+  const previousWx = host.wx;
+  const menus: unknown[] = [];
+  const cards: unknown[] = [];
+
+  try {
+    host.wx = {
+      showShareMenu: (options: unknown) => { menus.push(options); },
+      shareAppMessage: (options: unknown) => { cards.push(options); },
+    };
+    const runtime = new PlatformRuntime();
+    runtime.share({ title: '魔女炼金屋｜来挑战魔法药水排序', query: 'level=35' });
+    runtime.dispose();
+
+    assert.deepEqual(menus, [{ menus: ['shareAppMessage'] }]);
+    assert.deepEqual(cards, [{ title: '魔女炼金屋｜来挑战魔法药水排序', query: 'level=35' }]);
+
+    host.wx = {};
+    const unavailable = new PlatformRuntime();
+    assert.doesNotThrow(() => unavailable.share({ title: '分享', query: 'level=1' }));
+    unavailable.dispose();
+  } finally {
+    if (previousWx === undefined) delete host.wx;
+    else host.wx = previousWx;
+  }
+});
+
 test('stamina uses its own key and corrupt data never changes progress or sessions', () => {
   const storage = new MemoryStorage();
   const store = new LocalProgressStore(storage);
@@ -356,4 +505,40 @@ test('stamina uses its own key and corrupt data never changes progress or sessio
   store.saveStamina({ schemaVersion: 1, value: 6, updatedAt: 4_000 });
   assert.deepEqual(store.loadStamina(5_000), { schemaVersion: 1, value: 6, updatedAt: 4_000 });
   assert.deepEqual(store.loadProgress(), progress);
+});
+
+test('daily commission uses one independent record and reconciles the local day', () => {
+  const storage = new MemoryStorage();
+  const store = new LocalProgressStore(storage);
+  const dayOne = new Date('2026-09-09T12:00:00+08:00').getTime();
+  const dayTwo = new Date('2026-09-10T12:00:00+08:00').getTime();
+
+  assert.equal(store.loadDailyCommission(dayOne, 4).levelId, null);
+  const unlocked = store.loadDailyCommission(dayOne, 5);
+  assert.equal(unlocked.levelId, 'level-003');
+  assert.equal(storage.values.has('witch-water-sort:daily-commission:v1'), true);
+
+  store.saveDailyCommission({ ...unlocked, completed: true, bestMoves: 16, lastCompletedDate: unlocked.date });
+  assert.equal(store.loadDailyCommission(dayOne, 100).levelId, 'level-003');
+  const nextDay = store.loadDailyCommission(dayTwo, 5);
+  assert.equal(nextDay.levelId, 'level-004');
+  assert.equal(nextDay.completed, false);
+  assert.equal(nextDay.rewardClaimed, false);
+  assert.equal(nextDay.bestMoves, null);
+  assert.deepEqual(store.loadProgress(), createDefaultProgress());
+});
+
+test('endless mode uses one independent record and corrupt data cannot alter main progress', () => {
+  const storage = new MemoryStorage();
+  const store = new LocalProgressStore(storage);
+  const main = { ...store.loadProgress(), revision: 2, currentLevel: 'level-006', completedThrough: 5 };
+  store.saveProgress(main);
+  storage.setItem('witch-water-sort:endless:v1', '{bad');
+
+  assert.deepEqual(store.loadEndlessState(), createEndlessState());
+  const endless = startEndlessRun(createEndlessState(), 1234, 100);
+  store.saveEndlessState(endless);
+  assert.deepEqual(store.loadEndlessState(), endless);
+  assert.deepEqual(store.loadProgress(), main);
+  assert.equal(storage.values.has('witch-water-sort:session:' + endless.run?.levelId + ':v2'), false);
 });

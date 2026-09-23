@@ -25,6 +25,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DATA_PATH = resolve(ROOT, 'assets/scripts/core/level-data.generated.ts');
 const REPORT_PATH = resolve(ROOT, 'assets/scripts/core/level-generation-report.json');
 const CONFIG_VERSION = 'chapter-1.2026-08-25.1';
+const TUTORIAL_CONFIG_VERSION = 'chapter-1.2026-09-12.1';
 
 interface ReportLevel {
   readonly id: string;
@@ -228,7 +229,7 @@ function authoredTutorial(
   const config: LevelConfig = {
     id: levelId(number),
     number,
-    configVersion: CONFIG_VERSION,
+    configVersion: TUTORIAL_CONFIG_VERSION,
     presentationSeed: number,
     capacity: 4,
     slotCount: 15,
@@ -392,7 +393,7 @@ function buildPublishedLevels(): {
     1,
     tutorialState([['rose'], ['rose', 'rose', 'rose']]),
     1,
-    { type: 'first-valid-pour' },
+    { type: 'first-bottle-complete' },
     300,
   );
 

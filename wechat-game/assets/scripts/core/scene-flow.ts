@@ -10,10 +10,12 @@ export interface SceneFlowState {
   readonly soundEnabled: boolean;
   readonly settingsOpen: boolean;
   readonly staminaDialogOpen: boolean;
+  readonly dailyDialogOpen: boolean;
   readonly exitConfirmOpen: boolean;
   readonly collectionReturnScene: 'home' | 'levelSelect';
   readonly selectedLevelChapterId: number;
   readonly selectedCollectionChapterId: number | null;
+  readonly endlessDialog: null | 'locked' | 'failed' | 'end-confirm';
 }
 
 export function createSceneFlow(): SceneFlowState {
@@ -23,26 +25,59 @@ export function createSceneFlow(): SceneFlowState {
     nextLevelId: null,
     soundEnabled: true,
     staminaDialogOpen: false,
+    dailyDialogOpen: false,
     exitConfirmOpen: false,
     settingsOpen: false,
     collectionReturnScene: 'home',
     selectedLevelChapterId: 1,
     selectedCollectionChapterId: null,
+    endlessDialog: null,
   };
 }
 
 
 export function openStaminaDialog(state: SceneFlowState): SceneFlowState {
-  return { ...state, settingsOpen: false, staminaDialogOpen: true, exitConfirmOpen: false };
+  return { ...state, settingsOpen: false, staminaDialogOpen: true, dailyDialogOpen: false, exitConfirmOpen: false, endlessDialog: null };
 }
 
 export function closeStaminaDialog(state: SceneFlowState): SceneFlowState {
   return { ...state, staminaDialogOpen: false };
 }
 
+export function openDailyDialog(state: SceneFlowState): SceneFlowState {
+  if (state.scene !== 'home') return state;
+  return { ...state, settingsOpen: false, staminaDialogOpen: false, dailyDialogOpen: true, exitConfirmOpen: false, endlessDialog: null };
+}
+
+export function closeDailyDialog(state: SceneFlowState): SceneFlowState {
+  return { ...state, dailyDialogOpen: false };
+}
+
+export function openEndlessLockedDialog(state: SceneFlowState): SceneFlowState {
+  if (state.scene !== 'home') return state;
+  return { ...state, settingsOpen: false, staminaDialogOpen: false, dailyDialogOpen: false, exitConfirmOpen: false, endlessDialog: 'locked' };
+}
+
+export function openEndlessFailureDialog(state: SceneFlowState): SceneFlowState {
+  if (state.scene !== 'level') return state;
+  return { ...state, settingsOpen: false, staminaDialogOpen: false, dailyDialogOpen: false, exitConfirmOpen: false, endlessDialog: 'failed' };
+}
+
+export function openEndlessEndConfirm(state: SceneFlowState): SceneFlowState {
+  return state.endlessDialog === 'failed' ? { ...state, endlessDialog: 'end-confirm' } : state;
+}
+
+export function restoreEndlessFailureDialog(state: SceneFlowState): SceneFlowState {
+  return state.endlessDialog === 'end-confirm' ? { ...state, endlessDialog: 'failed' } : state;
+}
+
+export function closeEndlessDialog(state: SceneFlowState): SceneFlowState {
+  return { ...state, endlessDialog: null };
+}
+
 export function openExitConfirm(state: SceneFlowState): SceneFlowState {
   if (state.scene !== 'level') return state;
-  return { ...state, settingsOpen: false, staminaDialogOpen: false, exitConfirmOpen: true };
+  return { ...state, settingsOpen: false, staminaDialogOpen: false, dailyDialogOpen: false, exitConfirmOpen: true, endlessDialog: null };
 }
 
 export function closeExitConfirm(state: SceneFlowState): SceneFlowState {
@@ -60,7 +95,9 @@ export function openLevelSelect(
     nextLevelId: null,
     settingsOpen: false,
     staminaDialogOpen: false,
+    dailyDialogOpen: false,
     exitConfirmOpen: false,
+    endlessDialog: null,
     selectedLevelChapterId: chapter?.releaseState === 'available' ? chapterId : state.selectedLevelChapterId,
     selectedCollectionChapterId: null,
   };
@@ -73,7 +110,7 @@ export function selectLevelChapter(
 ): SceneFlowState {
   const chapter = getChapter(chapterId);
   if (state.scene !== 'levelSelect' || !unlocked || chapter?.releaseState !== 'available') return state;
-  return chapterId === state.selectedLevelChapterId ? state : { ...state, selectedLevelChapterId: chapterId, staminaDialogOpen: false, exitConfirmOpen: false };
+  return chapterId === state.selectedLevelChapterId ? state : { ...state, selectedLevelChapterId: chapterId, staminaDialogOpen: false, dailyDialogOpen: false, exitConfirmOpen: false, endlessDialog: null };
 }
 
 export function openCollection(state: SceneFlowState): SceneFlowState {
@@ -84,7 +121,9 @@ export function openCollection(state: SceneFlowState): SceneFlowState {
     nextLevelId: null,
     settingsOpen: false,
     staminaDialogOpen: false,
+    dailyDialogOpen: false,
     exitConfirmOpen: false,
+    endlessDialog: null,
     collectionReturnScene: state.scene,
     selectedCollectionChapterId: null,
   };
@@ -98,7 +137,9 @@ export function closeCollection(state: SceneFlowState): SceneFlowState {
     nextLevelId: null,
     settingsOpen: false,
     staminaDialogOpen: false,
+    dailyDialogOpen: false,
     exitConfirmOpen: false,
+    endlessDialog: null,
   };
 }
 
@@ -109,12 +150,12 @@ export function openCollectionDetail(
 ): SceneFlowState {
   if (state.scene !== 'collection' || state.selectedCollectionChapterId !== null) return state;
   if (!unlocked || getChapter(chapterId)?.releaseState !== 'available') return state;
-  return { ...state, selectedCollectionChapterId: chapterId, settingsOpen: false, staminaDialogOpen: false, exitConfirmOpen: false };
+  return { ...state, selectedCollectionChapterId: chapterId, settingsOpen: false, staminaDialogOpen: false, dailyDialogOpen: false, exitConfirmOpen: false, endlessDialog: null };
 }
 
 export function closeCollectionDetail(state: SceneFlowState): SceneFlowState {
   if (state.scene !== 'collection' || state.selectedCollectionChapterId === null) return state;
-  return { ...state, selectedCollectionChapterId: null, settingsOpen: false, staminaDialogOpen: false, exitConfirmOpen: false };
+  return { ...state, selectedCollectionChapterId: null, settingsOpen: false, staminaDialogOpen: false, dailyDialogOpen: false, exitConfirmOpen: false, endlessDialog: null };
 }
 
 export function enterSelectedLevel(
@@ -130,7 +171,9 @@ export function enterSelectedLevel(
     nextLevelId: null,
     settingsOpen: false,
     staminaDialogOpen: false,
+    dailyDialogOpen: false,
     exitConfirmOpen: false,
+    endlessDialog: null,
   };
 }
 
@@ -140,7 +183,7 @@ export function showLevelComplete(
 ): SceneFlowState {
   if (state.scene !== 'level') return state;
   if (nextLevelId !== null && !getLevelConfig(nextLevelId)) return state;
-  return { ...state, scene: 'levelComplete', nextLevelId, settingsOpen: false, staminaDialogOpen: false, exitConfirmOpen: false };
+  return { ...state, scene: 'levelComplete', nextLevelId, settingsOpen: false, staminaDialogOpen: false, dailyDialogOpen: false, exitConfirmOpen: false, endlessDialog: null };
 }
 
 export function continueFromLevelComplete(state: SceneFlowState): SceneFlowState {
@@ -153,14 +196,16 @@ export function continueFromLevelComplete(state: SceneFlowState): SceneFlowState
       nextLevelId: null,
       settingsOpen: false,
       staminaDialogOpen: false,
+      dailyDialogOpen: false,
       exitConfirmOpen: false,
+      endlessDialog: null,
     };
   }
-  return { ...state, scene: 'levelSelect', nextLevelId: null, settingsOpen: false, staminaDialogOpen: false, exitConfirmOpen: false };
+  return { ...state, scene: 'levelSelect', nextLevelId: null, settingsOpen: false, staminaDialogOpen: false, dailyDialogOpen: false, exitConfirmOpen: false, endlessDialog: null };
 }
 
 export function returnHome(state: SceneFlowState): SceneFlowState {
-  return { ...state, scene: 'home', nextLevelId: null, settingsOpen: false, staminaDialogOpen: false, exitConfirmOpen: false };
+  return { ...state, scene: 'home', nextLevelId: null, settingsOpen: false, staminaDialogOpen: false, dailyDialogOpen: false, exitConfirmOpen: false, endlessDialog: null };
 }
 
 export function toggleSound(state: SceneFlowState): SceneFlowState {
@@ -168,5 +213,5 @@ export function toggleSound(state: SceneFlowState): SceneFlowState {
 }
 
 export function toggleSettings(state: SceneFlowState): SceneFlowState {
-  return { ...state, settingsOpen: !state.settingsOpen };
+  return { ...state, settingsOpen: !state.settingsOpen, dailyDialogOpen: false, endlessDialog: null };
 }

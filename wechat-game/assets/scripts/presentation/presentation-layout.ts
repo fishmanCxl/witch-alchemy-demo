@@ -73,7 +73,7 @@ export function completionPrimaryLabel(currentLevel: number, nextLevel: number |
 
 export function completionOptimalLabel(moves: number, optimalMoves: number): string {
   return moves <= optimalMoves
-    ? '✦ 完美炼成 · 已达理论最优'
+    ? '✦ 完美炼成'
     : `本关最少 ${optimalMoves} 步 · 还可优化 ${moves - optimalMoves} 步`;
 }
 
@@ -92,7 +92,7 @@ export const HEALTHY_GAME_ADVICE_LINES = Object.freeze([
 
 export const LAUNCH_LAYOUT = Object.freeze({
   ageBadge: Object.freeze({ x: -155, y: 376, width: 42, height: 42 }),
-  title: Object.freeze({ x: 0, y: 235, width: 330, height: 74 }),
+  title: Object.freeze({ x: 0, y: 235, width: 306, height: 111 }),
   witch: Object.freeze({ x: 0, y: 22, width: 260, height: 260 }),
   progressTrack: Object.freeze({ x: 0, y: -230, width: 300, height: 18 }),
   percent: Object.freeze({ x: 0, y: -265, width: 120, height: 32 }),
@@ -100,6 +100,14 @@ export const LAUNCH_LAYOUT = Object.freeze({
   retryButton: Object.freeze({ x: 0, y: -334, width: 224, height: 56 }),
   adviceCenters: Object.freeze([-374, -394] as const),
 });
+
+export function proportionalHeightForWidth(
+  width: number,
+  sourceWidth: number,
+  sourceHeight: number,
+): number {
+  return width * sourceHeight / sourceWidth;
+}
 
 export function launchProgressFill(progress: number): Readonly<{ x: number; width: number }> {
   const normalized = Number.isFinite(progress) ? Math.min(1, Math.max(0, progress)) : 0;
@@ -112,26 +120,66 @@ export function launchProgressFill(progress: number): Readonly<{ x: number; widt
 }
 
 export const HOME_LAYOUT = Object.freeze({
-  header: Object.freeze({ x: 0, eyebrowY: 278, levelY: 238, width: 260, align: 'center' as const }),
-  titleBadge: Object.freeze({ x: 0, y: 101, width: 168, height: 84 }),
+  titleBadge: Object.freeze({ x: 0, y: 101, width: 168 }),
   titleFloat: Object.freeze({ distance: 6, duration: 1.6 }),
   settingsButton: Object.freeze({ x: 150, y: 270, width: 48, height: 48 }),
+  dailyCommissionButton: Object.freeze({ x: -150, y: 270, width: 64, height: 64 }),
+  endlessButton: Object.freeze({ x: -150, y: 198, width: 64, height: 64, hitWidth: 96, hitHeight: 96 }),
+  dailyCommissionBubble: Object.freeze({
+    x: 56, y: 12, width: 64, height: 32, contentY: 3,
+    floatDistance: 3, floatDuration: 1.2,
+  }),
   collectionButton: Object.freeze({ x: 150, y: 198, width: 64, height: 64 }),
+  shareButton: Object.freeze({ x: 150, y: 126, width: 64, height: 64 }),
   witch: Object.freeze({ x: 0, y: 0, width: 246, height: 304 }),
   continueButton: Object.freeze({ x: 0, y: -348, width: 286, height: 72 }),
   selectButton: Object.freeze({ x: 0, y: -266, width: 224, height: 56 }),
   showsProgressCard: false,
 });
 
+export function endlessHudText(stage: number, streak: number, remainingMoves: number): Readonly<{
+  title: string;
+  streak: string;
+  moves: string;
+}> {
+  return Object.freeze({
+    title: `无尽 · 第${stage}关`,
+    streak: `连胜 ${streak}`,
+    moves: `剩余 ${Math.max(0, remainingMoves)} 步`,
+  });
+}
+
 export const STAMINA_LAYOUT = Object.freeze({
-  homeBar: Object.freeze({ x: -112, y: 365, width: 148, height: 46, padding: Object.freeze({ horizontal: 8, vertical: 4 }), gap: 4 }),
+  homeBar: Object.freeze({ x: -118, y: 365, width: 136, height: 34, padding: Object.freeze({ horizontal: 4, vertical: 2 }), gap: 2, addSize: 18, addTrailingPadding: 10, iconCenterFromLeft: 22 }),
   dialog: Object.freeze({ x: 0, y: -8, width: 321, height: 430 }),
   dialogRows: Object.freeze({ title: 148, icon: 86, value: 40, status: 0, note: -34, message: -148 }),
-  close: Object.freeze({ x: 118, y: 166, width: 48, height: 48 }),
+  close: Object.freeze({ x: 124.5, y: 179, width: 48, height: 48 }),
   adButton: Object.freeze({ x: 0, y: -92, width: 240, height: 72 }),
   exitDialog: Object.freeze({ x: 0, y: -12, width: 304, height: 350 }),
   exitConfirm: Object.freeze({ x: 0, y: -48, width: 224, height: 64 }),
   exitCancel: Object.freeze({ x: 0, y: -120, width: 224, height: 56 }),
+});
+
+export function staminaBarYForMenu(viewportHeight: number, menuButtonCenterRatio: number | null): number {
+  if (!Number.isFinite(viewportHeight) || viewportHeight <= 0 || menuButtonCenterRatio === null
+    || !Number.isFinite(menuButtonCenterRatio) || menuButtonCenterRatio < 0 || menuButtonCenterRatio > 1) {
+    return STAMINA_LAYOUT.homeBar.y;
+  }
+  return viewportHeight * (0.5 - menuButtonCenterRatio);
+}
+
+export const DAILY_COMMISSION_LAYOUT = Object.freeze({
+  dialog: Object.freeze({ x: 0, y: -8, width: 321, height: 430 }),
+  close: Object.freeze({ x: 124.5, y: 179, width: 48, height: 48 }),
+  titleY: 144,
+  rewardY: 58,
+  action: Object.freeze({ x: 0, y: -38, width: 240, height: 72 }),
+  noteY: -156,
+});
+
+export const DIALOG_TRANSITION = Object.freeze({
+  enter: Object.freeze({ duration: 0.28, fromScale: 0.92 }),
+  exit: Object.freeze({ duration: 0.26, toScale: 0.96 }),
 });
 
 export function staminaBarContentLayout(): Readonly<{
@@ -168,29 +216,39 @@ export const LEVEL_LAYOUT = Object.freeze({
   controlCenters: Object.freeze([-122, 0, 122] as const),
   controlY: -338,
   controlLabelY: -18,
+  controlAllowanceBubble: HOME_LAYOUT.dailyCommissionBubble,
+  controlAdBadge: Object.freeze({ x: 26, y: 27, width: 22, height: 18 }),
 });
 
+export function controlAllowanceVisual(remaining: number): Readonly<{ text: string; showAdBadge: boolean }> {
+  return Object.freeze({ text: remaining === 0 ? '' : String(remaining), showAdBadge: remaining === 0 });
+}
+
 export const LEVEL_SELECT_LAYOUT = Object.freeze({
-  header: Object.freeze({ x: 0, y: 344, width: 321, height: 44 }),
-  subtitleY: 310,
+  header: Object.freeze({ x: 0, y: 320, width: 321, height: 44 }),
+  starTotalY: 255,
+  starTotalFontSize: 44,
+  starTotalWidth: 260,
   previousChapterButton: Object.freeze({ x: -158, y: 320, width: 44, height: 44 }),
   nextChapterButton: Object.freeze({ x: 158, y: 320, width: 44, height: 44 }),
-  collectionButton: Object.freeze({ x: 0, y: 255, width: 176, height: 44 }),
   columns: 5,
   rows: 6,
   buttonSize: 48,
   columnCenters: Object.freeze([-136, -68, 0, 68, 136] as const),
-  rowCenters: Object.freeze([180, 120, 60, 0, -60, -120] as const),
+  rowCenters: Object.freeze([180, 112, 44, -24, -92, -160] as const),
+  starY: -32,
+  starSize: 15,
+  starGap: 18,
   backButton: Object.freeze({ x: 0, y: -342, width: 224, height: 72 }),
 });
 
 export const COLLECTION_LAYOUT = Object.freeze({
   title: Object.freeze({ x: 0, y: 334, width: 300, height: 48 }),
-  titleBadge: Object.freeze({ x: 0, y: 260, width: 250, height: 92 }),
   puzzle: Object.freeze({ x: 0, y: 58, width: 252, height: 252, columns: 2, rows: 3 }),
   progressY: -96,
   description: Object.freeze({ x: 0, y: -174, width: 300, height: 92 }),
-  backButton: Object.freeze({ x: 0, y: -342, width: 224, height: 72 }),
+  backButton: Object.freeze({ x: -72, y: -342, width: 132, height: 56 }),
+  shareButton: Object.freeze({ x: 72, y: -342, width: 132, height: 56 }),
 });
 
 export const COLLECTION_OVERVIEW_LAYOUT = Object.freeze({
@@ -209,35 +267,46 @@ export const COLLECTION_OVERVIEW_LAYOUT = Object.freeze({
 
 export const COLLECTION_LOCK_VISUAL = Object.freeze({
   width: 30,
-  height: 36,
-  bodyWidth: 24,
-  bodyHeight: 20,
-  bodyColor: '#2A1538',
-  rimColor: '#F2C76E',
-  glowColor: '#D8A84E',
+  height: 38.5,
+  assetWidth: 60,
+  assetHeight: 77,
 });
 
 export const LEVEL_COMPLETE_LAYOUT = Object.freeze({
   panel: Object.freeze({ x: 0, y: -5, width: 321, height: 470 }),
-  title: Object.freeze({ x: 0, y: 142, width: 260, height: 52 }),
-  stats: Object.freeze({ x: 0, y: 68, width: 250, height: 46 }),
-  feedback: Object.freeze({ x: 0, y: 0, width: 280, lineGap: 22 }),
-  primaryButton: Object.freeze({ x: 0, y: -72, width: 240, height: 72 }),
-  secondaryButton: Object.freeze({ x: 0, y: -164, width: 240, height: 72 }),
+  title: Object.freeze({ x: 0, y: 174, width: 260, height: 52 }),
+  starsY: -8,
+  info: Object.freeze({ x: 0, width: 280, top: 118, bottom: 34, maxLineGap: 42 }),
+  primaryButton: Object.freeze({ x: 0, y: -164, width: 240, height: 64 }),
+  shareButton: Object.freeze({ x: 62, y: -82, width: 116, height: 64 }),
+  replayButton: Object.freeze({ x: -62, y: -82, width: 116, height: 64 }),
 });
+
+export function completionInfoRowY(index: number, rowCount: number): number {
+  const info = LEVEL_COMPLETE_LAYOUT.info;
+  const gap = rowCount <= 1 ? 0 : Math.min(
+    info.maxLineGap,
+    (info.top - info.bottom) / (rowCount - 1),
+  );
+  return (info.top + info.bottom + gap * (rowCount - 1)) / 2 - gap * index;
+}
 
 export const SETTINGS_LAYOUT = Object.freeze({
   trigger: Object.freeze({ x: -155, y: 378, width: 48, height: 48 }),
   dialog: Object.freeze({ x: 0, y: -21, width: 304, height: 360 }),
-  close: Object.freeze({ x: 110, y: 138, width: 48, height: 48 }),
+  close: Object.freeze({ x: 116, y: 144, width: 48, height: 48 }),
   soundButton: Object.freeze({ x: 0, y: 14, width: 224, height: 72 }),
   homeButton: Object.freeze({ x: 0, y: -81, width: 224, height: 72 }),
   qaButton: Object.freeze({ x: -58, y: -146, width: 108, height: 48 }),
-  qaBottleButton: Object.freeze({ x: 58, y: -146, width: 108, height: 48 }),
+  qaAdButton: Object.freeze({ x: 58, y: -146, width: 108, height: 48 }),
 });
 
-export function rewardBottleFlow(qaAvailable: boolean, directEnabled: boolean): 'rewarded' | 'direct' {
-  return qaAvailable && directEnabled ? 'direct' : 'rewarded';
+export function levelSelectContentOffset(settingsButtonY: number): number {
+  const safeGap = 12;
+  const settingsBottom = settingsButtonY - SETTINGS_LAYOUT.trigger.height / 2;
+  const chapterArrowTop = LEVEL_SELECT_LAYOUT.previousChapterButton.y
+    + LEVEL_SELECT_LAYOUT.previousChapterButton.height / 2;
+  return Math.min(0, settingsBottom - safeGap - chapterArrowTop);
 }
 
 export function levelSelectButton(index: number): RectLayout {
@@ -334,6 +403,34 @@ export function mysteryPotionSheetCell(index: number): MysteryPotionSheetCell {
     y: (row - 1) * 96,
   });
 }
+
+export interface TitleBadgeSheetCell {
+  readonly path: string;
+  readonly sourceX: number;
+  readonly sourceY: number;
+  readonly sourceWidth: number;
+  readonly sourceHeight: number;
+  readonly displayWidth: number;
+  readonly displayHeight: number;
+}
+
+export function titleBadgeSheetCell(chapterId: number): TitleBadgeSheetCell {
+  if (!Number.isInteger(chapterId) || chapterId < 1 || chapterId > 10) {
+    throw new RangeError('title chapter ID must be from 1 to 10');
+  }
+  const index = chapterId - 1;
+  const column = index % 2;
+  const row = Math.floor(index / 2);
+  return Object.freeze({
+    path: 'game/chibi/titles/title-badges/spriteFrame',
+    sourceX: column * 336,
+    sourceY: row * 90,
+    sourceWidth: 336,
+    sourceHeight: 90,
+    displayWidth: 168,
+    displayHeight: 45,
+  });
+}
 function hash32(value: number): number {
   let hash = value | 0;
   hash = Math.imul(hash ^ (hash >>> 16), 0x45d9f3b);
@@ -345,6 +442,12 @@ export function bottleFeedbackVisual(selected: boolean, pouring: boolean): Bottl
   if (selected) return Object.freeze({ yOffset: 10, scale: 1.04, auraVisible: true });
   if (pouring) return Object.freeze({ yOffset: 0, scale: 1.06, auraVisible: false });
   return Object.freeze({ yOffset: 0, scale: 1, auraVisible: false });
+}
+
+export function bottlePourAngle(baseAngle: number, sourceIndex: number, targetIndex: number): number {
+  const sourceColumn = sourceIndex % LEVEL_LAYOUT.slotColumns.length;
+  const targetColumn = targetIndex % LEVEL_LAYOUT.slotColumns.length;
+  return baseAngle + (targetColumn > sourceColumn ? -28 : 28);
 }
 
 export function selectedBottleAuraVisual(): readonly SelectedBottleAuraVisual[] {

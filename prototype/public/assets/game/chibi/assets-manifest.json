@@ -74,7 +74,19 @@
       "add-bottle": "/assets/game/chibi/ui/icon-add-bottle.png"
     },
     "badgePlus": "/assets/game/chibi/ui/badge-plus.png",
-    "messagePanel": "/assets/game/chibi/ui/message-panel.png"
+    "staminaBar": "/assets/game/chibi/ui/stamina-bar-background.png",
+    "messagePanel": "/assets/game/chibi/ui/message-panel.png",
+    "collectionLock": "/assets/game/chibi/ui/collection-lock.png",
+    "collectionCardBackground": "/assets/game/chibi/ui/collection-card-background.png",
+    "homeEntries": {
+      "collection": "/assets/game/chibi/ui/home-collection-button.png",
+      "share": "/assets/game/chibi/ui/home-share-button.png",
+      "endless": "/assets/game/chibi/ui/home-endless-mode-button.png"
+    },
+    "stars": {
+      "earned": "/assets/game/chibi/ui/star-earned.png",
+      "empty": "/assets/game/chibi/ui/star-empty.png"
+    }
   },
   "effects": {
     "completionBurst": "/assets/game/chibi/effects/completion-burst.png",
@@ -88,5 +100,8 @@
         "pattern": "/assets/game/chibi/effects/witch-magic/celebrate/celebrate-{index}.png"
       }
     }
+  },
+  "titles": {
+    "badges": "/assets/game/chibi/titles/title-badges.png"
   }
 }

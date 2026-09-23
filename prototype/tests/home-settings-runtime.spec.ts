@@ -12,7 +12,7 @@ async function loadCleanHome(page: Page) {
   await page.goto("/");
   await page.evaluate((key) => window.localStorage.removeItem(key), AUDIO_PREFERENCES_KEY);
   await page.reload();
-  await expect(page.getByRole("main", { name: "暮影炼金室首页" })).toBeVisible();
+  await expect(page.getByRole("main", { name: "魔女炼金屋首页" })).toBeVisible();
 }
 
 async function openSettings(page: Page) {
@@ -35,7 +35,7 @@ test("returning home and continuing preserves the changed board, move count, and
 
   await openSettings(page);
   await page.getByRole("button", { name: "返回主页" }).click();
-  await expect(page.getByRole("main", { name: "暮影炼金室首页" })).toBeVisible();
+  await expect(page.getByRole("main", { name: "魔女炼金屋首页" })).toBeVisible();
 
   await page.getByRole("button", { name: "继续炼金 · 第 12 关" }).click();
   await expect(page.getByText("步数 1", { exact: true })).toBeVisible();
@@ -73,7 +73,7 @@ test("home and level expose their distinct settings capabilities and return hand
   await expect(page.getByRole("button", { name: "声音：已开启" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("button", { name: "返回主页" })).toBeVisible();
   await page.getByRole("button", { name: "返回主页" }).click();
-  await expect(page.getByRole("main", { name: "暮影炼金室首页" })).toBeVisible();
+  await expect(page.getByRole("main", { name: "魔女炼金屋首页" })).toBeVisible();
 });
 
 test("master sound persists and drives both AudioDirector track gain ramps", async ({ page }) => {
@@ -129,7 +129,7 @@ test("master sound persists and drives both AudioDirector track gain ramps", asy
   ]);
 
   await page.reload();
-  await expect(page.getByRole("main", { name: "暮影炼金室首页" })).toBeVisible();
+  await expect(page.getByRole("main", { name: "魔女炼金屋首页" })).toBeVisible();
   await openSettings(page);
   await expect(page.getByRole("button", { name: "声音：已关闭" })).toHaveAttribute("aria-pressed", "false");
   await page.evaluate(() => {

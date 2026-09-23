@@ -7,7 +7,7 @@ const db = cloud.database();
 const LEVEL_ID = /^level-(\d{3})$/;
 const CLAIM_ID = /^[A-Za-z0-9_-]{8,128}$/;
 const FIRST_LEVEL = 1;
-const LAST_LEVEL = 90;
+const LAST_LEVEL = 180;
 
 function getOpenId() {
   const openid = cloud.getWXContext().OPENID;

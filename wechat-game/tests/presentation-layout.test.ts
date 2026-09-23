@@ -5,6 +5,7 @@ import {
   ART_FONT_RESOURCE,
   COLLECTION_LAYOUT,
   COLLECTION_OVERVIEW_LAYOUT,
+  DAILY_COMMISSION_LAYOUT,
   HEALTHY_GAME_ADVICE_LINES,
   HOME_LAYOUT,
   LAUNCH_LAYOUT,
@@ -15,25 +16,31 @@ import {
   STAMINA_LAYOUT,
   RESTART_LABEL,
   bottleFeedbackVisual,
+  bottlePourAngle,
   bottlePlacement,
   buttonBaseLayout,
   buttonSpritePath,
   collectionCompleteLabel,
   collectionRewardLabel,
   chapterLabel,
+  completionInfoRowY,
   completionOptimalLabel,
   completionPrimaryLabel,
+  controlAllowanceVisual,
   formatRecoveryCountdown,
+  endlessHudText,
   levelButtonVisual,
   levelInteractionRefreshMode,
   levelSelectButton,
   collectionPuzzlePiece,
   collectionCardLayout,
   launchProgressFill,
+  proportionalHeightForWidth,
   potionParticleVisuals,
   potionProgressLabel,
   shouldRenderBottle,
   squareBottomFit,
+  staminaBarYForMenu,
   staminaBarContentLayout,
 } from '../assets/scripts/presentation/presentation-layout.ts';
 import * as presentationLayout from '../assets/scripts/presentation/presentation-layout.ts';
@@ -42,7 +49,7 @@ import { pour, vanishBottle } from '../assets/scripts/core/water-sort.ts';
 
 test('launch screen keeps every required element inside the 393 by 852 safe frame', () => {
   assert.deepEqual(LAUNCH_LAYOUT.ageBadge, { x: -155, y: 376, width: 42, height: 42 });
-  assert.deepEqual(LAUNCH_LAYOUT.title, { x: 0, y: 235, width: 330, height: 74 });
+  assert.deepEqual(LAUNCH_LAYOUT.title, { x: 0, y: 235, width: 306, height: 111 });
   assert.deepEqual(LAUNCH_LAYOUT.witch, { x: 0, y: 22, width: 260, height: 260 });
   assert.deepEqual(LAUNCH_LAYOUT.progressTrack, { x: 0, y: -230, width: 300, height: 18 });
   assert.deepEqual(LAUNCH_LAYOUT.percent, { x: 0, y: -265, width: 120, height: 32 });
@@ -62,31 +69,56 @@ test('launch screen keeps every required element inside the 393 by 852 safe fram
 test('home stamina bar stays in the left safe area aligned with the WeChat capsule', () => {
   assert.equal(formatRecoveryCountdown(1_800_000), '30:00');
   assert.equal(formatRecoveryCountdown(1), '00:01');
-  assert.equal(STAMINA_LAYOUT.homeBar.x, -112);
+  assert.equal(STAMINA_LAYOUT.homeBar.x, -118);
   assert.equal(STAMINA_LAYOUT.homeBar.y, 365);
   assert.ok(STAMINA_LAYOUT.homeBar.x - STAMINA_LAYOUT.homeBar.width / 2 >= -393 / 2 + 4);
   assert.ok(STAMINA_LAYOUT.homeBar.x + STAMINA_LAYOUT.homeBar.width / 2 < 0);
 });
 
+test('launch logo derives its height from the fixed display width without distortion', () => {
+  assert.equal(proportionalHeightForWidth(306, 612, 222), 111);
+});
+
+test('home stamina bar converts the WeChat capsule center into Cocos coordinates', () => {
+  assert.equal(staminaBarYForMenu(852, 45 / 852), 381);
+  assert.equal(staminaBarYForMenu(852, null), 365);
+});
+
+test('endless entry keeps its 64px artwork inside a larger phone hit target', () => {
+  assert.deepEqual(HOME_LAYOUT.endlessButton, {
+    x: -150, y: 198, width: 64, height: 64, hitWidth: 96, hitHeight: 96,
+  });
+  assert.equal(HOME_LAYOUT.endlessButton.y, HOME_LAYOUT.collectionButton.y);
+  assert.deepEqual(endlessHudText(7, 4, -3), {
+    title: '无尽 · 第7关',
+    streak: '连胜 4',
+    moves: '剩余 0 步',
+  });
+});
+
 test('home stamina content uses a centered flex-like row within padded bar bounds', () => {
-  assert.deepEqual(STAMINA_LAYOUT.homeBar.padding, { horizontal: 8, vertical: 4 });
-  assert.equal(STAMINA_LAYOUT.homeBar.gap, 4);
+  assert.deepEqual(STAMINA_LAYOUT.homeBar.padding, { horizontal: 4, vertical: 2 });
+  assert.equal(STAMINA_LAYOUT.homeBar.gap, 2);
+  assert.equal(STAMINA_LAYOUT.homeBar.addSize, 18);
+  assert.equal(STAMINA_LAYOUT.homeBar.addTrailingPadding, 10);
+  assert.equal(STAMINA_LAYOUT.homeBar.width + STAMINA_LAYOUT.homeBar.gap
+    + STAMINA_LAYOUT.homeBar.addSize + STAMINA_LAYOUT.homeBar.addTrailingPadding, 166);
   const content = staminaBarContentLayout();
   assert.deepEqual(content, {
-    width: 132,
+    width: 128,
     height: 30,
-    icon: { x: -66, y: 0, width: 30, height: 30 },
+    icon: { x: -64, y: 0, width: 30, height: 30 },
     value: { x: -32, y: 0, width: 36, height: 30 },
-    status: { x: 8, y: 0, width: 58, height: 30 },
+    status: { x: 6, y: 0, width: 58, height: 30 },
   });
   assert.equal(content.icon.y, content.value.y);
   assert.equal(content.value.y, content.status.y);
-  assert.equal(content.value.x - (content.icon.x + content.icon.width), 4);
-  assert.equal(content.status.x - (content.value.x + content.value.width), 4);
-  assert.equal(content.width <= STAMINA_LAYOUT.homeBar.width - 16, true);
-  assert.equal(content.height <= STAMINA_LAYOUT.homeBar.height - 8, true);
+  assert.equal(content.value.x - (content.icon.x + content.icon.width), 2);
+  assert.equal(content.status.x - (content.value.x + content.value.width), 2);
+  assert.equal(content.width <= STAMINA_LAYOUT.homeBar.width - 8, true);
+  assert.equal(content.height <= STAMINA_LAYOUT.homeBar.height - 4, true);
   assert.equal(content.icon.x + content.width / 2, 0);
-  assert.equal(content.status.x + content.status.width / 2, 37);
+  assert.equal(content.status.x + content.status.width / 2, 35);
 });
 
 test('stamina dialog rows keep balanced vertical breathing room', () => {
@@ -111,6 +143,19 @@ test('exit dialog keeps the cancel button inside its decorated bottom edge', () 
   const cancelBottom = STAMINA_LAYOUT.exitCancel.y - STAMINA_LAYOUT.exitCancel.height / 2;
 
   assert.ok(cancelBottom - dialogBottom >= 24);
+});
+
+test('modal dialogs use the approved subtle enter and exit timing', () => {
+  const transition = (presentationLayout as unknown as {
+    DIALOG_TRANSITION?: Readonly<{
+      enter: Readonly<{ duration: number; fromScale: number }>;
+      exit: Readonly<{ duration: number; toScale: number }>;
+    }>;
+  }).DIALOG_TRANSITION;
+  assert.deepEqual(transition, {
+    enter: { duration: 0.28, fromScale: 0.92 },
+    exit: { duration: 0.26, toScale: 0.96 },
+  });
 });
 
 test('launch progress fill grows from the left edge and clamps to the track', () => {
@@ -145,12 +190,24 @@ test('selector maps completed, current, unlocked, and locked states to approved 
   });
 });
 
+test('selector leaves room below each button for three stars while keeping thirty levels on one page', () => {
+  assert.deepEqual(LEVEL_SELECT_LAYOUT.rowCenters, [180, 112, 44, -24, -92, -160]);
+  assert.equal(LEVEL_SELECT_LAYOUT.starY, -32);
+  assert.equal(LEVEL_SELECT_LAYOUT.starSize, 15);
+  assert.equal(LEVEL_SELECT_LAYOUT.starGap, 18);
+  assert.equal(LEVEL_SELECT_LAYOUT.rowCenters.length * LEVEL_SELECT_LAYOUT.columns, 30);
+  for (let index = 1; index < LEVEL_SELECT_LAYOUT.rowCenters.length; index += 1) {
+    assert.equal(LEVEL_SELECT_LAYOUT.rowCenters[index - 1] - LEVEL_SELECT_LAYOUT.rowCenters[index], 68);
+  }
+});
+
 test('selector fits thirty square buttons in one five by six page', () => {
   const cells = Array.from({ length: 30 }, (_, index) => levelSelectButton(index));
   assert.equal(LEVEL_SELECT_LAYOUT.columns, 5);
   assert.equal(LEVEL_SELECT_LAYOUT.rows, 6);
-  assert.equal(LEVEL_SELECT_LAYOUT.subtitleY, 310);
-  assert.deepEqual(LEVEL_SELECT_LAYOUT.collectionButton, { x: 0, y: 255, width: 176, height: 44 });
+  assert.equal(LEVEL_SELECT_LAYOUT.starTotalY, 255);
+  assert.equal(LEVEL_SELECT_LAYOUT.starTotalFontSize, 44);
+  assert.equal(LEVEL_SELECT_LAYOUT.starTotalWidth, 260);
   assert.deepEqual(LEVEL_SELECT_LAYOUT.previousChapterButton, { x: -158, y: 320, width: 44, height: 44 });
   assert.deepEqual(LEVEL_SELECT_LAYOUT.nextChapterButton, { x: 158, y: 320, width: 44, height: 44 });
   assert.equal(cells.length, 30);
@@ -160,7 +217,7 @@ test('selector fits thirty square buttons in one five by six page', () => {
     assert.equal(cell.height, 48);
     assert.ok(Math.abs(cell.x) + 24 <= 393 / 2);
     assert.ok(Math.abs(cell.y) + 24 <= 852 / 2);
-    assert.ok(cell.y - cell.height / 2 >= -144);
+    assert.ok(cell.y - cell.height / 2 >= -184);
   }
 });
 
@@ -227,44 +284,62 @@ test('locked collection cards select all nine cells from one approved sprite she
   assert.throws(() => sheetCell(9), RangeError);
 });
 
-test('collection lock uses the compact magical seal proportions and palette', () => {
+test('home titles select all ten cells from one 168 by 84 sprite sheet', () => {
+  const sheetCell = (presentationLayout as unknown as {
+    titleBadgeSheetCell?: (chapterId: number) => Readonly<{
+      path: string; sourceX: number; sourceY: number; sourceWidth: number; sourceHeight: number;
+      displayWidth: number; displayHeight: number;
+    }>;
+  }).titleBadgeSheetCell;
+  assert.equal(typeof sheetCell, 'function');
+  if (!sheetCell) return;
+
+  assert.deepEqual(Array.from({ length: 10 }, (_, index) => sheetCell(index + 1)), [
+    { path: 'game/chibi/titles/title-badges/spriteFrame', sourceX: 0, sourceY: 0, sourceWidth: 336, sourceHeight: 90, displayWidth: 168, displayHeight: 45 },
+    { path: 'game/chibi/titles/title-badges/spriteFrame', sourceX: 336, sourceY: 0, sourceWidth: 336, sourceHeight: 90, displayWidth: 168, displayHeight: 45 },
+    { path: 'game/chibi/titles/title-badges/spriteFrame', sourceX: 0, sourceY: 90, sourceWidth: 336, sourceHeight: 90, displayWidth: 168, displayHeight: 45 },
+    { path: 'game/chibi/titles/title-badges/spriteFrame', sourceX: 336, sourceY: 90, sourceWidth: 336, sourceHeight: 90, displayWidth: 168, displayHeight: 45 },
+    { path: 'game/chibi/titles/title-badges/spriteFrame', sourceX: 0, sourceY: 180, sourceWidth: 336, sourceHeight: 90, displayWidth: 168, displayHeight: 45 },
+    { path: 'game/chibi/titles/title-badges/spriteFrame', sourceX: 336, sourceY: 180, sourceWidth: 336, sourceHeight: 90, displayWidth: 168, displayHeight: 45 },
+    { path: 'game/chibi/titles/title-badges/spriteFrame', sourceX: 0, sourceY: 270, sourceWidth: 336, sourceHeight: 90, displayWidth: 168, displayHeight: 45 },
+    { path: 'game/chibi/titles/title-badges/spriteFrame', sourceX: 336, sourceY: 270, sourceWidth: 336, sourceHeight: 90, displayWidth: 168, displayHeight: 45 },
+    { path: 'game/chibi/titles/title-badges/spriteFrame', sourceX: 0, sourceY: 360, sourceWidth: 336, sourceHeight: 90, displayWidth: 168, displayHeight: 45 },
+    { path: 'game/chibi/titles/title-badges/spriteFrame', sourceX: 336, sourceY: 360, sourceWidth: 336, sourceHeight: 90, displayWidth: 168, displayHeight: 45 },
+  ]);
+  assert.throws(() => sheetCell(0), RangeError);
+  assert.throws(() => sheetCell(11), RangeError);
+});
+
+test('collection lock keeps a 30px display width and the source aspect ratio', () => {
   const visual = (presentationLayout as unknown as {
     COLLECTION_LOCK_VISUAL?: Readonly<{
-      width: number; height: number; bodyWidth: number; bodyHeight: number;
-      bodyColor: string; rimColor: string; glowColor: string;
+      width: number; height: number; assetWidth: number; assetHeight: number;
     }>;
   }).COLLECTION_LOCK_VISUAL;
   assert.ok(visual);
   assert.deepEqual(visual, {
     width: 30,
-    height: 36,
-    bodyWidth: 24,
-    bodyHeight: 20,
-    bodyColor: '#2A1538',
-    rimColor: '#F2C76E',
-    glowColor: '#D8A84E',
+    height: 38.5,
+    assetWidth: 60,
+    assetHeight: 77,
   });
 });
 
 test('home layout preserves the accepted prototype hierarchy without a progress card', () => {
-  assert.deepEqual(HOME_LAYOUT.header, {
-    x: 0,
-    eyebrowY: 278,
-    levelY: 238,
-    width: 260,
-    align: 'center',
-  });
-  assert.deepEqual(HOME_LAYOUT.titleBadge, { x: 0, y: 101, width: 168, height: 84 });
+  assert.deepEqual(HOME_LAYOUT.titleBadge, { x: 0, y: 101, width: 168 });
   assert.deepEqual(HOME_LAYOUT.titleFloat, { distance: 6, duration: 1.6 });
   assert.deepEqual(HOME_LAYOUT.settingsButton, { x: 150, y: 270, width: 48, height: 48 });
   assert.deepEqual(HOME_LAYOUT.collectionButton, { x: 150, y: 198, width: 64, height: 64 });
+  assert.deepEqual(HOME_LAYOUT.shareButton, { x: 150, y: 126, width: 64, height: 64 });
   assert.deepEqual(HOME_LAYOUT.witch, { x: 0, y: 0, width: 246, height: 304 });
   assert.deepEqual(HOME_LAYOUT.continueButton, { x: 0, y: -348, width: 286, height: 72 });
   assert.equal(HOME_LAYOUT.showsProgressCard, false);
   assert.deepEqual(HOME_LAYOUT.selectButton, { x: 0, y: -266, width: 224, height: 56 });
 
   assert.equal(HOME_LAYOUT.settingsButton.x, HOME_LAYOUT.collectionButton.x);
+  assert.equal(HOME_LAYOUT.collectionButton.x, HOME_LAYOUT.shareButton.x);
   assert.ok(HOME_LAYOUT.settingsButton.y > HOME_LAYOUT.collectionButton.y);
+  assert.ok(HOME_LAYOUT.collectionButton.y > HOME_LAYOUT.shareButton.y);
 });
 
 test('level layout keeps the witch, board, message, and controls in the accepted 393 by 852 frame', () => {
@@ -276,6 +351,14 @@ test('level layout keeps the witch, board, message, and controls in the accepted
   assert.equal(LEVEL_LAYOUT.controlY, -338);
   assert.equal(LEVEL_LAYOUT.controlLabelY, -18);
   assert.ok(LEVEL_LAYOUT.controlLabelY - 14 >= -36);
+});
+
+test('control allowance bubbles show only the compact number and reveal ads only at zero', () => {
+  assert.deepEqual(LEVEL_LAYOUT.controlAllowanceBubble, HOME_LAYOUT.dailyCommissionBubble);
+  assert.deepEqual(LEVEL_LAYOUT.controlAdBadge, { x: 26, y: 27, width: 22, height: 18 });
+  assert.deepEqual(controlAllowanceVisual(3), { text: '3', showAdBadge: false });
+  assert.deepEqual(controlAllowanceVisual(1), { text: '1', showAdBadge: false });
+  assert.deepEqual(controlAllowanceVisual(0), { text: '', showAdBadge: true });
 });
 
 test('witch artwork keeps square proportions and aligns to the bottom of each prototype stage', () => {
@@ -327,20 +410,40 @@ test('wide raster buttons preserve their corners with the prototype nine-slice g
     'sliced',
   );
   assert.equal(
-    buttonBaseLayout(LEVEL_COMPLETE_LAYOUT.secondaryButton, 'sliced').renderMode,
+    buttonBaseLayout(LEVEL_COMPLETE_LAYOUT.shareButton, 'sliced').renderMode,
     'sliced',
   );
 });
 
+test('completion info rows distribute evenly between fixed bounds', () => {
+  assert.deepEqual(LEVEL_COMPLETE_LAYOUT.info, { x: 0, width: 280, top: 118, bottom: 34, maxLineGap: 42 });
+  assert.deepEqual([0, 1, 2].map((index) => completionInfoRowY(index, 3)), [118, 76, 34]);
+  assert.deepEqual([0, 1, 2, 3].map((index) => completionInfoRowY(index, 4)), [118, 90, 62, 34]);
+});
+
+test('daily commission mirrors settings with a larger reward-led home entry', () => {
+  assert.deepEqual(HOME_LAYOUT.dailyCommissionButton, { x: -150, y: 270, width: 64, height: 64 });
+  assert.equal(HOME_LAYOUT.dailyCommissionButton.y, HOME_LAYOUT.settingsButton.y);
+  assert.deepEqual(DAILY_COMMISSION_LAYOUT.action, { x: 0, y: -38, width: 240, height: 72 });
+  const dialogBottom = DAILY_COMMISSION_LAYOUT.dialog.y - DAILY_COMMISSION_LAYOUT.dialog.height / 2;
+  const actionBottom = DAILY_COMMISSION_LAYOUT.action.y - DAILY_COMMISSION_LAYOUT.action.height / 2;
+  assert.ok(actionBottom - dialogBottom >= 24);
+});
+
 test('selector and completion actions use wide sliced buttons inside safe bounds', () => {
   assert.deepEqual(LEVEL_SELECT_LAYOUT.backButton, { x: 0, y: -342, width: 224, height: 72 });
-  assert.deepEqual(LEVEL_COMPLETE_LAYOUT.primaryButton, { x: 0, y: -72, width: 240, height: 72 });
-  assert.deepEqual(LEVEL_COMPLETE_LAYOUT.secondaryButton, { x: 0, y: -164, width: 240, height: 72 });
-  assert.deepEqual(LEVEL_COMPLETE_LAYOUT.feedback, { x: 0, y: 0, width: 280, lineGap: 22 });
+  assert.deepEqual(LEVEL_COMPLETE_LAYOUT.primaryButton, { x: 0, y: -164, width: 240, height: 64 });
+  assert.deepEqual(LEVEL_COMPLETE_LAYOUT.shareButton, { x: 62, y: -82, width: 116, height: 64 });
+  assert.deepEqual(LEVEL_COMPLETE_LAYOUT.replayButton, { x: -62, y: -82, width: 116, height: 64 });
+  assert.deepEqual(COLLECTION_LAYOUT.backButton, { x: -72, y: -342, width: 132, height: 56 });
+  assert.deepEqual(COLLECTION_LAYOUT.shareButton, { x: 72, y: -342, width: 132, height: 56 });
   for (const button of [
     LEVEL_SELECT_LAYOUT.backButton,
     LEVEL_COMPLETE_LAYOUT.primaryButton,
-    LEVEL_COMPLETE_LAYOUT.secondaryButton,
+    LEVEL_COMPLETE_LAYOUT.shareButton,
+    LEVEL_COMPLETE_LAYOUT.replayButton,
+    COLLECTION_LAYOUT.backButton,
+    COLLECTION_LAYOUT.shareButton,
   ]) {
     assert.ok(Math.abs(button.x) + button.width / 2 <= 393 / 2);
     assert.ok(Math.abs(button.y) + button.height / 2 <= 852 / 2);
@@ -368,6 +471,12 @@ test('selected bottle feedback matches the prototype lift without moving its hit
   assert.deepEqual(bottleFeedbackVisual(false, false), { yOffset: 0, scale: 1, auraVisible: false });
   assert.deepEqual(bottleFeedbackVisual(true, false), { yOffset: 10, scale: 1.04, auraVisible: true });
   assert.deepEqual(bottleFeedbackVisual(false, true), { yOffset: 0, scale: 1.06, auraVisible: false });
+});
+
+test('pour tilt follows the target column and defaults left within the same column', () => {
+  assert.equal(bottlePourAngle(1, 0, 1), -27);
+  assert.equal(bottlePourAngle(1, 4, 3), 29);
+  assert.equal(bottlePourAngle(1, 0, 5), 29);
 });
 
 test('selected bottle aura reproduces the prototype cyan drop shadow with three soft layers', () => {
@@ -611,7 +720,7 @@ test('completion and collection copy follows chapter boundaries and potion catal
   assert.equal(completionPrimaryLabel(90, 91), '进入第四章');
   assert.equal(completionPrimaryLabel(119, 120), '下一关');
   assert.equal(completionPrimaryLabel(120, null), '返回选关');
-  assert.equal(completionOptimalLabel(22, 22), '✦ 完美炼成 · 已达理论最优');
+  assert.equal(completionOptimalLabel(22, 22), '✦ 完美炼成');
   assert.equal(completionOptimalLabel(25, 22), '本关最少 22 步 · 还可优化 3 步');
   assert.equal(collectionRewardLabel(2, 1), '获得森林药水拼图 1/6');
   assert.equal(collectionCompleteLabel(2), '森林药水已收入图鉴');
@@ -631,24 +740,26 @@ test('non-home settings trigger stays in the top-left safe area without overlapp
   assert.equal(triggerOverlapsPreviousChapter, false);
 });
 
+test('selector content moves below the runtime menu-aligned settings trigger with a 12px gap', () => {
+  const offsetFor = (presentationLayout as typeof presentationLayout & {
+    levelSelectContentOffset?: (settingsButtonY: number) => number;
+  }).levelSelectContentOffset;
+  assert.equal(typeof offsetFor, 'function');
+  if (!offsetFor) return;
+
+  assert.equal(offsetFor(381), 0);
+  assert.equal(offsetFor(365), -13);
+  const adjustedArrowY = LEVEL_SELECT_LAYOUT.previousChapterButton.y + offsetFor(350);
+  const settingsBottom = 350 - SETTINGS_LAYOUT.trigger.height / 2;
+  const arrowTop = adjustedArrowY + LEVEL_SELECT_LAYOUT.previousChapterButton.height / 2;
+  assert.equal(settingsBottom - arrowTop, 12);
+});
+
 test('settings layout uses the accepted raster-backed dialog geometry', () => {
   assert.deepEqual(SETTINGS_LAYOUT.dialog, { x: 0, y: -21, width: 304, height: 360 });
-  assert.deepEqual(SETTINGS_LAYOUT.close, { x: 110, y: 138, width: 48, height: 48 });
+  assert.deepEqual(SETTINGS_LAYOUT.close, { x: 116, y: 144, width: 48, height: 48 });
   assert.deepEqual(SETTINGS_LAYOUT.soundButton, { x: 0, y: 14, width: 224, height: 72 });
   assert.deepEqual(SETTINGS_LAYOUT.homeButton, { x: 0, y: -81, width: 224, height: 72 });
   assert.deepEqual(SETTINGS_LAYOUT.qaButton, { x: -58, y: -146, width: 108, height: 48 });
-  assert.deepEqual(SETTINGS_LAYOUT.qaBottleButton, { x: 58, y: -146, width: 108, height: 48 });
-});
-
-test('free reward bottles bypass ads only when the development switch is enabled', () => {
-  const rewardBottleFlow = (presentationLayout as unknown as {
-    rewardBottleFlow?: (qaAvailable: boolean, directEnabled: boolean) => 'rewarded' | 'direct';
-  }).rewardBottleFlow;
-  assert.equal(typeof rewardBottleFlow, 'function');
-  if (!rewardBottleFlow) return;
-
-  assert.equal(rewardBottleFlow(false, false), 'rewarded');
-  assert.equal(rewardBottleFlow(false, true), 'rewarded');
-  assert.equal(rewardBottleFlow(true, false), 'rewarded');
-  assert.equal(rewardBottleFlow(true, true), 'direct');
+  assert.deepEqual(SETTINGS_LAYOUT.qaAdButton, { x: 58, y: -146, width: 108, height: 48 });
 });

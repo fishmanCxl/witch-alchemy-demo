@@ -8,6 +8,7 @@ import {
   decodePlayerProgress,
   isLevelUnlocked,
   mergePlayerProgress,
+  recordBestMoves,
   selectCurrentLevel,
   type PlayerProgress,
 } from '../assets/scripts/core/level-progress.ts';
@@ -43,7 +44,7 @@ test('new players start at level 1 with only level 1 unlocked', () => {
     currentLevel: 'level-001',
     completedThrough: 0,
     bestMoves: {},
-    configVersion: 'chapters-1-4.2026-09-05.1',
+    configVersion: 'chapters-1-6.2026-09-19.1',
   });
   assert.equal(isLevelUnlocked(progress, 'level-001'), true);
   assert.equal(isLevelUnlocked(progress, 'level-002'), false);
@@ -74,6 +75,27 @@ test('replaying a level keeps continuous progress idempotent and only lowers bes
   assert.equal(fasterReplay.revision, 3);
   assert.equal(fasterReplay.bestMoves['level-001'], 3);
   assert.equal(completeLevel(first, 'level-001', 0), null);
+});
+
+test('daily replay only lowers best moves without advancing formal progress', () => {
+  const progress: PlayerProgress = {
+    ...createDefaultProgress(),
+    revision: 8,
+    currentLevel: 'level-006',
+    completedThrough: 5,
+    bestMoves: { 'level-003': 18 },
+  };
+
+  const slower = recordBestMoves(progress, 'level-003', 20)!;
+  const faster = recordBestMoves(progress, 'level-003', 14)!;
+
+  assert.equal(slower, progress);
+  assert.equal(faster.revision, 9);
+  assert.equal(faster.currentLevel, 'level-006');
+  assert.equal(faster.completedThrough, 5);
+  assert.equal(faster.bestMoves['level-003'], 14);
+  assert.equal(recordBestMoves(progress, 'level-006', 10), null);
+  assert.equal(recordBestMoves(progress, 'level-003', 0), null);
 });
 
 test('selecting an old unlocked level never lowers the highest unlock boundary', () => {
@@ -112,11 +134,11 @@ test('merging progress keeps the furthest boundary, minimizes best moves, and ke
     currentLevel: 'level-005',
     completedThrough: 5,
     bestMoves: { 'level-001': 8, 'level-002': 9, 'level-003': 10 },
-    configVersion: 'chapters-1-4.2026-09-05.1',
+    configVersion: 'chapters-1-6.2026-09-19.1',
   });
 });
 
-test('chapter boundaries unlock levels 31, 61, and 91 while level 120 caps published progression', () => {
+test('chapter boundaries unlock through level 151 while level 180 caps published progression', () => {
   const afterThirty = completeLevel(progressAt('level-030'), 'level-030', 28)!;
   assert.equal(afterThirty.currentLevel, 'level-031');
   assert.equal(afterThirty.completedThrough, 30);
@@ -133,9 +155,19 @@ test('chapter boundaries unlock levels 31, 61, and 91 while level 120 caps publi
   assert.equal(isLevelUnlocked(afterNinety, 'level-091'), true);
 
   const afterOneTwenty = completeLevel(progressAt('level-120'), 'level-120', 61)!;
-  assert.equal(afterOneTwenty.currentLevel, 'level-120');
+  assert.equal(afterOneTwenty.currentLevel, 'level-121');
   assert.equal(afterOneTwenty.completedThrough, 120);
-  assert.equal(isLevelUnlocked(afterOneTwenty, 'level-121'), false);
+  assert.equal(isLevelUnlocked(afterOneTwenty, 'level-121'), true);
+
+  const afterOneFifty = completeLevel(progressAt('level-150'), 'level-150', 72)!;
+  assert.equal(afterOneFifty.currentLevel, 'level-151');
+  assert.equal(afterOneFifty.completedThrough, 150);
+  assert.equal(isLevelUnlocked(afterOneFifty, 'level-151'), true);
+
+  const afterOneEighty = completeLevel(progressAt('level-180'), 'level-180', 80)!;
+  assert.equal(afterOneEighty.currentLevel, 'level-180');
+  assert.equal(afterOneEighty.completedThrough, 180);
+  assert.equal(isLevelUnlocked(afterOneEighty, 'level-181'), false);
 });
 
 test('old v2 progress is normalized to v3 continuous progress', () => {
@@ -143,7 +175,7 @@ test('old v2 progress is normalized to v3 continuous progress', () => {
 
   assert.equal(decoded?.completedThrough, 14);
   assert.deepEqual(decoded?.bestMoves, oldFifteenLevelProgress.bestMoves);
-  assert.equal(decoded?.configVersion, 'chapters-1-4.2026-09-05.1');
+  assert.equal(decoded?.configVersion, 'chapters-1-6.2026-09-19.1');
 });
 
 test('an existing sixty-level v3 save keeps its boundary and unlocks chapter three', () => {
@@ -159,7 +191,7 @@ test('an existing sixty-level v3 save keeps its boundary and unlocks chapter thr
   assert.equal(decoded?.currentLevel, 'level-060');
   assert.equal(decoded?.completedThrough, 60);
   assert.deepEqual(decoded?.bestMoves, { 'level-001': 5, 'level-060': 41 });
-  assert.equal(decoded?.configVersion, 'chapters-1-4.2026-09-05.1');
+  assert.equal(decoded?.configVersion, 'chapters-1-6.2026-09-19.1');
   assert.equal(decoded && isLevelUnlocked(decoded, 'level-061'), true);
 });
 
@@ -176,8 +208,24 @@ test('an existing ninety-level v3 save keeps its boundary and unlocks chapter fo
   assert.equal(decoded?.currentLevel, 'level-090');
   assert.equal(decoded?.completedThrough, 90);
   assert.deepEqual(decoded?.bestMoves, { 'level-090': 52 });
-  assert.equal(decoded?.configVersion, 'chapters-1-4.2026-09-05.1');
+  assert.equal(decoded?.configVersion, 'chapters-1-6.2026-09-19.1');
   assert.equal(decoded && isLevelUnlocked(decoded, 'level-091'), true);
+});
+
+test('an existing level-120 save unlocks chapter five without expanding the save shape', () => {
+  const decoded = decodePlayerProgress(JSON.stringify({
+    schemaVersion: 3,
+    revision: 120,
+    currentLevel: 'level-120',
+    completedThrough: 120,
+    bestMoves: { 'level-120': 61 },
+    configVersion: 'chapters-1-4.2026-09-05.1',
+  }));
+
+  assert.equal(decoded?.currentLevel, 'level-120');
+  assert.equal(decoded?.completedThrough, 120);
+  assert.equal(decoded?.configVersion, 'chapters-1-6.2026-09-19.1');
+  assert.equal(decoded && isLevelUnlocked(decoded, 'level-121'), true);
 });
 
 test('a high v2 unlock migrates to the equivalent continuous completion boundary', () => {
@@ -206,6 +254,39 @@ test('a completed level 60 in legacy v2 progress remains completed after chapter
   assert.equal(decoded && isLevelUnlocked(decoded, 'level-061'), true);
 });
 
+test('an existing level-150 save keeps its boundary and unlocks chapter six', () => {
+  const decoded = decodePlayerProgress(JSON.stringify({
+    schemaVersion: 3,
+    revision: 150,
+    currentLevel: 'level-150',
+    completedThrough: 150,
+    bestMoves: { 'level-150': 72 },
+    configVersion: 'chapters-1-5.2026-09-06.1',
+  }));
+
+  assert.equal(decoded?.currentLevel, 'level-150');
+  assert.equal(decoded?.completedThrough, 150);
+  assert.deepEqual(decoded?.bestMoves, { 'level-150': 72 });
+  assert.equal(decoded?.configVersion, 'chapters-1-6.2026-09-19.1');
+  assert.equal(decoded && isLevelUnlocked(decoded, 'level-151'), true);
+});
+
+test('an existing level-180 save remains capped at chapter six', () => {
+  const decoded = decodePlayerProgress(JSON.stringify({
+    schemaVersion: 3,
+    revision: 180,
+    currentLevel: 'level-180',
+    completedThrough: 180,
+    bestMoves: { 'level-180': 80 },
+    configVersion: 'chapters-1-6.2026-09-19.1',
+  }));
+
+  assert.equal(decoded?.currentLevel, 'level-180');
+  assert.equal(decoded?.completedThrough, 180);
+  assert.equal(decoded?.configVersion, 'chapters-1-6.2026-09-19.1');
+  assert.equal(decoded && isLevelUnlocked(decoded, 'level-181'), false);
+});
+
 test('progress encoding strips derived and unknown top-level fields', () => {
   const polluted = {
     schemaVersion: 3,
@@ -225,7 +306,7 @@ test('progress encoding strips derived and unknown top-level fields', () => {
     currentLevel: 'level-003',
     completedThrough: 3,
     bestMoves: { 'level-001': 5, 'level-003': 9 },
-    configVersion: 'chapters-1-4.2026-09-05.1',
+    configVersion: 'chapters-1-6.2026-09-19.1',
   });
 });
 
@@ -248,7 +329,7 @@ test('progress decoding strips derived and unknown top-level fields', () => {
     currentLevel: 'level-003',
     completedThrough: 3,
     bestMoves: { 'level-001': 5, 'level-003': 9 },
-    configVersion: 'chapters-1-4.2026-09-05.1',
+    configVersion: 'chapters-1-6.2026-09-19.1',
   });
 });
 

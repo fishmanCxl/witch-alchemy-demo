@@ -1,8 +1,8 @@
 {
   "source": "prototype/public/assets/game",
-  "generatedAt": "2026-09-05T14:20:03.114Z",
-  "files": 197,
-  "bytes": 19545098,
+  "generatedAt": "2026-09-23T01:01:18.386Z",
+  "files": 207,
+  "bytes": 20368745,
   "paths": [
     "audio/audio-manifest.json",
     "audio/bgm/alchemy-room-loop.mp3",
@@ -124,10 +124,13 @@
     "chibi/character/return/return-15.png",
     "chibi/character/return/return-16.png",
     "chibi/character/return/return-17.png",
+    "chibi/collection/flame-potion.png",
     "chibi/collection/forest-potion.png",
+    "chibi/collection/ice-crystal-potion.png",
     "chibi/collection/moon-glow-potion.png",
     "chibi/collection/mystery-potions.png",
     "chibi/collection/star-dew-potion.png",
+    "chibi/collection/wind-spirit-potion.png",
     "chibi/effects/completion-burst.png",
     "chibi/effects/particle-amber-spark.png",
     "chibi/effects/particle-blue-snow.png",
@@ -176,8 +179,7 @@
     "chibi/effects/witch-magic/celebrate/celebrate-12.png",
     "chibi/effects/witch-magic/celebrate/celebrate-13.png",
     "chibi/items/bottle-frame.png",
-    "chibi/titles/title-badge-junior.png",
-    "chibi/titles/title-badge-novice.png",
+    "chibi/titles/title-badges.png",
     "chibi/ui/audio-settings-panel.png",
     "chibi/ui/badge-plus.png",
     "chibi/ui/button-gold-disabled.png",
@@ -186,6 +188,11 @@
     "chibi/ui/button-purple-disabled.png",
     "chibi/ui/button-purple-normal.png",
     "chibi/ui/button-purple-pressed.png",
+    "chibi/ui/collection-card-background.png",
+    "chibi/ui/collection-lock.png",
+    "chibi/ui/home-collection-button.png",
+    "chibi/ui/home-endless-mode-button.png",
+    "chibi/ui/home-share-button.png",
     "chibi/ui/icon-add-bottle.png",
     "chibi/ui/icon-alchemy-book.png",
     "chibi/ui/icon-audio-settings.png",
@@ -200,6 +207,9 @@
     "chibi/ui/icon-undo.png",
     "chibi/ui/message-panel.png",
     "chibi/ui/settings-dialog-panel.png",
-    "chibi/ui/stamina-icons.png"
+    "chibi/ui/stamina-bar-background.png",
+    "chibi/ui/stamina-icons.png",
+    "chibi/ui/star-earned.png",
+    "chibi/ui/star-empty.png"
   ]
 }

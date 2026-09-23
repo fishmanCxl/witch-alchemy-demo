@@ -105,6 +105,7 @@ test('approved chibi and audio manifests are synchronized into Cocos resources',
   assert.equal(chibi.witch.idle.frames, 18);
   assert.equal(chibi.witch.cast.frames, 20);
   assert.equal(chibi.witch.celebrate.frames, 14);
+  assert.equal(chibi.ui.homeEntries.endless, '/assets/game/chibi/ui/home-endless-mode-button.png');
   assert.equal(audio.entries.length, 11);
 });
 
@@ -115,9 +116,10 @@ test('collection and title artwork is synchronized as loadable SpriteFrames', ()
     'collection/forest-potion.png',
     'collection/moon-glow-potion.png',
     'collection/flame-potion.png',
+    'collection/ice-crystal-potion.png',
+    'collection/wind-spirit-potion.png',
     'collection/mystery-potions.png',
-    'titles/title-badge-novice.png',
-    'titles/title-badge-junior.png',
+    'titles/title-badges.png',
     'effects/particle-scarlet-flame.png',
     'effects/particle-chartreuse-rune.png',
     'effects/particle-indigo-comet.png',
@@ -192,6 +194,118 @@ test('audio playback is unlocked only from a player gesture', () => {
   assert.match(bootstrap, /this\.audio\?\.unlockFromGesture\(\)/);
 });
 
+test('non-bottle buttons share UI sound and light vibration feedback', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+
+  assert.match(bootstrap, /private bindUiClick\(node: Node, onClick: \(\) => void\): void/);
+  assert.match(bootstrap, /this\.audio\?\.play\('ui-tap'\)/);
+  assert.match(bootstrap, /this\.platform\.vibrateShort\(\)/);
+  assert.match(bootstrap, /hitTarget\.on\(Button\.EventType\.CLICK, \(\) => this\.handleBottle\(index\)\)/);
+  assert.doesNotMatch(bootstrap, /bindUiClick\(hitTarget/);
+});
+
+test('endless home entry keeps the approved 128px transparent SpriteFrame contract', () => {
+  const relative = 'ui/home-endless-mode-button.png';
+  const prototypePath = new URL(`../../prototype/public/assets/game/chibi/${relative}`, import.meta.url);
+  const productionPath = new URL(`../assets/resources/game/chibi/${relative}`, import.meta.url);
+
+  for (const path of [prototypePath, productionPath]) {
+    assert.equal(existsSync(path), true, path.pathname);
+    const png = readFileSync(path);
+    assert.equal(png.readUInt32BE(16), 128, `${path.pathname} width`);
+    assert.equal(png.readUInt32BE(20), 128, `${path.pathname} height`);
+    assert.equal(png.readUInt8(25), 6, `${path.pathname} must retain RGBA alpha`);
+  }
+
+  const meta = JSON.parse(readFileSync(
+    new URL(`../assets/resources/game/chibi/${relative}.meta`, import.meta.url),
+    'utf8',
+  ));
+  assert.equal(meta.userData.type, 'sprite-frame');
+  assert.equal(meta.subMetas.f9941.importer, 'sprite-frame');
+});
+
+test('collection cards share one single-resolution 158x180 SpriteFrame background', () => {
+  const relative = 'ui/collection-card-background.png';
+  const prototypePath = new URL(`../../prototype/public/assets/game/chibi/${relative}`, import.meta.url);
+  const productionPath = new URL(`../assets/resources/game/chibi/${relative}`, import.meta.url);
+
+  for (const path of [prototypePath, productionPath]) {
+    assert.equal(existsSync(path), true, path.pathname);
+    const png = readFileSync(path);
+    assert.equal(png.readUInt32BE(16), 158, `${path.pathname} width`);
+    assert.equal(png.readUInt32BE(20), 180, `${path.pathname} height`);
+    assert.equal(png.readUInt8(25), 6, `${path.pathname} must retain RGBA alpha`);
+  }
+
+  const meta = JSON.parse(readFileSync(
+    new URL(`../assets/resources/game/chibi/${relative}.meta`, import.meta.url),
+    'utf8',
+  ));
+  assert.equal(meta.userData.type, 'sprite-frame');
+  assert.equal(meta.subMetas.f9941.importer, 'sprite-frame');
+});
+
+test('game messages use one single-resolution 321x46 SpriteFrame background', () => {
+  const relative = 'ui/message-panel.png';
+  const prototypePath = new URL(`../../prototype/public/assets/game/chibi/${relative}`, import.meta.url);
+  const productionPath = new URL(`../assets/resources/game/chibi/${relative}`, import.meta.url);
+
+  for (const path of [prototypePath, productionPath]) {
+    const png = readFileSync(path);
+    assert.equal(png.readUInt32BE(16), 321, `${path.pathname} width`);
+    assert.equal(png.readUInt32BE(20), 46, `${path.pathname} height`);
+    assert.equal(png.readUInt8(25), 6, `${path.pathname} must retain RGBA alpha`);
+  }
+
+  const meta = JSON.parse(readFileSync(
+    new URL(`../assets/resources/game/chibi/${relative}.meta`, import.meta.url),
+    'utf8',
+  ));
+  assert.equal(meta.userData.type, 'sprite-frame');
+  assert.equal(meta.subMetas.f9941.importer, 'sprite-frame');
+});
+
+test('home stamina uses one maximum-size 166x34 SpriteFrame background', () => {
+  const relative = 'ui/stamina-bar-background.png';
+  const prototypePath = new URL(`../../prototype/public/assets/game/chibi/${relative}`, import.meta.url);
+  const productionPath = new URL(`../assets/resources/game/chibi/${relative}`, import.meta.url);
+
+  for (const path of [prototypePath, productionPath]) {
+    const png = readFileSync(path);
+    assert.equal(png.readUInt32BE(16), 166, `${path.pathname} width`);
+    assert.equal(png.readUInt32BE(20), 34, `${path.pathname} height`);
+    assert.equal(png.readUInt8(25), 6, `${path.pathname} must retain RGBA alpha`);
+  }
+
+  const meta = JSON.parse(readFileSync(
+    new URL(`../assets/resources/game/chibi/${relative}.meta`, import.meta.url),
+    'utf8',
+  ));
+  assert.equal(meta.userData.type, 'sprite-frame');
+  assert.equal(meta.subMetas.f9941.importer, 'sprite-frame');
+});
+
+test('collection lock uses one proportional double-resolution 60x77 SpriteFrame', () => {
+  const relative = 'ui/collection-lock.png';
+  const prototypePath = new URL(`../../prototype/public/assets/game/chibi/${relative}`, import.meta.url);
+  const productionPath = new URL(`../assets/resources/game/chibi/${relative}`, import.meta.url);
+
+  for (const path of [prototypePath, productionPath]) {
+    const png = readFileSync(path);
+    assert.equal(png.readUInt32BE(16), 60, `${path.pathname} width`);
+    assert.equal(png.readUInt32BE(20), 77, `${path.pathname} height`);
+    assert.equal(png.readUInt8(25), 6, `${path.pathname} must retain RGBA alpha`);
+  }
+
+  const meta = JSON.parse(readFileSync(
+    new URL(`../assets/resources/game/chibi/${relative}.meta`, import.meta.url),
+    'utf8',
+  ));
+  assert.equal(meta.userData.type, 'sprite-frame');
+  assert.equal(meta.subMetas.f9941.importer, 'sprite-frame');
+});
+
 test('production buttons use sliced wide bases and contained square control bases', () => {
   const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
 
@@ -199,13 +313,23 @@ test('production buttons use sliced wide bases and contained square control base
   assert.match(bootstrap, /buttonBaseLayout\(stage, 'contain'\)/);
   assert.match(bootstrap, /sprite\.type = Sprite\.Type\.SLICED/);
   assert.doesNotMatch(bootstrap, /decorateRasterButton\(node, variant, disabled, action\)/);
-  assert.doesNotMatch(bootstrap, /badge-plus/);
+  assert.equal(bootstrap.match(/game\/chibi\/ui\/badge-plus\/spriteFrame/g)?.length, 1);
 });
 
 test('production bottle feedback uses prototype transforms and deterministic particles', () => {
   const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const witchSettledBody = bootstrap.slice(
+    bootstrap.indexOf('private handleWitchSettled'),
+    bootstrap.indexOf('private addBottle'),
+  );
 
   assert.match(bootstrap, /bottleFeedbackVisual\(/);
+  assert.match(bootstrap, /SELECTED_BOTTLE_SWAY_DEGREES = 5/);
+  assert.match(bootstrap, /startSelectedBottleSway\(/);
+  assert.match(bootstrap, /bottlePourAngle\(/);
+  assert.match(bootstrap, /Array\.from\(this\.pouring\)/);
+  assert.doesNotMatch(witchSettledBody, /refreshLevelFeedback\(/);
+  assert.match(witchSettledBody, /levelWitchAnimator\.play\(/);
   assert.match(bootstrap, /potionParticleVisuals\(/);
   assert.match(bootstrap, /BottleHitTarget/);
   assert.match(bootstrap, /BottleVisual/);
@@ -243,6 +367,25 @@ test('production labels use the bundled art font and approved prototype copy', (
   assert.doesNotMatch(bootstrap, /'重开'/);
 });
 
+test('regular completion offers a fresh replay without restoring the completed snapshot', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const render = bootstrap.slice(
+    bootstrap.indexOf('private renderLevelComplete'),
+    bootstrap.indexOf('private completionRewardLines'),
+  );
+  const switchLevel = bootstrap.slice(
+    bootstrap.indexOf('private switchLevel'),
+    bootstrap.indexOf('private renderLevel('),
+  );
+
+  assert.match(render, /'再次挑战'[\s\S]*LEVEL/);
+  assert.match(render, /LEVEL_COMPLETE_LAYOUT\.replayButton[\s\S]*this\.switchLevel\(this\.currentLevel\.id, true\)/);
+  assert.match(render, /this\.activeDailyCommission \? '返回主页' : completionPrimaryLabel[\s\S]*LEVEL_COMPLETE_LAYOUT\.primaryButton/);
+  assert.doesNotMatch(render, /'选择关卡'/);
+  assert.match(switchLevel, /private switchLevel\(levelId: string, fresh = false\)/);
+  assert.match(switchLevel, /fresh \? createGameSession\(level\) : this\.store\.loadSession\(level\)/);
+});
+
 test('production presentation derives level copy, targets, seeds, and reward ids from the active config', () => {
   const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
 
@@ -262,6 +405,7 @@ test('production presentation derives level copy, targets, seeds, and reward ids
   assert.doesNotMatch(bootstrap, /chapter\.id === 1 \? '第一章' : '第二章'/);
   assert.match(bootstrap, /renderLevelComplete/);
   assert.match(bootstrap, /completionOptimalLabel\(this\.session\.game\.moves,\s*this\.currentLevel\.metrics\.optimalMoves\)/);
+  assert.match(bootstrap, /completionInfoRowY\(index, infoLines\.length\)/);
   assert.match(bootstrap, /switchLevel/);
   assert.match(bootstrap, /persistCompletion/);
 });
@@ -388,6 +532,43 @@ test('production launch ignores stale preload callbacks before UI work and clear
   assert.match(bootstrap, /private clearLaunchNodeReferences\(\): void \{\s+this\.launchProgressFill = null;\s+this\.launchPercentLabel = null;\s+this\.launchStatusLabel = null;\s+this\.launchRetryButton = null;\s+\}/);
 });
 
+test('chapter switching refreshes only chapter content and keeps the level-select surface mounted', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const changeChapter = bootstrap.slice(
+    bootstrap.indexOf('private changeLevelChapter'),
+    bootstrap.indexOf('private openSelector'),
+  );
+
+  assert.match(changeChapter, /this\.refreshLevelSelectChapter\(\)/);
+  assert.doesNotMatch(changeChapter, /this\.render\(\)/);
+});
+
+test('selector reapplies the capsule-safe chapter offset on entry and chapter refresh', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const render = bootstrap.slice(
+    bootstrap.indexOf('private renderLevelSelect('),
+    bootstrap.indexOf('private renderLevelSelectChapter'),
+  );
+  const refresh = bootstrap.slice(
+    bootstrap.indexOf('private refreshLevelSelectChapter'),
+    bootstrap.indexOf('private openSelector'),
+  );
+
+  assert.match(render, /this\.positionLevelSelectChapterContent\(this\.levelSelectChapterContent\)/);
+  assert.match(refresh, /this\.positionLevelSelectChapterContent\(this\.levelSelectChapterContent\)/);
+});
+
+test('sprite rendering reuses loaded Cocos SpriteFrames before requesting another async load', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const addSprite = bootstrap.slice(
+    bootstrap.indexOf('private addSprite'),
+    bootstrap.indexOf('private addButtonSprite'),
+  );
+
+  assert.match(addSprite, /resources\.get\(path, SpriteFrame\)/);
+  assert.ok(addSprite.indexOf('resources.get(path, SpriteFrame)') < addSprite.indexOf('resources.load(path, SpriteFrame'));
+});
+
 test('home stamina labels stay single-line and shrink within the flex row', () => {
   const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
   const render = bootstrap.slice(bootstrap.indexOf('private renderStaminaBar'), bootstrap.indexOf('private staminaRecoveryText'));
@@ -464,6 +645,64 @@ test('bottle and stamina rewards share the production busy guard', () => {
     assert.match(handler, /this\.rewardBusy = true/);
     assert.match(handler, /this\.rewardBusy = false/);
   }
+});
+
+test('all rewarded actions use one global mock-or-WeChat configuration and QA result switch', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const platform = readFileSync(new URL('../assets/scripts/platform/WeChatPlatform.ts', import.meta.url), 'utf8');
+
+  assert.match(platform, /export const REWARDED_AD_CONFIG[\s\S]*mode: 'mock'[\s\S]*mockResult: 'completed'[\s\S]*adUnitId: ''/);
+  assert.match(bootstrap, /createRewardedPorts\(REWARDED_AD_CONFIG, \(\) => this\.qaAdResult\)/);
+  assert.match(bootstrap, /广告状态 · 通过/);
+  assert.match(bootstrap, /广告状态 · 失败/);
+  assert.doesNotMatch(bootstrap, /空瓶直加/);
+  assert.doesNotMatch(bootstrap, /REWARDED_AD_UNIT_ID/);
+});
+
+test('all modal dialogs share one guarded enter and exit transition', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+
+  assert.equal((bootstrap.match(/this\.animateDialogIn\(shield, panel\)/g) ?? []).length, 5);
+  assert.ok((bootstrap.match(/this\.animateDialogOut\(shield, panel,/g) ?? []).length >= 5);
+  assert.match(bootstrap, /private animateDialogIn\([\s\S]*UIOpacity[\s\S]*fromScale[\s\S]*quadOut/);
+  assert.match(bootstrap, /private animateDialogOut\([\s\S]*dialogClosing[\s\S]*toScale[\s\S]*quadIn[\s\S]*onClosed\(\)/);
+});
+
+test('control allowance bubbles reuse the home floating treatment and disappear at zero', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const controls = bootstrap.slice(
+    bootstrap.indexOf('private addControlButton'),
+    bootstrap.indexOf('private addRewardedAdBadge'),
+  );
+
+  assert.match(controls, /if \(allowanceVisual\?\.text\)/);
+  assert.match(controls, /tween\(bubble\)\.repeatForever\([\s\S]*floatDuration[\s\S]*floatDistance/);
+});
+
+test('endless mode reuses regular bottom controls and restart never routes to failure', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const controls = bootstrap.slice(
+    bootstrap.indexOf('private addLevelControls'),
+    bootstrap.indexOf('private refreshLevelContent'),
+  );
+  const undo = bootstrap.slice(
+    bootstrap.indexOf('private async handleUndo'),
+    bootstrap.indexOf('private performUndo'),
+  );
+  const restart = bootstrap.slice(
+    bootstrap.indexOf('private async handleRestart'),
+    bootstrap.indexOf('private performRestart'),
+  );
+  const rewardBottle = bootstrap.slice(
+    bootstrap.indexOf('private async handleRewardedBottle'),
+    bootstrap.indexOf('private rewardFailureMessage'),
+  );
+
+  assert.doesNotMatch(controls, /this\.activeEndless/);
+  assert.doesNotMatch(undo, /this\.activeEndless/);
+  assert.doesNotMatch(restart, /failActiveEndless/);
+  assert.match(restart, /this\.performRestart\(\)/);
+  assert.doesNotMatch(rewardBottle, /this\.activeEndless/);
 });
 
 test('final settling blocks exit without cancelling completion callbacks or charging stamina', () => {

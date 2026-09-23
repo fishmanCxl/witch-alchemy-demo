@@ -1,12 +1,12 @@
-# 暮影炼金室 — Cocos Creator 生产客户端
+# 魔女炼金屋 — Cocos Creator 生产客户端
 
 使用 Cocos Creator 3.8.8 打开本目录。首个运行场景是 `assets/scenes/Main.scene`；打开后使用 Preview 验证首页、选关、关卡和结算流程。
 
-## 第一章关卡
+## 已发布关卡
 
-- 第一章发布第 1–15 关，运行时只读取 `assets/scripts/core/level-data.generated.ts` 静态目录。
+- 前六章发布第 1–180 关，运行时只读取 `assets/scripts/core/level-data*.generated.ts` 静态目录。
 - 第 1–3 关是人工教学配置；第 12 关初始棋盘保持旧演示关完全一致；其余关卡由离线确定性生成器创建并经求解器筛选。
-- 难度指标和生成种子记录在 `assets/scripts/core/level-generation-report.json`，综合难度非递减。
+- 各章难度指标和生成种子记录在对应 `level-generation-report*.json` 中；第六章使用 11 色、2 个初始空瓶，并以硬门槛约束最优步数、分段数和搜索状态数。
 - 生成器与求解器只位于 `tools/`，不会进入 Cocos 运行时依赖图。
 
 重新生成或检查已发布目录：
@@ -14,6 +14,8 @@
 ```powershell
 node --experimental-strip-types tools/generate-levels.ts
 node --experimental-strip-types tools/generate-levels.ts --check
+node --experimental-strip-types tools/generate-chapter-six.ts --check
+node --experimental-strip-types tools/generate-chapter-six.ts --verify-solver
 ```
 
 也可在具备全局 Node.js 的环境使用：
@@ -21,7 +23,11 @@ node --experimental-strip-types tools/generate-levels.ts --check
 ```powershell
 npm run generate:levels
 npm run check:levels
+npm run check:chapter-six
+npm run verify:chapter-six
 ```
+
+第六章起将关卡发现与日常复验分开：`--check` 使用已锁定的 attempt/seed 快速重建棋盘并核对静态数据和报告，不运行精确求解器；`--verify-solver` 对 30 个锁定棋盘执行完整求解，仅用于求解器、硬门槛变更或发布前深验；`--search` 会从 attempt 1 开始重新寻找候选，可能耗时数小时，只用于主动重新选关。
 
 ## 代码边界
 
@@ -66,5 +72,7 @@ node --test tests/*.test.mjs
 2. 确认控制台没有 TypeScript、组件或资源导入错误。
 3. Preview 验证：新玩家第 1 关、第 1–2 关教学、5×3 选关锁定状态、两关切换与恢复、旧第 12 关迁移、奖励瓶后重开、普通通关和下一关解锁、第 15 关章节结算、各页面设置、离线普通保存及在线奖励失败提示。
 4. 完成实际导入和 Preview 前，不应宣称 Cocos 场景或微信构建兼容。
+
+每次 Cocos 微信构建后都要运行 `npm run prepare:wechat-build`。
 
 不要提交 CloudBase 环境 ID、微信广告位 ID、OPENID、密钥或管理员凭据；这些值必须由构建或部署环境注入。

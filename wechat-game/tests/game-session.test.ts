@@ -6,6 +6,8 @@ import {
   createGameSession,
   grantRewardBottle,
   pressBottle,
+  refillRestartAllowance,
+  refillUndoAllowance,
   restartSession,
   undoSession,
 } from '../assets/scripts/core/game-session.ts';
@@ -93,6 +95,45 @@ test('undo and restart restore stable gameplay state', () => {
   const restarted = restartSession(poured);
   assert.deepEqual(restarted.session.game, createDemoState());
   assert.equal(restarted.session.message, '关卡已重新开始');
+});
+
+test('undo allows three successful uses and a rewarded refill immediately serves the pending undo', () => {
+  let session = createGameSession(DEMO_LEVEL_CONFIG);
+  for (const remaining of [2, 1, 0]) {
+    session = pressBottle(session, 0).session;
+    session = pressBottle(session, 9).session;
+    const undone = undoSession(session);
+    assert.equal(undone.cue, 'undo');
+    assert.equal(undone.session.undoRemaining, remaining);
+    session = undone.session;
+  }
+
+  session = pressBottle(session, 0).session;
+  session = pressBottle(session, 9).session;
+  const blocked = undoSession(session);
+  assert.equal(blocked.session, session);
+  assert.equal(blocked.cue, null);
+
+  const rewarded = undoSession(refillUndoAllowance(session));
+  assert.equal(rewarded.cue, 'undo');
+  assert.equal(rewarded.session.undoRemaining, 2);
+});
+
+test('restart allows one use, does not refill undo, and rewarded refill immediately restarts', () => {
+  const initial = createGameSession(DEMO_LEVEL_CONFIG);
+  const first = restartSession(initial);
+  assert.equal(first.cue, 'restart');
+  assert.equal(first.session.restartRemaining, 0);
+  assert.equal(first.session.undoRemaining, 3);
+
+  const blocked = restartSession(first.session);
+  assert.equal(blocked.session, first.session);
+  assert.equal(blocked.cue, null);
+
+  const rewarded = restartSession(refillRestartAllowance(first.session));
+  assert.equal(rewarded.cue, 'restart');
+  assert.equal(rewarded.session.restartRemaining, 0);
+  assert.equal(rewarded.session.undoRemaining, 3);
 });
 
 test('reward bottle activates the reserved fifteenth slot once', () => {

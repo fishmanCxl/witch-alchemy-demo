@@ -10,6 +10,8 @@ EXPECTED = {
     'collection/forest-potion.png': (512, 512),
     'collection/moon-glow-potion.png': (512, 512),
     'collection/flame-potion.png': (512, 512),
+    'collection/ice-crystal-potion.png': (512, 512),
+    'collection/wind-spirit-potion.png': (512, 512),
     'titles/title-badge-novice.png': (768, 384),
     'titles/title-badge-junior.png': (768, 384),
     'effects/particle-scarlet-flame.png': (64, 64),
@@ -29,6 +31,8 @@ for relative in (
     'collection/forest-potion.png',
     'collection/moon-glow-potion.png',
     'collection/flame-potion.png',
+    'collection/ice-crystal-potion.png',
+    'collection/wind-spirit-potion.png',
 ):
     assert (ROOT / relative).stat().st_size <= 307_200, relative
 

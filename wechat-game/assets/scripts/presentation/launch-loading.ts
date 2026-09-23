@@ -1,4 +1,5 @@
 export const LAUNCH_MIN_VISIBLE_MS = 900;
+export const LAUNCH_RESOURCE_PROGRESS_START = 0.6;
 
 export function launchMinimumRemainingMs(startedAt: number, now: number): number {
   return Math.max(0, LAUNCH_MIN_VISIBLE_MS - (now - startedAt));
@@ -32,8 +33,8 @@ export function createLaunchLoadingState(startedAt: number): LaunchLoadingState 
   return freeze({
     attempt: 1,
     phase: 'loading',
-    progress: 0,
-    percent: 0,
+    progress: LAUNCH_RESOURCE_PROGRESS_START,
+    percent: Math.floor(LAUNCH_RESOURCE_PROGRESS_START * 100),
     startedAt: Number.isFinite(startedAt) ? startedAt : 0,
     resourcesReady: false,
     minimumVisibleReady: false,
@@ -51,7 +52,9 @@ export function updateLaunchProgress(
   const candidate = Number.isFinite(finished) && Number.isFinite(total) && total > 0
     ? Math.min(1, Math.max(0, finished / total))
     : 0;
-  const progress = Math.max(state.progress, candidate);
+  const resourceProgress = LAUNCH_RESOURCE_PROGRESS_START
+    + candidate * (1 - LAUNCH_RESOURCE_PROGRESS_START);
+  const progress = Math.max(state.progress, resourceProgress);
   const percent = Math.min(99, Math.floor(progress * 100));
   if (progress === state.progress && percent === state.percent) return state;
   return freeze({ ...state, progress, percent });
@@ -83,8 +86,8 @@ export function retryLaunch(state: LaunchLoadingState): LaunchLoadingState {
     ...state,
     attempt: state.attempt + 1,
     phase: 'loading',
-    progress: 0,
-    percent: 0,
+    progress: LAUNCH_RESOURCE_PROGRESS_START,
+    percent: Math.floor(LAUNCH_RESOURCE_PROGRESS_START * 100),
     resourcesReady: false,
     errorMessage: null,
   });

@@ -5,13 +5,13 @@ export const PUBLISHED_LEVEL_DATA: readonly LevelConfig[] = [
   {
     "id": "level-001",
     "number": 1,
-    "configVersion": "chapter-1.2026-08-25.1",
+    "configVersion": "chapter-1.2026-09-12.1",
     "presentationSeed": 1,
     "capacity": 4,
     "slotCount": 15,
     "rewardSlotIndex": 14,
     "completionRule": {
-      "type": "first-valid-pour"
+      "type": "first-bottle-complete"
     },
     "metrics": {
       "colorCount": 1,

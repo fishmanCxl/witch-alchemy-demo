@@ -92,6 +92,23 @@ export function completeLevel(
   };
 }
 
+export function recordBestMoves(
+  progress: PlayerProgress,
+  id: string,
+  moves: number,
+): PlayerProgress | null {
+  const level = getLevelConfig(id);
+  if (!level || level.number > progress.completedThrough) return null;
+  if (!Number.isInteger(moves) || moves < 1) return null;
+  const previousBest = progress.bestMoves[id];
+  if (previousBest !== undefined && previousBest <= moves) return progress;
+  return {
+    ...progress,
+    revision: progress.revision + 1,
+    bestMoves: { ...progress.bestMoves, [id]: moves },
+  };
+}
+
 function mergedBestMoves(
   left: Readonly<Record<string, number>>,
   right: Readonly<Record<string, number>>,

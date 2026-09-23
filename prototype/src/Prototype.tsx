@@ -269,7 +269,7 @@ export default function Prototype() {
           }}
         />
         <header className="level-header">
-          <p className="chapter-label">暮影炼金室</p>
+          <p className="chapter-label">魔女炼金屋</p>
           <h1>第 12 关</h1>
           <div className="level-meta" aria-label={`步数 ${game.moves}，已完成 ${completedCount} 瓶`}>
             <span>步数 {game.moves}</span>

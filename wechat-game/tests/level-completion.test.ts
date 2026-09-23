@@ -21,15 +21,26 @@ function pourFromTo(
   return pressBottle(pressBottle(session, from).session, to).session;
 }
 
-test('level 1 completes after its first valid pour result is produced', () => {
+test('level 1 completes only after a full potion is created and vanished', () => {
   const level = getLevelConfig('level-001')!;
-  const initial = createGameSession(level);
-  const completed = pourFromTo(initial, 0, 1);
+  let session = createGameSession(level);
+
+  session = pourFromTo(session, 0, 2);
+  assert.equal(session.game.moves, 1);
+  assert.equal(session.levelComplete, false);
+  assert.equal(isSessionComplete(session), false);
+  assert.deepEqual(session.pendingCompletion, []);
+
+  session = pourFromTo(session, 2, 1);
+  assert.equal(session.levelComplete, false);
+  assert.deepEqual(session.pendingCompletion, [1]);
+
+  const completed = completePendingBottles(session);
 
   assert.equal(completed.levelId, 'level-001');
   assert.equal(completed.levelComplete, true);
   assert.equal(isSessionComplete(completed), true);
-  assert.deepEqual(completed.pendingCompletion, [1]);
+  assert.deepEqual(completed.pendingCompletion, []);
 });
 
 for (const levelId of ['level-002', 'level-003'] as const) {
@@ -66,7 +77,7 @@ for (const levelId of ['level-002', 'level-003'] as const) {
 
 test('completed sessions reject bottle, undo, restart, and reward input', () => {
   const level = getLevelConfig('level-001')!;
-  const completed = pourFromTo(createGameSession(level), 0, 1);
+  const completed = completePendingBottles(pourFromTo(createGameSession(level), 0, 1));
 
   assert.equal(pressBottle(completed, 2).session, completed);
   assert.equal(undoSession(completed).session, completed);

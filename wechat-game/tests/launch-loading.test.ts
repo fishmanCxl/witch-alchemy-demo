@@ -15,11 +15,11 @@ import * as launchLoading from '../assets/scripts/presentation/launch-loading.ts
 
 test('launch progress clamps invalid values, never regresses, and reserves 100 for completion', () => {
   let state = createLaunchLoadingState(1_000);
-  assert.deepEqual([state.progress, state.percent], [0, 0]);
+  assert.deepEqual([state.progress, state.percent], [0.6, 60]);
   state = updateLaunchProgress(state, 1, 3, 10);
-  assert.deepEqual([state.progress, state.percent], [0.3, 30]);
+  assert.deepEqual([state.progress, state.percent], [0.72, 72]);
   state = updateLaunchProgress(state, 1, 2, 10);
-  assert.deepEqual([state.progress, state.percent], [0.3, 30]);
+  assert.deepEqual([state.progress, state.percent], [0.72, 72]);
   state = updateLaunchProgress(state, 1, 99, 10);
   assert.deepEqual([state.progress, state.percent], [1, 99]);
   state = updateLaunchProgress(state, 1, Number.NaN, Number.POSITIVE_INFINITY);
@@ -61,7 +61,7 @@ test('failed launch retries once and ignores stale callbacks', () => {
   assert.equal(canExitLaunch(state), false);
 
   state = retryLaunch(state);
-  assert.deepEqual([state.attempt, state.phase, state.progress, state.percent], [2, 'loading', 0, 0]);
+  assert.deepEqual([state.attempt, state.phase, state.progress, state.percent], [2, 'loading', 0.6, 60]);
   const sameRetry = retryLaunch(state);
   assert.equal(sameRetry, state);
 
@@ -77,10 +77,10 @@ test('failed launch retries once and ignores stale callbacks', () => {
   assert.equal(duplicateComplete, state);
 });
 
-test('zero and negative totals stay at zero before completion', () => {
+test('zero and negative totals stay at the completed engine boundary before resource completion', () => {
   let state = createLaunchLoadingState(0);
   state = updateLaunchProgress(state, 1, 0, 0);
-  assert.deepEqual([state.progress, state.percent], [0, 0]);
+  assert.deepEqual([state.progress, state.percent], [0.6, 60]);
   state = updateLaunchProgress(state, 1, 4, -1);
-  assert.deepEqual([state.progress, state.percent], [0, 0]);
+  assert.deepEqual([state.progress, state.percent], [0.6, 60]);
 });

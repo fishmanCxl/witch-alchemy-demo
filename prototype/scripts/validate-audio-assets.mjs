@@ -14,7 +14,7 @@ const REQUIRED_FIELDS = Object.freeze([
   'loop', 'loopStartMs', 'loopEndMs', 'duckMusic', 'generatorVersion', 'seed',
 ]);
 const SFX_DURATION_RANGES = Object.freeze({
-  'ui.tap': [70, 70],
+  'ui.tap': [100, 140],
   'bottle.select': [160, 160],
   'bottle.deselect': [140, 140],
   'pour.valid': [500, 500],

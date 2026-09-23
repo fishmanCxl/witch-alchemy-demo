@@ -3,6 +3,7 @@ import { _decorator, AudioClip, AudioSource, Component, Node, resources } from '
 import type { GameCue } from '../core/game-session.ts';
 
 const { ccclass } = _decorator;
+type AudioCue = GameCue | 'ui-tap';
 
 @ccclass('AudioDirector')
 export class AudioDirector extends Component {
@@ -10,7 +11,7 @@ export class AudioDirector extends Component {
   private unlocked = false;
   private foreground = true;
   private bgm: AudioSource | null = null;
-  private clips = new Map<GameCue, AudioClip>();
+  private clips = new Map<AudioCue, AudioClip>();
 
   initialize(enabled: boolean): void {
     this.enabled = enabled;
@@ -42,7 +43,7 @@ export class AudioDirector extends Component {
     this.syncBgm();
   }
 
-  play(cue: GameCue | null): void {
+  play(cue: AudioCue | null): void {
     if (!cue || !this.enabled || !this.unlocked || !this.foreground) return;
     const cached = this.clips.get(cue);
     if (cached) {

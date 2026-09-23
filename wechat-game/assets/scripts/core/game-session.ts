@@ -26,6 +26,8 @@ export interface GameSession {
   readonly levelComplete: boolean;
   readonly witchMood: WitchMood;
   readonly message: string;
+  readonly undoRemaining: number;
+  readonly restartRemaining: number;
 }
 
 export interface SessionResult {
@@ -36,6 +38,8 @@ export interface SessionResult {
 }
 
 const NO_EFFECTS = { invalid: [], pouring: [] } as const;
+export const UNDO_ALLOWANCE = 3;
+export const RESTART_ALLOWANCE = 1;
 
 export function createGameSession(level: LevelConfig, game: GameState = level.initialState): GameSession {
   return {
@@ -50,6 +54,8 @@ export function createGameSession(level: LevelConfig, game: GameState = level.in
     levelComplete: false,
     witchMood: 'idle',
     message: '选择一瓶，再选择目标瓶',
+    undoRemaining: UNDO_ALLOWANCE,
+    restartRemaining: RESTART_ALLOWANCE,
   };
 }
 
@@ -165,7 +171,7 @@ export function completePendingBottles(session: GameSession): GameSession {
 
 export function undoSession(session: GameSession): SessionResult {
   const previous = session.history.at(-1);
-  if (session.levelComplete || !previous || session.pendingCompletion.length > 0) {
+  if (session.levelComplete || session.undoRemaining <= 0 || !previous || session.pendingCompletion.length > 0) {
     return { session, cue: null, ...NO_EFFECTS };
   }
 
@@ -177,6 +183,7 @@ export function undoSession(session: GameSession): SessionResult {
       selected: null,
       witchMood: 'cast',
       message: '已撤销上一步',
+      undoRemaining: session.undoRemaining - 1,
     },
     cue: 'undo',
     ...NO_EFFECTS,
@@ -184,7 +191,7 @@ export function undoSession(session: GameSession): SessionResult {
 }
 
 export function restartSession(session: GameSession): SessionResult {
-  if (session.levelComplete) return { session, cue: null, ...NO_EFFECTS };
+  if (session.levelComplete || session.restartRemaining <= 0) return { session, cue: null, ...NO_EFFECTS };
   const game = session.game.rewardBottleUsed
     ? addRewardBottle(session.initialState)
     : session.initialState;
@@ -198,10 +205,19 @@ export function restartSession(session: GameSession): SessionResult {
       levelComplete: false,
       witchMood: 'cast',
       message: '关卡已重新开始',
+      restartRemaining: session.restartRemaining - 1,
     },
     cue: 'restart',
     ...NO_EFFECTS,
   };
+}
+
+export function refillUndoAllowance(session: GameSession): GameSession {
+  return { ...session, undoRemaining: UNDO_ALLOWANCE };
+}
+
+export function refillRestartAllowance(session: GameSession): GameSession {
+  return { ...session, restartRemaining: RESTART_ALLOWANCE };
 }
 
 export function grantRewardBottle(session: GameSession): SessionResult {

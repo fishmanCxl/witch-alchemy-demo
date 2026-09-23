@@ -62,7 +62,13 @@ ASSET_SIZES = {
     "icon-add-bottle.png": (192, 192),
     "badge-plus.png": (128, 128),
     "message-panel.png": (768, 192),
+    "home-collection-button.png": (128, 128),
+    "home-share-button.png": (128, 128),
+    "star-earned.png": (80, 80),
+    "star-empty.png": (80, 80),
 }
+TITLE_BADGE_CELL = (336, 90)
+TITLE_BADGE_GRID = (2, 5)
 
 
 def is_removable_neutral(pixel: tuple[int, int, int, int]) -> bool:
@@ -411,7 +417,9 @@ def prepare_supporting_assets() -> None:
         source = RAW_ASSETS / filename
         if not source.is_file():
             raise FileNotFoundError(f"missing {source}")
-        padding = 12 if filename == "message-panel.png" else max(8, round(min(canvas_size) * 0.08))
+        padding = 4 if filename.startswith(("star-", "home-")) else (
+            12 if filename == "message-panel.png" else max(8, round(min(canvas_size) * 0.08))
+        )
         asset = normalized_canvas(Image.open(source), canvas_size, padding)
         if filename == "completion-burst.png":
             asset = clear_neutral_region_at(asset, (canvas_size[0] // 2, canvas_size[1] // 2))
@@ -420,6 +428,36 @@ def prepare_supporting_assets() -> None:
         target = target_for_asset(filename)
         target.parent.mkdir(parents=True, exist_ok=True)
         asset.save(target, optimize=True)
+
+
+def prepare_title_badges() -> None:
+    source = RAW_ASSETS / "title-badges-sheet.png"
+    if not source.is_file():
+        raise FileNotFoundError(f"missing {source}")
+    cleaned = remove_connected_neutral_background(Image.open(source))
+    cell_width, cell_height = TITLE_BADGE_CELL
+    columns, rows = TITLE_BADGE_GRID
+    atlas = Image.new("RGBA", (cell_width * columns, cell_height * rows), (0, 0, 0, 0))
+    x_edges = [round(index * cleaned.width / columns) for index in range(columns + 1)]
+    for column in range(columns):
+        column_image = cleaned.crop((x_edges[column], 0, x_edges[column + 1], cleaned.height))
+        components = sorted(
+            (component for component in opaque_components_with_points(column_image, threshold=1) if component[0] > 1000),
+            key=lambda component: component[1][1],
+        )
+        if len(components) != rows:
+            raise ValueError(f"title badge column {column + 1} contains {len(components)} badges instead of {rows}")
+        source_pixels = column_image.load()
+        for row, (_area, _bounds, points) in enumerate(components):
+            component = Image.new("RGBA", column_image.size, (0, 0, 0, 0))
+            component_pixels = component.load()
+            for x, y in points:
+                component_pixels[x, y] = source_pixels[x, y]
+            cell = normalized_canvas(component, TITLE_BADGE_CELL, 2)
+            atlas.alpha_composite(cell, (column * cell_width, row * cell_height))
+    target = ASSET_ROOT / "titles" / "title-badges.png"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    atlas.save(target, optimize=True)
 
 
 def write_manifest() -> None:
@@ -461,6 +499,14 @@ def write_manifest() -> None:
             },
             "badgePlus": f"{base}/ui/badge-plus.png",
             "messagePanel": f"{base}/ui/message-panel.png",
+            "homeEntries": {
+                "collection": f"{base}/ui/home-collection-button.png",
+                "share": f"{base}/ui/home-share-button.png",
+            },
+            "stars": {
+                "earned": f"{base}/ui/star-earned.png",
+                "empty": f"{base}/ui/star-empty.png",
+            },
         },
         "effects": {
             "completionBurst": f"{base}/effects/completion-burst.png",
@@ -468,6 +514,9 @@ def write_manifest() -> None:
                 "cast": {"frames": 20, "pattern": f"{base}/effects/witch-magic/cast/cast-{{index}}.png"},
                 "celebrate": {"frames": 14, "pattern": f"{base}/effects/witch-magic/celebrate/celebrate-{{index}}.png"},
             },
+        },
+        "titles": {
+            "badges": f"{base}/titles/title-badges.png",
         },
     }
     ASSET_ROOT.mkdir(parents=True, exist_ok=True)
@@ -488,6 +537,7 @@ def main() -> None:
     prepare_frames()
     prepare_magic_frames()
     prepare_supporting_assets()
+    prepare_title_badges()
     write_manifest()
 
 

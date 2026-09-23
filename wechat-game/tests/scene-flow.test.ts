@@ -5,13 +5,19 @@ import {
   closeCollection,
   closeCollectionDetail,
   closeExitConfirm,
+  closeDailyDialog,
   closeStaminaDialog,
   continueFromLevelComplete,
   createSceneFlow,
   enterSelectedLevel,
+  openEndlessEndConfirm,
+  openEndlessFailureDialog,
+  openEndlessLockedDialog,
+  restoreEndlessFailureDialog,
   openCollection,
   openCollectionDetail,
   openExitConfirm,
+  openDailyDialog,
   openStaminaDialog,
   openLevelSelect,
   returnHome,
@@ -25,6 +31,7 @@ test('scene flow starts on home without an implicit selected level', () => {
   assert.deepEqual(createSceneFlow(), {
     scene: 'home',
     staminaDialogOpen: false,
+    dailyDialogOpen: false,
     exitConfirmOpen: false,
     selectedLevelId: null,
     nextLevelId: null,
@@ -33,7 +40,36 @@ test('scene flow starts on home without an implicit selected level', () => {
     collectionReturnScene: 'home',
     selectedLevelChapterId: 1,
     selectedCollectionChapterId: null,
+    endlessDialog: null,
   });
+});
+
+test('endless dialogs stay scene-specific and mutually exclusive with settings', () => {
+  const home = createSceneFlow();
+  const locked = openEndlessLockedDialog(home);
+  assert.equal(locked.endlessDialog, 'locked');
+  assert.equal(locked.settingsOpen, false);
+  assert.equal(toggleSettings(locked).endlessDialog, null);
+
+  const level = enterSelectedLevel(home, 'level-002', true);
+  const failed = openEndlessFailureDialog(level);
+  assert.equal(failed.endlessDialog, 'failed');
+  const confirm = openEndlessEndConfirm(failed);
+  assert.equal(confirm.endlessDialog, 'end-confirm');
+  assert.equal(restoreEndlessFailureDialog(confirm).endlessDialog, 'failed');
+  assert.equal(openEndlessFailureDialog(home), home);
+});
+
+test('daily dialog is home-only and mutually exclusive with other overlays', () => {
+  const settings = toggleSettings(createSceneFlow());
+  const daily = openDailyDialog(settings);
+  assert.equal(daily.dailyDialogOpen, true);
+  assert.equal(daily.settingsOpen, false);
+  assert.equal(daily.staminaDialogOpen, false);
+  const selector = openLevelSelect(createSceneFlow());
+  assert.equal(openDailyDialog(selector), selector);
+  assert.equal(openStaminaDialog(daily).dailyDialogOpen, false);
+  assert.equal(closeDailyDialog(daily).dailyDialogOpen, false);
 });
 
 
@@ -56,7 +92,11 @@ test('selector changes only to a published chapter that the player has unlocked'
   assert.equal(selectLevelChapter(selector, 2, true).selectedLevelChapterId, 2);
   assert.equal(selectLevelChapter(selector, 3, true).selectedLevelChapterId, 3);
   assert.equal(selectLevelChapter(selector, 4, true).selectedLevelChapterId, 4);
-  assert.equal(selectLevelChapter(selector, 5, true), selector);
+  assert.equal(selectLevelChapter(selector, 5, true).selectedLevelChapterId, 5);
+  assert.equal(selectLevelChapter(selector, 6, true).selectedLevelChapterId, 6);
+  assert.equal(selectLevelChapter(selector, 7, true), selector);
+  assert.equal(selectLevelChapter(selector, 8, true), selector);
+  assert.equal(selectLevelChapter(selector, 9, true), selector);
 });
 
 test('selecting an unlocked chapter closes the stamina dialog', () => {
@@ -90,7 +130,10 @@ test('selector rejects locked and unpublished level ids without changing state',
 
   assert.equal(enterSelectedLevel(selector, 'level-004', false), selector);
   assert.equal(enterSelectedLevel(selector, 'level-091', true).selectedLevelId, 'level-091');
-  assert.equal(enterSelectedLevel(selector, 'level-121', true), selector);
+  assert.equal(enterSelectedLevel(selector, 'level-121', true).selectedLevelId, 'level-121');
+  assert.equal(enterSelectedLevel(selector, 'level-151', true).selectedLevelId, 'level-151');
+  assert.equal(enterSelectedLevel(selector, 'level-180', true).selectedLevelId, 'level-180');
+  assert.equal(enterSelectedLevel(selector, 'level-181', true), selector);
   assert.equal(enterSelectedLevel(selector, 'not-a-level', true), selector);
 });
 
@@ -105,14 +148,24 @@ test('level 30 completion returns to selector when the chapter has no next level
   assert.equal(selector.selectedLevelId, 'level-030');
 });
 
-test('level 120 completion returns to the fourth chapter selector', () => {
-  const playing = enterSelectedLevel(openLevelSelect(createSceneFlow(), 4), 'level-120', true);
+test('level 150 completion returns to the fifth chapter selector', () => {
+  const playing = enterSelectedLevel(openLevelSelect(createSceneFlow(), 5), 'level-150', true);
   const completed = showLevelComplete(playing, null);
   const selector = continueFromLevelComplete(completed);
 
   assert.equal(selector.scene, 'levelSelect');
-  assert.equal(selector.selectedLevelChapterId, 4);
-  assert.equal(selector.selectedLevelId, 'level-120');
+  assert.equal(selector.selectedLevelChapterId, 5);
+  assert.equal(selector.selectedLevelId, 'level-150');
+});
+
+test('level 180 completion returns to the sixth chapter selector', () => {
+  const playing = enterSelectedLevel(openLevelSelect(createSceneFlow(), 6), 'level-180', true);
+  const completed = showLevelComplete(playing, null);
+  const selector = continueFromLevelComplete(completed);
+
+  assert.equal(selector.scene, 'levelSelect');
+  assert.equal(selector.selectedLevelChapterId, 6);
+  assert.equal(selector.selectedLevelId, 'level-180');
 });
 
 test('collection returns to the scene that opened it', () => {
@@ -141,7 +194,11 @@ test('collection detail requires a published chapter that the player has unlocke
   assert.equal(openCollectionDetail(overview, 2, true).selectedCollectionChapterId, 2);
   assert.equal(openCollectionDetail(overview, 3, true).selectedCollectionChapterId, 3);
   assert.equal(openCollectionDetail(overview, 4, true).selectedCollectionChapterId, 4);
-  assert.equal(openCollectionDetail(overview, 5, true), overview);
+  assert.equal(openCollectionDetail(overview, 5, true).selectedCollectionChapterId, 5);
+  assert.equal(openCollectionDetail(overview, 6, true).selectedCollectionChapterId, 6);
+  assert.equal(openCollectionDetail(overview, 7, true), overview);
+  assert.equal(openCollectionDetail(overview, 8, true), overview);
+  assert.equal(openCollectionDetail(overview, 9, true), overview);
   assert.equal(openCollectionDetail(overview, 11, true), overview);
 });
 

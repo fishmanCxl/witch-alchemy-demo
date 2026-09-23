@@ -1,11 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { tmpdir } from 'node:os';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { validateLevelConfig, type LevelConfig } from '../assets/scripts/core/level-config.ts';
+import {
+  DEMO_LEVEL_CONFIG,
+  validateLevelConfig,
+  type LevelConfig,
+} from '../assets/scripts/core/level-config.ts';
 import { isCompleteBottle } from '../assets/scripts/core/water-sort.ts';
 import {
+  analyzeState,
   generateCandidate,
   generatedOutputMatches,
   type GenerationSpec,
@@ -213,6 +222,124 @@ test('chapter three generation gates rise above chapter two without changing boa
   assert.equal(generator.chapterThreeGeneratorSeed(61), (0x2609_0000 + Math.imul(61, 104_729)) >>> 0);
   assert.throws(() => generator.chapterThreeGenerationSpec(60), RangeError);
   assert.throws(() => generator.chapterThreeGeneratorSeed(91), RangeError);
+});
+
+test('chapter five difficulty follows the approved frost anchors and interpolation', async () => {
+  const generator = await import('../tools/generate-chapter-five.ts').catch(() => ({}));
+  assert.equal(typeof generator.chapterFiveDifficultyTarget, 'function');
+  const target = generator.chapterFiveDifficultyTarget as (level: number) => number;
+
+  assert.deepEqual(
+    [121, 122, 123, 124, 125, 130, 140, 145, 147, 148, 149, 150].map(target),
+    [1.09, 1.17, 1.18, 1.19, 1.2, 1.22, 1.25, 1.26, 1.26, 1.237, 1.213, 1.19],
+  );
+  assert.throws(() => target(120), RangeError);
+  assert.throws(() => target(151), RangeError);
+});
+
+test('candidate generation rejects specs that cannot fit the fourteen ordinary slots', () => {
+  assert.throws(
+    () => generateCandidate({ ...SPEC, colorCount: 13, emptyBottleCount: 2 }, 41),
+    /colorCount/,
+  );
+  assert.throws(
+    () => generateCandidate({ ...SPEC, colorCount: 12, emptyBottleCount: 3 }, 41),
+    /14 ordinary slots/,
+  );
+});
+
+test('chapter five uses ten colors and the approved optimal-move gates', async () => {
+  const generator = await import('../tools/generate-chapter-five.ts').catch(() => ({}));
+  assert.equal(typeof generator.chapterFiveGenerationSpec, 'function');
+  assert.equal(typeof generator.chapterFiveGeneratorSeed, 'function');
+
+  const expectedMinimumMoves = new Map([
+    [121, 26], [122, 26], [123, 27], [124, 27],
+    [125, 28], [130, 29], [135, 30],
+    [140, 30], [142, 31], [144, 32],
+    [145, 32], [146, 34], [147, 34],
+    [148, 31], [149, 30], [150, 29],
+  ]);
+  for (const [number, minimumOptimalMoves] of expectedMinimumMoves) {
+    const spec = generator.chapterFiveGenerationSpec(number);
+    assert.equal(spec.colorCount, 10, String(number));
+    assert.equal(spec.emptyBottleCount, 2, String(number));
+    assert.equal(spec.minimumOptimalMoves, minimumOptimalMoves, String(number));
+    assert.equal(spec.maximumOpeningMoves, 20, String(number));
+    assert.ok(spec.minimumMisleadingBranchRatio >= 0.3, String(number));
+  }
+  for (const number of [145, 146, 147]) {
+    assert.ok(generator.chapterFiveGenerationSpec(number).minimumExploredStates >= 15_000);
+  }
+  assert.equal(
+    generator.chapterFiveGeneratorSeed(121),
+    (0x260B_0000 + Math.imul(121, 104_729)) >>> 0,
+  );
+  assert.throws(() => generator.chapterFiveGenerationSpec(120), RangeError);
+  assert.throws(() => generator.chapterFiveGeneratorSeed(151), RangeError);
+});
+
+test('chapter six difficulty follows the approved wind-spirit anchors and interpolation', async () => {
+  const generator = await import('../tools/generate-chapter-six.ts').catch(() => ({}));
+  assert.equal(typeof generator.chapterSixDifficultyTarget, 'function');
+  const target = generator.chapterSixDifficultyTarget as (level: number) => number;
+
+  assert.deepEqual(
+    Array.from({ length: 30 }, (_, index) => target(index + 151)),
+    [
+      1.16, 1.24, 1.25, 1.26, 1.27,
+      1.274, 1.278, 1.282, 1.286, 1.29,
+      1.293, 1.296, 1.299, 1.302, 1.305,
+      1.308, 1.311, 1.314, 1.317, 1.32,
+      1.322, 1.324, 1.326, 1.328, 1.33,
+      1.33, 1.33, 1.307, 1.283, 1.26,
+    ],
+  );
+  assert.throws(() => target(150), RangeError);
+  assert.throws(() => target(181), RangeError);
+});
+
+test('chapter six uses eleven colors and hard gates beyond the capped target rating', async () => {
+  const generator = await import('../tools/generate-chapter-six.ts').catch(() => ({}));
+  assert.equal(typeof generator.chapterSixGenerationSpec, 'function');
+  assert.equal(typeof generator.chapterSixGeneratorSeed, 'function');
+
+  const expected = new Map([
+    [151, [31, 38, 15_000]],
+    [152, [32, 39, 18_000]],
+    [153, [33, 39, 20_000]],
+    [155, [34, 40, 24_000]],
+    [160, [35, 40, 30_000]],
+    [165, [36, 41, 40_000]],
+    [170, [37, 41, 50_000]],
+    [175, [38, 42, 65_000]],
+    [177, [38, 42, 65_000]],
+    [178, [37, 41, 34_000]],
+    [179, [35, 41, 29_000]],
+    [180, [34, 40, 24_000]],
+  ]);
+  for (const [number, [minimumOptimalMoves, minimumSegments, minimumExploredStates]] of expected) {
+    const spec = generator.chapterSixGenerationSpec(number);
+    assert.equal(spec.colorCount, 11, String(number));
+    assert.equal(spec.emptyBottleCount, 2, String(number));
+    assert.equal(spec.targetDifficulty, 1, String(number));
+    assert.equal(spec.minimumOptimalMoves, minimumOptimalMoves, String(number));
+    assert.equal(spec.maximumOptimalMoves, minimumOptimalMoves + 5, String(number));
+    assert.equal(spec.minimumSegments, minimumSegments, String(number));
+    assert.equal(spec.minimumExploredStates, minimumExploredStates, String(number));
+    assert.equal(spec.minimumOpeningMoves, 22, String(number));
+    assert.equal(spec.maximumOpeningMoves, 22, String(number));
+  }
+  assert.equal(generator.chapterSixGenerationSpec(151).minimumMisleadingBranchRatio, 4 / 11);
+  assert.equal(generator.chapterSixGenerationSpec(155).minimumMisleadingBranchRatio, 5 / 11);
+  assert.equal(generator.chapterSixGenerationSpec(178).minimumMisleadingBranchRatio, 4 / 11);
+  assert.equal(generator.chapterSixGenerationSpec(179).minimumMisleadingBranchRatio, 4 / 11);
+  assert.equal(
+    generator.chapterSixGeneratorSeed(151),
+    (0x260C_0000 + Math.imul(151, 104_729)) >>> 0,
+  );
+  assert.throws(() => generator.chapterSixGenerationSpec(150), RangeError);
+  assert.throws(() => generator.chapterSixGeneratorSeed(181), RangeError);
 });
 
 test('chapter four difficulty follows the approved elemental anchors and interpolation', async () => {
@@ -547,6 +674,96 @@ test('chapter four report records thirty solved levels and every approved coeffi
   }
 });
 
+test('chapter five report records thirty unique solved levels and every approved gate', async () => {
+  const reportUrl = new URL(
+    '../assets/scripts/core/level-generation-report.chapter-05.json',
+    import.meta.url,
+  );
+  assert.equal(existsSync(reportUrl), true);
+  const report = JSON.parse(readFileSync(reportUrl, 'utf8'));
+  const { chapterFiveDifficultyTarget, chapterFiveGenerationSpec } = await import(
+    '../tools/generate-chapter-five.ts'
+  );
+
+  assert.equal(report.schemaVersion, 1);
+  assert.equal(report.chapterId, 5);
+  assert.equal(report.configVersion, 'chapter-5.2026-09-06.1');
+  assert.equal(report.levels.length, 30);
+  assert.deepEqual(
+    report.levels.map((entry: { id: string }) => entry.id),
+    Array.from({ length: 30 }, (_, index) => 'level-' + String(index + 121).padStart(3, '0')),
+  );
+  assert.equal(new Set(report.levels.map((entry: { boardKey: string }) => entry.boardKey)).size, 30);
+  for (const entry of report.levels) {
+    const number = Number(entry.id.slice(-3));
+    const spec = chapterFiveGenerationSpec(number);
+    assert.equal(entry.source, 'generated');
+    assert.equal(entry.compatibilityExemption, null);
+    assert.equal(entry.targetCoefficient, chapterFiveDifficultyTarget(number));
+    assert.equal(entry.metrics.colorCount, 10);
+    assert.ok(entry.metrics.optimalMoves >= spec.minimumOptimalMoves, entry.id);
+    assert.ok(entry.metrics.optimalMoves <= spec.maximumOptimalMoves, entry.id);
+    assert.ok(entry.metrics.segmentCount >= spec.minimumSegments, entry.id);
+    assert.ok(entry.metrics.exploredStates >= spec.minimumExploredStates, entry.id);
+    assert.ok(entry.metrics.openingMoves >= spec.minimumOpeningMoves, entry.id);
+    assert.ok(entry.metrics.openingMoves <= spec.maximumOpeningMoves, entry.id);
+    assert.ok(entry.metrics.misleadingBranchRatio >= spec.minimumMisleadingBranchRatio, entry.id);
+  }
+});
+
+test('chapter six report records thirty unique solved levels and every approved hard gate', async () => {
+  const reportUrl = new URL(
+    '../assets/scripts/core/level-generation-report.chapter-06.json',
+    import.meta.url,
+  );
+  assert.equal(existsSync(reportUrl), true);
+  const report = JSON.parse(readFileSync(reportUrl, 'utf8'));
+  const { chapterSixDifficultyTarget, chapterSixGenerationSpec } = await import(
+    '../tools/generate-chapter-six.ts'
+  );
+
+  assert.equal(report.schemaVersion, 1);
+  assert.equal(report.chapterId, 6);
+  assert.equal(report.configVersion, 'chapter-6.2026-09-19.1');
+  assert.equal(report.levels.length, 30);
+  assert.deepEqual(
+    report.levels.map((entry: { id: string }) => entry.id),
+    Array.from({ length: 30 }, (_, index) => 'level-' + String(index + 151).padStart(3, '0')),
+  );
+  assert.equal(new Set(report.levels.map((entry: { boardKey: string }) => entry.boardKey)).size, 30);
+  for (const entry of report.levels) {
+    const number = Number(entry.id.slice(-3));
+    const spec = chapterSixGenerationSpec(number);
+    assert.equal(entry.source, 'generated');
+    assert.equal(entry.compatibilityExemption, null);
+    assert.equal(entry.targetCoefficient, chapterSixDifficultyTarget(number));
+    assert.equal(entry.targetDifficulty, 1);
+    assert.equal(entry.metrics.colorCount, 11);
+    assert.ok(entry.metrics.optimalMoves >= spec.minimumOptimalMoves, entry.id);
+    assert.ok(entry.metrics.optimalMoves <= spec.maximumOptimalMoves, entry.id);
+    assert.ok(entry.metrics.segmentCount >= spec.minimumSegments, entry.id);
+    assert.ok(entry.metrics.exploredStates >= spec.minimumExploredStates, entry.id);
+    assert.equal(entry.metrics.openingMoves, 22, entry.id);
+    assert.ok(entry.metrics.misleadingBranchRatio >= spec.minimumMisleadingBranchRatio, entry.id);
+  }
+});
+
+test('chapter six check validates locked artifacts without rerunning the exact solver', () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      '--experimental-strip-types',
+      fileURLToPath(new URL('../tools/generate-chapter-six.ts', import.meta.url)),
+      '--check',
+    ],
+    { encoding: 'utf8', timeout: 15_000 },
+  );
+
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+  assert.match(result.stdout, /30 chapter 6 levels match generated output/);
+  assert.doesNotMatch(result.stdout, /accepted deterministic shuffle/);
+});
+
 test('chapter two generation leaves the frozen first chapter content unchanged across line endings', () => {
   const data = readFileSync(
     new URL('../assets/scripts/core/level-data.generated.ts', import.meta.url),
@@ -554,7 +771,7 @@ test('chapter two generation leaves the frozen first chapter content unchanged a
   ).replace(/\r\n?/g, '\n');
   assert.equal(
     createHash('sha256').update(data).digest('hex'),
-    '1072854a1cbe8685df288c869d8ebf515e68badf9ed7253dbc16c423ce6b5050',
+    '149f6502bc162880670ae9079be7b58133466696b88943377ab5fa7b15be684c',
   );
 });
 
