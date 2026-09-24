@@ -121,6 +121,10 @@ test('prepared resources subpackage executes the Cocos bundle directly from game
     true,
     'resources config is missing the endless-mode button SpriteFrame',
   );
+  assert.equal(
+    readFileSync(resourcesConfigPath, 'utf8').includes('game/chibi/collection/moon-goddess-potion/spriteFrame'),
+    true,
+  );
 
   const registered = [];
   vm.runInNewContext(readFileSync(entryPath, 'utf8'), {
