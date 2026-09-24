@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { performance } from 'node:perf_hooks';
+import * as chapterNine from '../tools/generate-chapter-nine.ts';
 import {
   chapterNineDifficultyProfile,
   chapterNineDifficultyTarget,
@@ -65,4 +68,27 @@ test('chapter nine modes are explicit and bounded search validates attempt limit
   assert.throws(() => chapterNineMode(['--search', '--check']));
   assert.deepEqual(searchChapterNineLevel(241, 0).counters.attempts, 0);
   assert.throws(() => searchChapterNineLevel(241, 601), RangeError);
+});
+
+test('fast locked check rejects tampered report-only fields without solving', () => {
+  const report = JSON.parse(readFileSync(new URL('../assets/scripts/core/level-generation-report.chapter-09.json', import.meta.url), 'utf8'));
+  const entry = report.levels[0];
+  const reconstruct = chapterNine.reconstructReportLevel;
+  assert.equal(typeof reconstruct, 'function');
+  assert.doesNotThrow(() => reconstruct(241, entry, new Set(), false));
+  for (const change of [
+    { source: 'tampered' },
+    { compatibilityExemption: 'tampered' },
+    { reverseMoves: 999 },
+    { scoreComponents: { ...entry.scoreComponents, color: -1 } },
+    { metrics: { ...entry.metrics, difficultyRating: 0 } },
+  ]) {
+    assert.throws(() => reconstruct(241, { ...entry, ...change }, new Set(), false));
+  }
+});
+
+test('a candidate completed after the level deadline is not accepted', (t) => {
+  let calls = 0;
+  t.mock.method(performance, 'now', () => (++calls < 3 ? 0 : 300_001));
+  assert.throws(() => searchChapterNineLevel(242, 1), /exceeded level budget/);
 });

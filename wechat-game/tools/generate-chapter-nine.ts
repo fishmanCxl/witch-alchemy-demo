@@ -9,6 +9,7 @@ import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
 
 import {
+  difficultyRating,
   countColorSegments,
   levelId,
   validateLevelConfig,
@@ -28,6 +29,7 @@ import { canPour, isCompleteBottle } from '../assets/scripts/core/water-sort.ts'
 import {
   completeStateAnalysis,
   generatedOutputMatches,
+  scoreCandidate,
   solveStateCandidate,
   type FullStateAnalysis,
   type GenerationScoreComponents,
@@ -426,15 +428,19 @@ function searchLevel(
   const initialSeed = chapterNineGeneratorSeed(levelNumber);
   const completionRule = { type: 'all-colors', targetCount: 11 } as const;
 
-  for (let attempt = startAttempt; attempt <= maxAttempts; attempt += 1) {
-    const now = performance.now();
-    counters.elapsedMs = Math.round(now - startedAt);
-    if (counters.elapsedMs >= levelBudgetMs) {
+  const checkTime = (): void => {
+    const current = performance.now();
+    counters.elapsedMs = Math.round(current - startedAt);
+    if (current - startedAt >= levelBudgetMs) {
       throw new Error(`level-${levelNumber}: exceeded level budget ${JSON.stringify(counters)}`);
     }
-    if (now >= chapterDeadline) {
+    if (current >= chapterDeadline) {
       throw new Error(`level-${levelNumber}: exceeded 60-minute chapter budget ${JSON.stringify(counters)}`);
     }
+  };
+
+  for (let attempt = startAttempt; attempt <= maxAttempts; attempt += 1) {
+    checkTime();
     counters.attempts = attempt;
     const generatorSeed = seedForAttempt(initialSeed, attempt);
     const state = candidateState(generatorSeed, spec);
@@ -462,9 +468,9 @@ function searchLevel(
       MAX_EXPLORED_STATES,
       spec.minimumMisleadingBranchRatio,
     );
+    checkTime();
     if (!analysis) continue;
     counters.branchGatePasses += 1;
-    counters.elapsedMs = Math.round(performance.now() - startedAt);
 
     const config: LevelConfig = {
       id: levelId(levelNumber),
@@ -506,7 +512,7 @@ function searchLevel(
     };
   }
 
-  counters.elapsedMs = Math.round(performance.now() - startedAt);
+  checkTime();
   return { accepted: null, counters };
 }
 
@@ -595,7 +601,7 @@ function sameAnalysis(actual: FullStateAnalysis, entry: ReportLevel): boolean {
     && JSON.stringify(actual.scoreComponents) === JSON.stringify(entry.scoreComponents);
 }
 
-function reconstructReportLevel(
+export function reconstructReportLevel(
   levelNumber: number,
   entry: ReportLevel,
   boardKeys: Set<string>,
@@ -607,22 +613,48 @@ function reconstructReportLevel(
   const state = candidateState(generatorSeed, spec);
   const key = boardKey(state);
   const openingMoves = countLegalOpeningMoves(state);
+  const metrics = entry.metrics;
+  const expectedScore = scoreCandidate(
+    metrics.colorCount,
+    metrics.optimalMoves,
+    metrics.segmentCount,
+    metrics.exploredStates,
+    metrics.openingMoves,
+    metrics.misleadingBranchRatio,
+  );
+  const expectedReport: ReportLevel = {
+    id: levelId(levelNumber),
+    source: 'generated',
+    targetCoefficient: spec.targetCoefficient,
+    targetDifficulty: spec.targetDifficulty,
+    difficultyProfile: spec.difficultyProfile,
+    compatibilityExemption: null,
+    initialSeed,
+    generationStrategy: generationStrategy(spec),
+    generatorSeed,
+    attempt: entry.attempt,
+    reverseMoves: 0,
+    boardKey: key,
+    metrics: {
+      colorCount: spec.colorCount,
+      optimalMoves: metrics.optimalMoves,
+      segmentCount: countColorSegments(state),
+      exploredStates: metrics.exploredStates,
+      openingMoves,
+      misleadingBranchRatio: metrics.misleadingBranchRatio,
+      difficultyRating: difficultyRating(metrics),
+      difficultyScore: expectedScore.difficultyScore,
+    },
+    scoreComponents: expectedScore.components,
+  };
+
   if (
-    entry.id !== levelId(levelNumber)
-    || entry.targetCoefficient !== spec.targetCoefficient
-    || entry.targetDifficulty !== spec.targetDifficulty
-    || entry.difficultyProfile !== spec.difficultyProfile
-    || entry.initialSeed !== initialSeed
-    || entry.generatorSeed !== generatorSeed
-    || entry.generationStrategy !== generationStrategy(spec)
-    || !Number.isInteger(entry.attempt)
+    !Number.isInteger(entry.attempt)
     || entry.attempt < 1
     || entry.attempt > 600
-    || entry.boardKey !== key
+    || JSON.stringify(entry) !== JSON.stringify(expectedReport)
     || boardKeys.has(key)
     || state.bottles.some(isCompleteBottle)
-    || countColorSegments(state) !== entry.metrics.segmentCount
-    || openingMoves !== entry.metrics.openingMoves
     || !reportGatesPass(entry.metrics, spec)
   ) {
     throw new Error(`level-${levelNumber}: locked chapter nine artifact is invalid`);
@@ -818,5 +850,3 @@ function main(): void {
 const isMain = process.argv[1] !== undefined
   && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) main();
-
-
