@@ -11,7 +11,7 @@ import {
 } from '../assets/scripts/core/game-session.ts';
 import { getLevelConfig, PUBLISHED_LEVELS } from '../assets/scripts/core/level-catalog.ts';
 import { createDefaultProgress } from '../assets/scripts/core/level-progress.ts';
-import { createLocalSnapshot } from '../assets/scripts/core/save-schema.ts';
+import { createLocalSnapshot, decodeLocalSnapshot } from '../assets/scripts/core/save-schema.ts';
 import { LocalProgressStore } from '../assets/scripts/platform/LocalProgressStore.ts';
 import { PlatformRuntime, REWARDED_AD_CONFIG } from '../assets/scripts/platform/WeChatPlatform.ts';
 import type { RewardedAdResult } from '../assets/scripts/platform/rewarded-bottle.ts';
@@ -119,6 +119,21 @@ test('corrupt or config-mismatched snapshots fall back only to that level initia
   assert.deepEqual(store.loadSession(level5).game, level5.initialState);
   assert.equal(store.loadSession(level4).levelId, level4.id);
   assert.equal(store.loadSession(level5).levelId, level5.id);
+});
+
+test('a level-301 snapshot cannot be decoded as the published level 300', () => {
+  const level = getLevelConfig('level-300')!;
+  const forged = createLocalSnapshot({
+    levelId: 'level-301',
+    configVersion: level.configVersion,
+    revision: 0,
+    state: level.initialState,
+    history: [],
+    selected: null,
+    updatedAt: 10,
+  });
+  assert.equal(getLevelConfig('level-301'), null);
+  assert.equal(decodeLocalSnapshot(JSON.stringify(forged), level), null);
 });
 
 test('an existing level 12 v2 snapshot remains restorable after the catalog expands', () => {
@@ -238,7 +253,7 @@ test('loading v2 progress backs it up and persists only normalized v3 fields', (
     currentLevel: 'level-003',
     completedThrough: 3,
     bestMoves: { 'level-001': 5, 'level-003': 9 },
-    configVersion: 'chapters-1-9.2026-09-23.1',
+    configVersion: 'chapters-1-10.2026-09-24.1',
   };
 
   assert.deepEqual(stored, expected);
@@ -335,7 +350,7 @@ test('QA all-level mode backs up progress once and reset restores it exactly', (
   const qaProgress = store.enableQaAllLevels();
 
   assert.equal(store.isQaMode(), true);
-  assert.equal(qaProgress.currentLevel, 'level-270');
+  assert.equal(qaProgress.currentLevel, 'level-300');
   assert.equal(qaProgress.completedThrough, PUBLISHED_LEVELS.length);
 
   store.enableQaAllLevels();

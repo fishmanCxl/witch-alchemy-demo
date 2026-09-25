@@ -8,12 +8,12 @@ import {
   publishedChapters,
 } from '../assets/scripts/core/chapter-catalog.ts';
 
-test('catalog defines ten non-overlapping thirty-level chapters and publishes the first nine', () => {
+test('catalog defines and publishes ten non-overlapping thirty-level chapters', () => {
   assert.equal(CHAPTERS.length, 10);
   assert.deepEqual(CHAPTERS.map((chapter) => chapter.firstLevel), [
     1, 31, 61, 91, 121, 151, 181, 211, 241, 271,
   ]);
-  assert.deepEqual(publishedChapters().map((chapter) => chapter.id), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert.deepEqual(publishedChapters().map((chapter) => chapter.id), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   assert.equal(chapterForLevel(30)?.id, 1);
   assert.equal(chapterForLevel(31)?.id, 2);
   assert.equal(chapterForLevel(61)?.id, 3);
@@ -23,6 +23,7 @@ test('catalog defines ten non-overlapping thirty-level chapters and publishes th
   assert.equal(chapterForLevel(181)?.id, 7);
   assert.equal(chapterForLevel(211)?.id, 8);
   assert.equal(chapterForLevel(241)?.id, 9);
+  assert.equal(chapterForLevel(271)?.id, 10);
 });
 
 test('title order follows the approved reference', () => {
@@ -116,7 +117,7 @@ test('chapter eight publishes stellar alchemy and the stellar potion identity', 
   });
 });
 
-test('chapter nine publishes moon goddess mysticism and keeps chapter ten coming soon', () => {
+test('chapters nine and ten publish their approved themes and collections', () => {
   assert.deepEqual(getChapter(9), {
     id: 9,
     stageTitle: '月之魔女',
@@ -126,7 +127,15 @@ test('chapter nine publishes moon goddess mysticism and keeps chapter ten coming
     collectionId: 'moon-goddess-potion',
     releaseState: 'available',
   });
-  assert.equal(getChapter(10)?.releaseState, 'coming-soon');
+  assert.deepEqual(getChapter(10), {
+    id: 10,
+    stageTitle: '传奇炼金师',
+    themeTitle: '终极炼金',
+    firstLevel: 271,
+    levelCount: 30,
+    collectionId: 'sage-potion',
+    releaseState: 'available',
+  });
 });
 
 test('catalog lookup rejects out-of-range chapter and level values', () => {

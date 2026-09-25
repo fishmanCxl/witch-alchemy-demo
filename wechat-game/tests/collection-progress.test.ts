@@ -223,3 +223,18 @@ test('chapter nine reveals moon goddess pieces and promotes to legendary alchemi
   }
   assert.equal(deriveHighestTitle(progressWithCompleted(270)).title, '传奇炼金师');
 });
+
+test('chapter ten reveals six sage potion pieces without adding another title', () => {
+  for (const [level, piece] of [[275, 1], [280, 2], [285, 3], [290, 4], [295, 5], [300, 6]] as const) {
+    const before = progressWithCompleted(level - 1);
+    const after = progressWithCompleted(level);
+    assert.equal(deriveCollectionProgress(after, 10).revealedPieces, piece);
+    assert.equal(deriveCompletionReward(before, after, levelId(level)).puzzlePiece, piece);
+  }
+  assert.equal(deriveCollectionProgress(progressWithCompleted(300), 10).collected, true);
+  assert.equal(deriveHighestTitle(progressWithCompleted(300)).title, '传奇炼金师');
+  for (const level of [275, 300]) {
+    const completed = progressWithCompleted(level);
+    assert.equal(deriveCompletionReward(completed, completed, levelId(level)).puzzlePiece, null);
+  }
+});

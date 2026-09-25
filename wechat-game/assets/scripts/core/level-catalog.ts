@@ -7,11 +7,12 @@ import { CHAPTER_SIX_LEVEL_DATA } from './level-data.chapter-06.generated.ts';
 import { CHAPTER_SEVEN_LEVEL_DATA } from './level-data.chapter-07.generated.ts';
 import { CHAPTER_EIGHT_LEVEL_DATA } from './level-data.chapter-08.generated.ts';
 import { CHAPTER_NINE_LEVEL_DATA } from './level-data.chapter-09.generated.ts';
+import { CHAPTER_TEN_LEVEL_DATA } from './level-data.chapter-10.generated.ts';
 import type { BottleState, GameState } from './types.ts';
 import type { LevelConfig } from './level-config.ts';
 
 export const FIRST_CHAPTER_CONFIG_VERSION = 'chapter-1.2026-08-25.1' as const;
-export const GAME_CONFIG_VERSION = 'chapters-1-9.2026-09-23.1' as const;
+export const GAME_CONFIG_VERSION = 'chapters-1-10.2026-09-24.1' as const;
 
 function freezeState(state: GameState): GameState {
   const bottles = state.bottles.map((bottle): BottleState => Object.freeze({
@@ -63,6 +64,9 @@ export const CHAPTER_EIGHT_LEVELS: readonly LevelConfig[] = Object.freeze(
 export const CHAPTER_NINE_LEVELS: readonly LevelConfig[] = Object.freeze(
   CHAPTER_NINE_LEVEL_DATA.map(freezeLevel),
 );
+export const CHAPTER_TEN_LEVELS: readonly LevelConfig[] = Object.freeze(
+  CHAPTER_TEN_LEVEL_DATA.map(freezeLevel),
+);
 
 export const PUBLISHED_LEVELS: readonly LevelConfig[] = Object.freeze([
   ...FIRST_CHAPTER_LEVELS,
@@ -74,6 +78,7 @@ export const PUBLISHED_LEVELS: readonly LevelConfig[] = Object.freeze([
   ...CHAPTER_SEVEN_LEVELS,
   ...CHAPTER_EIGHT_LEVELS,
   ...CHAPTER_NINE_LEVELS,
+  ...CHAPTER_TEN_LEVELS,
 ]);
 
 const BOARD_KEYS = PUBLISHED_LEVELS.map((level) => JSON.stringify(
@@ -98,6 +103,7 @@ export function levelsForChapter(chapterId: number): readonly LevelConfig[] {
   if (chapterId === 7) return CHAPTER_SEVEN_LEVELS;
   if (chapterId === 8) return CHAPTER_EIGHT_LEVELS;
   if (chapterId === 9) return CHAPTER_NINE_LEVELS;
+  if (chapterId === 10) return CHAPTER_TEN_LEVELS;
   return Object.freeze([]);
 }
 

@@ -66,10 +66,30 @@ test('remote progress is validated before legal union and minimum merge', async 
   assert.deepEqual(result.progress.bestMoves, { 'level-001': 5, 'level-002': 9 });
 });
 
+test('cloud progress accepts level 300 and preserves earlier best moves', async () => {
+  const local = createDefaultProgress();
+  const remote = {
+    ...local,
+    revision: 300,
+    currentLevel: 'level-300',
+    completedThrough: 300,
+    bestMoves: { 'level-270': 44 },
+  };
+  const coordinator = new ProgressSyncCoordinator({
+    sync: async () => remote,
+    submitLevelResult: async () => undefined,
+  });
+  const result = await coordinator.sync(local, true);
+  assert.equal(result.status, 'synced');
+  assert.equal(result.progress.currentLevel, 'level-300');
+  assert.equal(result.progress.completedThrough, 300);
+  assert.equal(result.progress.bestMoves['level-270'], 44);
+});
+
 test('malformed remote data and cloud failures preserve the exact local object', async () => {
   const local = createDefaultProgress();
   const invalid = new ProgressSyncCoordinator({
-    sync: async () => ({ ...local, completedThrough: 271 }),
+    sync: async () => ({ ...local, completedThrough: 301 }),
     submitLevelResult: async () => undefined,
   });
   const failing = new ProgressSyncCoordinator({
