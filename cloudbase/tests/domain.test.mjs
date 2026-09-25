@@ -66,7 +66,7 @@ test('v3 merge takes the furthest continuous completion and minimizes moves', ()
   assert.equal('openid' in merged, false);
 });
 
-test('merge preserves a legal current level and accepts chapter nine but rejects level 271', () => {
+test('merge preserves a legal current level and accepts chapter ten but rejects level 301', () => {
   const current = {
     schemaVersion: 3,
     revision: 2,
@@ -128,7 +128,14 @@ test('merge preserves a legal current level and accepts chapter nine but rejects
     currentLevel: 'level-270',
     completedThrough: 270,
   }).completedThrough, 270);
-  assert.throws(() => mergeProgress(current, { ...current, completedThrough: 271 }));
+  const chapterTen = mergeProgress(current, {
+    ...current, currentLevel: 'level-300', completedThrough: 300,
+    bestMoves: { 'level-270': 44 }, configVersion: 'chapters-1-10.2026-09-24.1',
+  });
+  assert.equal(chapterTen.completedThrough, 300);
+  assert.equal(chapterTen.bestMoves['level-270'], 44);
+  assert.throws(() => mergeProgress(current, { ...current, completedThrough: 301 }));
+  assert.throws(() => mergeProgress(current, { ...current, currentLevel: 'level-301' }));
 });
 
 test('bootstrap migrates a completed chapter-two v2 cloud save to constant-size v3', () => {
@@ -155,14 +162,15 @@ test('bootstrap migrates a completed chapter-two v2 cloud save to constant-size 
   });
 });
 
-test('reward requests accept published levels 1 and 270 but reject level 271', () => {
+test('reward requests accept published levels 1, 270 and 300 but reject level 301', () => {
   assert.deepEqual(validateRewardRequest({ levelId: 'level-001', claimId: 'claim_12345678' }), {
     levelId: 'level-001', claimId: 'claim_12345678',
   });
   assert.deepEqual(validateRewardRequest({ levelId: 'level-270', claimId: 'claim_87654321' }), {
     levelId: 'level-270', claimId: 'claim_87654321',
   });
-  assert.throws(() => validateRewardRequest({ levelId: 'level-271', claimId: 'claim_12345678' }));
+  assert.equal(validateRewardRequest({ levelId: 'level-300', claimId: 'claim_12345678' }).levelId, 'level-300');
+  assert.throws(() => validateRewardRequest({ levelId: 'level-301', claimId: 'claim_12345678' }));
   assert.throws(() => validateRewardRequest({ levelId: 'level-001', claimId: 'x'.repeat(129) }));
 });
 
@@ -174,7 +182,10 @@ test('completion telemetry accepts only published levels and strips identity fie
   assert.deepEqual(result, {
     levelId: 'level-270', moves: 28, durationMs: 45_000, undoCount: 2, rewardedBottleUsed: true,
   });
+  assert.equal(normalizeLevelResult({
+    levelId: 'level-300', moves: 42, durationMs: 1000, undoCount: 0,
+  }).levelId, 'level-300');
   assert.throws(() => normalizeLevelResult({
-    levelId: 'level-271', moves: 1, durationMs: 1, undoCount: 0,
+    levelId: 'level-301', moves: 1, durationMs: 1, undoCount: 0,
   }));
 });
