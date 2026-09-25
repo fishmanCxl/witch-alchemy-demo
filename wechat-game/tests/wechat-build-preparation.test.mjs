@@ -125,6 +125,10 @@ test('prepared resources subpackage executes the Cocos bundle directly from game
     readFileSync(resourcesConfigPath, 'utf8').includes('game/chibi/collection/moon-goddess-potion/spriteFrame'),
     true,
   );
+  assert.equal(
+    readFileSync(resourcesConfigPath, 'utf8').includes('game/chibi/collection/sage-potion/spriteFrame'),
+    true,
+  );
 
   const registered = [];
   vm.runInNewContext(readFileSync(entryPath, 'utf8'), {

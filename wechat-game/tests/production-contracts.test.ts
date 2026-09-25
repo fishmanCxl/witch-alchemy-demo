@@ -165,6 +165,23 @@ test('moon goddess placeholder is one 512px transparent SpriteFrame under 300 Ki
   assert.equal(meta.subMetas.f9941.importer, 'sprite-frame');
 });
 
+test('sage potion placeholder is one 512px transparent SpriteFrame under 300 KiB', () => {
+  const relative = 'collection/sage-potion.png';
+  const prototypePath = new URL(`../../prototype/public/assets/game/chibi/${relative}`, import.meta.url);
+  const productionPath = new URL(`../assets/resources/game/chibi/${relative}`, import.meta.url);
+  for (const path of [prototypePath, productionPath]) {
+    const png = readFileSync(path);
+    assert.equal(png.readUInt32BE(16), 512);
+    assert.equal(png.readUInt32BE(20), 512);
+    assert.equal(png.readUInt8(25), 6, 'PNG must be RGBA');
+    assert.ok(png.length <= 307_200);
+  }
+  assert.deepEqual(readFileSync(prototypePath), readFileSync(productionPath));
+  const meta = JSON.parse(readFileSync(new URL(`../assets/resources/game/chibi/${relative}.meta`, import.meta.url), 'utf8'));
+  assert.equal(meta.userData.type, 'sprite-frame');
+  assert.equal(meta.subMetas.f9941.importer, 'sprite-frame');
+});
+
 test('pure core stays independent from Cocos and WeChat runtime APIs', () => {
   const coreRoot = new URL('../assets/scripts/core/', import.meta.url);
   for (const file of readdirSync(coreRoot).filter((name) => name.endsWith('.ts'))) {
