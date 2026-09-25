@@ -414,6 +414,7 @@ function searchLevel(
     counters.openingPasses += 1;
 
     const base = solveStateCandidate(state, completionRule, MAX_EXPLORED_STATES);
+    checkTime();
     if (!base) continue;
     counters.solved += 1;
     if (!baseGatesPass(base, spec)) continue;
@@ -565,6 +566,7 @@ export function reconstructReportLevel(
   entry: ReportLevel,
   boardKeys: Set<string>,
   verifySolver: boolean,
+  chapterDeadline = Number.POSITIVE_INFINITY,
 ): { readonly config: LevelConfig; readonly report: ReportLevel } {
   const spec = chapterTenGenerationSpec(levelNumber);
   const initialSeed = chapterTenGeneratorSeed(levelNumber);
@@ -622,6 +624,7 @@ export function reconstructReportLevel(
   if (verifySolver) {
     const completionRule = { type: 'all-colors', targetCount: 11 } as const;
     const base = solveStateCandidate(state, completionRule, MAX_EXPLORED_STATES);
+    checkChapterDeadline(levelNumber, chapterDeadline);
     if (!base || !baseGatesPass(base, spec)) {
       throw new Error(`level-${levelNumber}: locked base analysis no longer passes`);
     }
@@ -633,6 +636,7 @@ export function reconstructReportLevel(
       MAX_EXPLORED_STATES,
       spec.minimumMisleadingBranchRatio,
     );
+    checkChapterDeadline(levelNumber, chapterDeadline);
     if (!analysis || !sameAnalysis(analysis, entry)) {
       throw new Error(`level-${levelNumber}: locked exact analysis differs`);
     }
@@ -655,14 +659,24 @@ export function reconstructReportLevel(
   return { config, report: entry };
 }
 
+class ChapterDeadlineExceeded extends Error {}
+
+function checkChapterDeadline(levelNumber: number, deadline: number): void {
+  if (performance.now() >= deadline) {
+    throw new ChapterDeadlineExceeded(`level-${levelNumber}: exceeded 60-minute chapter budget`);
+  }
+}
+
 export function restoreChapterTenCheckpoints(
   checkpointRoot = CHECKPOINT_ROOT,
+  chapterDeadline = Number.POSITIVE_INFINITY,
 ): readonly AcceptedLevel[] {
   const boardKeys = priorBoardKeys();
   const restored: AcceptedLevel[] = [];
   for (let levelNumber = 271; levelNumber <= 300; levelNumber += 1) {
     const path = checkpointPath(checkpointRoot, levelNumber);
     if (!existsSync(path)) break;
+    checkChapterDeadline(levelNumber, chapterDeadline);
     try {
       const checkpoint = JSON.parse(readFileSync(path, 'utf8')) as ChapterTenCheckpoint;
       if (
@@ -679,11 +693,13 @@ export function restoreChapterTenCheckpoints(
         checkpoint.level,
         boardKeys,
         true,
+        chapterDeadline,
       );
       const accepted = { ...locked, counters: checkpoint.counters };
       restored.push(accepted);
       boardKeys.add(accepted.report.boardKey);
     } catch (error) {
+      if (error instanceof ChapterDeadlineExceeded) throw error;
       throw new Error(
         `chapter ten checkpoint level-${levelNumber} is invalid: ${String(error)}`,
       );
@@ -713,16 +729,15 @@ function generatedReport(levels: readonly ReportLevel[]): string {
 
 function runSearch(): void {
   const chapterStartedAt = performance.now();
-  const restored = restoreChapterTenCheckpoints();
+  const chapterDeadline = chapterStartedAt + MAX_CHAPTER_MS;
+  const restored = restoreChapterTenCheckpoints(CHECKPOINT_ROOT, chapterDeadline);
   const boardKeys = priorBoardKeys();
   const levels = restored.map(({ config }) => config);
   const report = restored.map(({ report: entry }) => entry);
   for (const accepted of restored) boardKeys.add(accepted.report.boardKey);
 
   for (let levelNumber = 271 + restored.length; levelNumber <= 300; levelNumber += 1) {
-    if (performance.now() - chapterStartedAt >= MAX_CHAPTER_MS) {
-      throw new Error(`level-${levelNumber}: exceeded 60-minute chapter budget`);
-    }
+    checkChapterDeadline(levelNumber, chapterDeadline);
     const result = searchLevel(
       levelNumber,
       boardKeys,
@@ -730,7 +745,7 @@ function runSearch(): void {
       1,
       emptyCounters(),
       performance.now(),
-      chapterStartedAt + MAX_CHAPTER_MS,
+      chapterDeadline,
     );
     const accepted = result.accepted;
     if (!accepted) {
@@ -745,6 +760,7 @@ function runSearch(): void {
     console.log(summarize(levelNumber, accepted.counters, accepted.report.attempt));
   }
 
+  checkChapterDeadline(300, chapterDeadline);
   writeFileSync(DATA_PATH, generatedTypeScript(levels), 'utf8');
   writeFileSync(REPORT_PATH, generatedReport(report), 'utf8');
   console.log('Generated chapter 10 levels 271–300 and difficulty report');
