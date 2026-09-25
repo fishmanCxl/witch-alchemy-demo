@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { performance } from 'node:perf_hooks';
 
 import {
@@ -9,6 +10,7 @@ import {
   chapterTenGeneratorSeed,
   chapterTenMode,
   chapterTenParentLevel,
+  reconstructReportLevel,
   searchChapterTenLevel,
 } from '../tools/generate-chapter-ten.ts';
 
@@ -40,22 +42,40 @@ test('chapter ten uses fixed eleven-color geometry and feasible hard gates', () 
     ['baseline', 'deep', 'deceptive', 'tangled', 'deep', 'deceptive', 'tangled', 'baseline', 'baseline'],
   );
   assert.deepEqual(
-    [271, 272, 273, 274, 298, 300].map(chapterTenParentLevel),
-    [null, 265, 266, 267, 270, 270],
+    [271, 272, 273, 274, 284, 298, 299, 300].map(chapterTenParentLevel),
+    [270, 265, 266, 267, 266, 266, 266, 266],
   );
   assert.deepEqual(
     [295, 296, 297].map((number) => chapterTenGenerationSpec(number).minimumOptimalMoves),
-    [41, 40, 40],
+    [40, 39, 39],
   );
   assert.deepEqual(
+    [285, 288, 291, 294].map((number) => chapterTenGenerationSpec(number).minimumOptimalMoves),
+    [39, 39, 39, 39],
+  );
+  assert.equal(chapterTenGenerationSpec(271).minimumExploredStates, 55_000);
+  assert.deepEqual(
     [295, 296, 297].map((number) => chapterTenGenerationSpec(number).minimumExploredStates),
-    [80_000, 80_000, 110_000],
+    [75_000, 80_000, 110_000],
   );
   assert.deepEqual(
     [295, 296, 297].map((number) => chapterTenGenerationSpec(number).minimumMisleadingBranchRatio),
     [1 / 11, 4 / 11, 2 / 11],
   );
-  assert.equal(chapterTenGeneratorSeed(271), (0x270F_0000 + Math.imul(271, 104_729)) >>> 0);
+});
+
+test('level 298 easing board keeps its other hard gates with a 39-step floor', () => {
+  const spec = chapterTenGenerationSpec(298);
+  assert.equal(spec.minimumOptimalMoves, 39);
+  assert.equal(spec.minimumExploredStates, 67_971);
+  assert.equal(spec.minimumSegments, 43);
+  assert.equal(spec.minimumOpeningMoves, 22);
+  assert.equal(spec.minimumMisleadingBranchRatio, 4 / 11);
+});
+
+test('level 271 uses the approved deterministic mutation seed', () => {
+  assert.equal(chapterTenGeneratorSeed(271), 683_807_095);
+  assert.equal(chapterTenGenerationSpec(271).minimumExploredStates, 55_000);
 });
 
 test('chapter ten modes are explicit and search attempts are bounded', () => {
@@ -73,4 +93,22 @@ test('a candidate completed after the chapter-ten level deadline is not accepted
   let calls = 0;
   t.mock.method(performance, 'now', () => (++calls < 3 ? 0 : 300_001));
   assert.throws(() => searchChapterTenLevel(272, 1), /exceeded level budget/);
+});
+
+test('locked chapter-ten report rejects duplicate and tampered entries', () => {
+  const report = JSON.parse(readFileSync(new URL('../assets/scripts/core/level-generation-report.chapter-10.json', import.meta.url), 'utf8'));
+  assert.equal(report.chapterId, 10);
+  assert.equal(report.levels.length, 30);
+  const entry = report.levels[0];
+  assert.doesNotThrow(() => reconstructReportLevel(271, entry, new Set(), false));
+  assert.throws(() => reconstructReportLevel(271, entry, new Set([entry.boardKey]), false));
+  for (const change of [
+    { source: 'tampered' },
+    { compatibilityExemption: 'tampered' },
+    { reverseMoves: 999 },
+    { attempt: 601 },
+    { scoreComponents: { ...entry.scoreComponents, color: -1 } },
+  ]) {
+    assert.throws(() => reconstructReportLevel(271, { ...entry, ...change }, new Set(), false));
+  }
 });

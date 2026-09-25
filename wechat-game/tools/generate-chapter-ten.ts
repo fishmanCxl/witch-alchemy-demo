@@ -156,7 +156,8 @@ export function chapterTenDifficultyProfile(levelNumber: number): ChapterTenDiff
 }
 export function chapterTenParentLevel(levelNumber: number): 265 | 266 | 267 | 270 | null {
   const profile = chapterTenDifficultyProfile(levelNumber);
-  if (levelNumber >= 298) return 270;
+  if (levelNumber === 284 || levelNumber >= 298) return 266;
+  if (levelNumber === 271) return 270;
   if (profile === 'baseline') return null;
   if (profile === 'deep') return 265;
   if (profile === 'deceptive') return 266;
@@ -175,16 +176,17 @@ export function chapterTenGenerationSpec(levelNumber: number): ChapterTenGenerat
     minimumOptimalMoves -= 1;
     minimumExploredStates += 30_000;
   }
+  if ([285, 288, 291, 294, 298].includes(levelNumber)) minimumOptimalMoves = 39;
   if (levelNumber === 295) {
-    minimumOptimalMoves = 41; minimumSegments = 44;
-    minimumExploredStates = 80_000; minimumMisleadingBranchRatio = 1 / 11;
+    minimumOptimalMoves = 40; minimumSegments = 44;
+    minimumExploredStates = 75_000; minimumMisleadingBranchRatio = 1 / 11;
   }
   if (levelNumber === 296) {
-    minimumOptimalMoves = 40; minimumSegments = 44;
+    minimumOptimalMoves = 39; minimumSegments = 44;
     minimumExploredStates = 80_000; minimumMisleadingBranchRatio = 4 / 11;
   }
   if (levelNumber === 297) {
-    minimumOptimalMoves = 40; minimumSegments = 44;
+    minimumOptimalMoves = 39; minimumSegments = 44;
     minimumExploredStates = 110_000; minimumMisleadingBranchRatio = 2 / 11;
   }
   return {
@@ -197,6 +199,7 @@ export function chapterTenGenerationSpec(levelNumber: number): ChapterTenGenerat
 }
 export function chapterTenGeneratorSeed(levelNumber: number): number {
   assertChapterTenLevel(levelNumber);
+  if (levelNumber === 271) return (0x2711_0000 + Math.imul(levelNumber, 104_729)) >>> 0;
   return (0x270F_0000 + Math.imul(levelNumber, 104_729)) >>> 0;
 }
 
