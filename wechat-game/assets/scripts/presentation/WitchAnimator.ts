@@ -27,7 +27,17 @@ export class WitchAnimator extends Component {
   private magic: Sprite | null = null;
   private playToken = 0;
   private tick: (() => void) | null = null;
-  private frameCache = new Map<string, readonly SpriteFrame[]>();
+  private static frameCache = new Map<string, Promise<readonly SpriteFrame[]>>();
+
+  static async preloadPourFrames(): Promise<void> {
+    for (const mood of ['cast', 'celebrate'] as const) {
+      const count = ANIMATIONS[mood].frames;
+      await Promise.all([
+        WitchAnimator.loadFrames(`game/chibi/character/${mood}/${mood}`, count),
+        WitchAnimator.loadFrames(`game/chibi/effects/witch-magic/${mood}/${mood}`, count),
+      ]);
+    }
+  }
 
   onLoad(): void {
     const stage = this.node.getComponent(UITransform) ?? this.node.addComponent(UITransform);
@@ -60,9 +70,9 @@ export class WitchAnimator extends Component {
 
     const spec = ANIMATIONS[mood];
     Promise.all([
-      this.loadFrames(`game/chibi/character/${mood}/${mood}`, spec.frames),
+      WitchAnimator.loadFrames(`game/chibi/character/${mood}/${mood}`, spec.frames),
       mood === 'cast' || mood === 'celebrate'
-        ? this.loadFrames(`game/chibi/effects/witch-magic/${mood}/${mood}`, spec.frames)
+        ? WitchAnimator.loadFrames(`game/chibi/effects/witch-magic/${mood}/${mood}`, spec.frames)
         : Promise.resolve([] as readonly SpriteFrame[]),
     ]).then(([frames, magicFrames]) => {
       if (token !== this.playToken || !this.character || frames.length === 0) return;
@@ -91,20 +101,22 @@ export class WitchAnimator extends Component {
     }).catch(() => undefined);
   }
 
-  private loadFrames(prefix: string, count: number): Promise<readonly SpriteFrame[]> {
+  private static loadFrames(prefix: string, count: number): Promise<readonly SpriteFrame[]> {
     const key = `${prefix}:${count}`;
-    const cached = this.frameCache.get(key);
-    if (cached) return Promise.resolve(cached);
+    const cached = WitchAnimator.frameCache.get(key);
+    if (cached) return cached;
 
-    return Promise.all(Array.from({ length: count }, (_, index) => new Promise<SpriteFrame>((resolve, reject) => {
+    const loading = Promise.all(Array.from({ length: count }, (_, index) => new Promise<SpriteFrame>((resolve, reject) => {
       const frameName = String(index).padStart(2, '0');
       resources.load(`${prefix}-${frameName}/spriteFrame`, SpriteFrame, (error, frame) => {
         if (error) reject(error);
         else resolve(frame);
       });
-    }))).then((frames) => {
-      this.frameCache.set(key, frames);
-      return frames;
+    }))).catch((error) => {
+      WitchAnimator.frameCache.delete(key);
+      throw error;
     });
+    WitchAnimator.frameCache.set(key, loading);
+    return loading;
   }
 }

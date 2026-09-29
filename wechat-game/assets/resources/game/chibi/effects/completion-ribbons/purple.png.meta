@@ -2,7 +2,7 @@
   "ver": "1.0.27",
   "importer": "image",
   "imported": true,
-  "uuid": "ed2872e3-a51f-479a-b23f-b02f69893ac1",
+  "uuid": "58d22aca-8666-42e0-938d-0eeccf0e04f6",
   "files": [
     ".json",
     ".png"
@@ -10,8 +10,8 @@
   "subMetas": {
     "6c48a": {
       "importer": "texture",
-      "uuid": "ed2872e3-a51f-479a-b23f-b02f69893ac1@6c48a",
-      "displayName": "icon-alchemy-book",
+      "uuid": "58d22aca-8666-42e0-938d-0eeccf0e04f6@6c48a",
+      "displayName": "purple",
       "id": "6c48a",
       "name": "texture",
       "userData": {
@@ -22,7 +22,7 @@
         "mipfilter": "none",
         "anisotropy": 0,
         "isUuid": true,
-        "imageUuidOrDatabaseUri": "ed2872e3-a51f-479a-b23f-b02f69893ac1",
+        "imageUuidOrDatabaseUri": "58d22aca-8666-42e0-938d-0eeccf0e04f6",
         "visible": false
       },
       "ver": "1.0.22",
@@ -34,43 +34,43 @@
     },
     "f9941": {
       "importer": "sprite-frame",
-      "uuid": "ed2872e3-a51f-479a-b23f-b02f69893ac1@f9941",
-      "displayName": "icon-alchemy-book",
+      "uuid": "58d22aca-8666-42e0-938d-0eeccf0e04f6@f9941",
+      "displayName": "purple",
       "id": "f9941",
       "name": "spriteFrame",
       "userData": {
         "trimType": "auto",
         "trimThreshold": 1,
         "rotated": false,
-        "offsetX": 3,
-        "offsetY": 0.5,
-        "trimX": 29,
-        "trimY": 10,
-        "width": 204,
-        "height": 235,
-        "rawWidth": 256,
+        "offsetX": 1,
+        "offsetY": 0,
+        "trimX": 12,
+        "trimY": 2,
+        "width": 149,
+        "height": 252,
+        "rawWidth": 171,
         "rawHeight": 256,
         "borderTop": 0,
         "borderBottom": 0,
         "borderLeft": 0,
         "borderRight": 0,
         "isUuid": true,
-        "imageUuidOrDatabaseUri": "ed2872e3-a51f-479a-b23f-b02f69893ac1@6c48a",
+        "imageUuidOrDatabaseUri": "58d22aca-8666-42e0-938d-0eeccf0e04f6@6c48a",
         "atlasUuid": "",
         "packable": true,
         "vertices": {
           "rawPosition": [
-            -102,
-            -117.5,
+            -74.5,
+            -126,
             0,
-            102,
-            -117.5,
+            74.5,
+            -126,
             0,
-            -102,
-            117.5,
+            -74.5,
+            126,
             0,
-            102,
-            117.5,
+            74.5,
+            126,
             0
           ],
           "indexes": [
@@ -82,33 +82,33 @@
             3
           ],
           "uv": [
-            29,
-            246,
-            233,
-            246,
-            29,
-            11,
-            233,
-            11
+            12,
+            254,
+            161,
+            254,
+            12,
+            2,
+            161,
+            2
           ],
           "nuv": [
-            0.11328125,
-            0.04296875,
-            0.91015625,
-            0.04296875,
-            0.11328125,
-            0.9609375,
-            0.91015625,
-            0.9609375
+            0.07017543859649122,
+            0.0078125,
+            0.9415204678362573,
+            0.0078125,
+            0.07017543859649122,
+            0.9921875,
+            0.9415204678362573,
+            0.9921875
           ],
           "minPos": [
-            -102,
-            -117.5,
+            -74.5,
+            -126,
             0
           ],
           "maxPos": [
-            102,
-            117.5,
+            74.5,
+            126,
             0
           ]
         },
@@ -129,6 +129,6 @@
     "type": "sprite-frame",
     "fixAlphaTransparencyArtifacts": false,
     "hasAlpha": true,
-    "redirect": "ed2872e3-a51f-479a-b23f-b02f69893ac1@6c48a"
+    "redirect": "58d22aca-8666-42e0-938d-0eeccf0e04f6@6c48a"
   }
 }

@@ -5,7 +5,6 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2] / 'prototype/public/assets/game/chibi'
 EXPECTED = {
-    'ui/icon-alchemy-book.png': (256, 256),
     'collection/star-dew-potion.png': (1024, 1024),
     'collection/forest-potion.png': (512, 512),
     'collection/moon-glow-potion.png': (512, 512),
@@ -16,8 +15,7 @@ EXPECTED = {
     'collection/stellar-potion.png': (512, 512),
     'collection/moon-goddess-potion.png': (512, 512),
     'collection/sage-potion.png': (512, 512),
-    'titles/title-badge-novice.png': (768, 384),
-    'titles/title-badge-junior.png': (768, 384),
+    'titles/title-badges.png': (672, 450),
     'effects/particle-scarlet-flame.png': (64, 64),
     'effects/particle-chartreuse-rune.png': (64, 64),
     'effects/particle-indigo-comet.png': (64, 64),

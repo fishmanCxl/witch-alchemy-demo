@@ -92,7 +92,7 @@ export const HEALTHY_GAME_ADVICE_LINES = Object.freeze([
 
 export const LAUNCH_LAYOUT = Object.freeze({
   ageBadge: Object.freeze({ x: -155, y: 376, width: 42, height: 42 }),
-  title: Object.freeze({ x: 0, y: 235, width: 306, height: 111 }),
+  title: Object.freeze({ x: 0, y: 235, width: 306, height: 229.5 }),
   witch: Object.freeze({ x: 0, y: 22, width: 260, height: 260 }),
   progressTrack: Object.freeze({ x: 0, y: -230, width: 300, height: 18 }),
   percent: Object.freeze({ x: 0, y: -265, width: 120, height: 32 }),

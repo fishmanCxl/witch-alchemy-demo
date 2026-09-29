@@ -200,7 +200,7 @@ test('prepared WeChat build installs the branded pre-engine loading screen', () 
   assert.equal(existsSync(launchBackgroundPath), true, 'launch background is missing');
   assert.equal(existsSync(launchWitchPath), true, 'launch witch is missing');
   assert.equal(existsSync(launchLogoPath), true, 'launch logo is missing');
-  assert.deepEqual(pngSize(launchLogoPath), { width: 612, height: 222 });
+  assert.deepEqual(pngSize(launchLogoPath), { width: 612, height: 459 });
 
   const module = { exports: {} };
   vm.runInNewContext(readFileSync(firstScreenPath, 'utf8'), { module, exports: module.exports });

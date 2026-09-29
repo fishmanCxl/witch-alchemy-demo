@@ -6,12 +6,13 @@ const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const workspaceRoot = resolve(projectRoot, '..');
 const sourceRoot = join(workspaceRoot, 'prototype', 'public', 'assets', 'game');
 const targetRoot = join(projectRoot, 'assets', 'resources', 'game');
+const includeInProduction = (path) => relative(sourceRoot, path).replaceAll('\\', '/') !== 'chibi/ui/audio-settings-panel.png';
 
 for (const directory of ['chibi', 'audio']) {
   const source = join(sourceRoot, directory);
   const target = join(targetRoot, directory);
   mkdirSync(target, { recursive: true });
-  cpSync(source, target, { recursive: true, force: true });
+  cpSync(source, target, { recursive: true, force: true, filter: includeInProduction });
 }
 
 function collectFiles(directory) {
@@ -21,7 +22,7 @@ function collectFiles(directory) {
   });
 }
 
-const files = ['chibi', 'audio'].flatMap((directory) => collectFiles(join(sourceRoot, directory)));
+const files = ['chibi', 'audio'].flatMap((directory) => collectFiles(join(sourceRoot, directory))).filter(includeInProduction);
 const report = {
   source: 'prototype/public/assets/game',
   generatedAt: new Date().toISOString(),

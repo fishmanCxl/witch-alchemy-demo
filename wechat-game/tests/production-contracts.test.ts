@@ -111,7 +111,6 @@ test('approved chibi and audio manifests are synchronized into Cocos resources',
 
 test('collection and title artwork is synchronized as loadable SpriteFrames', () => {
   const collectionAssets = [
-    'ui/icon-alchemy-book.png',
     'collection/star-dew-potion.png',
     'collection/forest-potion.png',
     'collection/moon-glow-potion.png',
@@ -148,35 +147,27 @@ test('collection and title artwork is synchronized as loadable SpriteFrames', ()
   }
 });
 
-test('moon goddess placeholder is one 512px transparent SpriteFrame under 300 KiB', () => {
+test('moon goddess artwork is one 512px transparent SpriteFrame under 512 KiB', () => {
   const relative = 'collection/moon-goddess-potion.png';
-  const prototypePath = new URL(`../../prototype/public/assets/game/chibi/${relative}`, import.meta.url);
   const productionPath = new URL(`../assets/resources/game/chibi/${relative}`, import.meta.url);
-  for (const path of [prototypePath, productionPath]) {
-    const png = readFileSync(path);
-    assert.equal(png.readUInt32BE(16), 512);
-    assert.equal(png.readUInt32BE(20), 512);
-    assert.equal(png.readUInt8(25), 6, 'PNG must be RGBA');
-    assert.ok(png.length <= 307_200);
-  }
-  assert.deepEqual(readFileSync(prototypePath), readFileSync(productionPath));
+  const png = readFileSync(productionPath);
+  assert.equal(png.readUInt32BE(16), 512);
+  assert.equal(png.readUInt32BE(20), 512);
+  assert.equal(png.readUInt8(25), 6, 'PNG must be RGBA');
+  assert.ok(png.length <= 524_288);
   const meta = JSON.parse(readFileSync(new URL(`../assets/resources/game/chibi/${relative}.meta`, import.meta.url), 'utf8'));
   assert.equal(meta.userData.type, 'sprite-frame');
   assert.equal(meta.subMetas.f9941.importer, 'sprite-frame');
 });
 
-test('sage potion placeholder is one 512px transparent SpriteFrame under 300 KiB', () => {
+test('sage potion artwork is one 512px transparent SpriteFrame under 512 KiB', () => {
   const relative = 'collection/sage-potion.png';
-  const prototypePath = new URL(`../../prototype/public/assets/game/chibi/${relative}`, import.meta.url);
   const productionPath = new URL(`../assets/resources/game/chibi/${relative}`, import.meta.url);
-  for (const path of [prototypePath, productionPath]) {
-    const png = readFileSync(path);
-    assert.equal(png.readUInt32BE(16), 512);
-    assert.equal(png.readUInt32BE(20), 512);
-    assert.equal(png.readUInt8(25), 6, 'PNG must be RGBA');
-    assert.ok(png.length <= 307_200);
-  }
-  assert.deepEqual(readFileSync(prototypePath), readFileSync(productionPath));
+  const png = readFileSync(productionPath);
+  assert.equal(png.readUInt32BE(16), 512);
+  assert.equal(png.readUInt32BE(20), 512);
+  assert.equal(png.readUInt8(25), 6, 'PNG must be RGBA');
+  assert.ok(png.length <= 524_288);
   const meta = JSON.parse(readFileSync(new URL(`../assets/resources/game/chibi/${relative}.meta`, import.meta.url), 'utf8'));
   assert.equal(meta.userData.type, 'sprite-frame');
   assert.equal(meta.subMetas.f9941.importer, 'sprite-frame');
@@ -505,6 +496,22 @@ test('production launch preloads the real game directory before rendering home o
   assert.match(transitionBody, /this\.render\(\)/);
   assert.match(transitionBody, /void this\.syncCloudProgress\(\)/);
   assert.ok(transitionBody.indexOf('this.render()') < transitionBody.indexOf('this.syncCloudProgress()'));
+});
+
+test('first pour animation frames are loaded before launch exits and shared across levels', () => {
+  const bootstrap = readFileSync(new URL('../assets/scripts/presentation/ProductionBootstrap.ts', import.meta.url), 'utf8');
+  const witch = readFileSync(new URL('../assets/scripts/presentation/WitchAnimator.ts', import.meta.url), 'utf8');
+  const preloadBody = bootstrap.slice(
+    bootstrap.indexOf('private startLaunchPreload'),
+    bootstrap.indexOf('private showLaunchFailure'),
+  );
+
+  assert.match(preloadBody, /WitchAnimator\.preloadPourFrames\(\)/);
+  assert.ok(preloadBody.indexOf('preloadPourFrames()') < preloadBody.indexOf('completeLaunchResources('));
+  assert.match(witch, /private static frameCache/);
+  assert.match(witch, /\['cast', 'celebrate'\] as const/);
+  assert.match(witch, /game\/chibi\/character\/\$\{mood\}\/\$\{mood\}/);
+  assert.match(witch, /game\/chibi\/effects\/witch-magic\/\$\{mood\}\/\$\{mood\}/);
 });
 
 test('production launch uses the approved timing and keeps input blocked through fade', () => {

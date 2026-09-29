@@ -9,6 +9,7 @@ export const ENDLESS_UNLOCK_LEVEL = 5 as const;
 
 export interface EndlessRun {
   readonly seed: number;
+  readonly selectionVersion?: 2;
   readonly cycle: number;
   readonly stage: number;
   readonly streak: number;
@@ -50,7 +51,7 @@ function shuffled<T>(values: readonly T[], seed: number): T[] {
   return result;
 }
 
-export function endlessLevelIds(seed: number, cycle = 0): readonly string[] {
+function orderedEndlessLevelIds(seed: number, cycle: number, legacy: boolean): readonly string[] {
   const chapters = new Map<number, string[]>();
   for (const level of PUBLISHED_LEVELS) {
     if (level.number === 1) continue;
@@ -62,16 +63,25 @@ export function endlessLevelIds(seed: number, cycle = 0): readonly string[] {
   }
   return Array.from(chapters.entries())
     .sort(([left], [right]) => left - right)
-    .flatMap(([chapterId, ids]) => shuffled(
-      ids,
-      (seed >>> 0) ^ Math.imul(cycle + 1, 0x9E3779B1) ^ Math.imul(chapterId, 0x85EBCA6B),
-    ));
+    .flatMap(([chapterId, ids]) => {
+      const chapterSeed = (seed >>> 0) ^ Math.imul(cycle + 1, 0x9E3779B1) ^ Math.imul(chapterId, 0x85EBCA6B);
+      if (legacy) return shuffled(ids, chapterSeed);
+      const result: string[] = [];
+      for (let start = 0; start < ids.length; start += 5) {
+        result.push(...shuffled(ids.slice(start, start + 5), chapterSeed ^ Math.imul(start / 5 + 1, 0xC2B2AE35)));
+      }
+      return result;
+    });
 }
 
-function levelForStage(seed: number, stage: number) {
+export function endlessLevelIds(seed: number, cycle = 0): readonly string[] {
+  return orderedEndlessLevelIds(seed, cycle, false);
+}
+
+function levelForStage(seed: number, stage: number, selectionVersion?: 2) {
   const cycle = Math.floor((stage - 1) / ENDLESS_LEVEL_COUNT);
   const index = (stage - 1) % ENDLESS_LEVEL_COUNT;
-  return getLevelConfig(endlessLevelIds(seed, cycle)[index] ?? '');
+  return getLevelConfig(orderedEndlessLevelIds(seed, cycle, selectionVersion !== 2)[index] ?? '');
 }
 
 export function endlessAllowedMoves(optimalMoves: number, streak: number): number {
@@ -102,12 +112,13 @@ function initialSnapshot(levelId: string, updatedAt: number): LocalSnapshot {
 }
 
 export function startEndlessRun(state: EndlessState, seed: number, updatedAt = Date.now()): EndlessState {
-  const level = levelForStage(seed, 1);
+  const level = levelForStage(seed, 1, 2);
   if (!level) return state;
   return {
     ...state,
     run: {
       seed: seed >>> 0,
+      selectionVersion: 2,
       cycle: 0,
       stage: 1,
       streak: 0,
@@ -185,13 +196,14 @@ export function completeEndlessStage(state: EndlessState, updatedAt = Date.now()
   if (!run || run.failed) return state;
   const stage = run.stage + 1;
   const streak = run.streak + 1;
-  const level = levelForStage(run.seed, stage);
+  const level = levelForStage(run.seed, stage, run.selectionVersion);
   if (!level) return state;
   return {
     schemaVersion: ENDLESS_SCHEMA_VERSION,
     bestStreak: Math.max(state.bestStreak, streak),
     run: {
       seed: run.seed,
+      ...(run.selectionVersion === 2 ? { selectionVersion: 2 as const } : {}),
       cycle: Math.floor((stage - 1) / ENDLESS_LEVEL_COUNT),
       stage,
       streak,
@@ -227,8 +239,9 @@ export function decodeEndlessState(serialized: string | null | undefined): Endle
       || !Number.isInteger(run.stage) || run.stage < 1
       || !Number.isInteger(run.streak) || run.streak !== run.stage - 1
       || !Number.isInteger(run.cycle) || run.cycle !== Math.floor((run.stage - 1) / ENDLESS_LEVEL_COUNT)
+      || (run.selectionVersion !== undefined && run.selectionVersion !== 2)
       || typeof run.reviveUsed !== 'boolean' || typeof run.failed !== 'boolean') return createEndlessState();
-    const level = levelForStage(run.seed, run.stage);
+    const level = levelForStage(run.seed, run.stage, run.selectionVersion);
     if (!level || run.levelId !== level.id
       || run.allowedMoves !== endlessAllowedMoves(level.metrics.optimalMoves, run.streak)) return createEndlessState();
     const snapshot = decodeLocalSnapshot(JSON.stringify(run.snapshot), level);

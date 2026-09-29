@@ -13,9 +13,6 @@ OUTPUT_ROOT = ROOT / "public" / "assets" / "game" / "chibi" / "ui"
 ASSETS = {
     "audio-settings-panel": ((248, 96), 4),
     "icon-audio-settings": ((96, 96), 7),
-    "icon-music-on": ((96, 96), 7),
-    "icon-music-off": ((96, 96), 7),
-    "icon-sfx-on": ((96, 96), 7),
     "icon-sfx-off": ((96, 96), 7),
 }
 
@@ -94,9 +91,6 @@ def main() -> None:
     sheet.alpha_composite(panel, ((sheet.width - panel.width) // 2, 12))
     icon_names = [
         "icon-audio-settings",
-        "icon-music-on",
-        "icon-music-off",
-        "icon-sfx-on",
         "icon-sfx-off",
     ]
     for index, name in enumerate(icon_names):

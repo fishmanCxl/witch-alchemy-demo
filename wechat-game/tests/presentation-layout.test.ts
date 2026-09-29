@@ -49,7 +49,7 @@ import { pour, vanishBottle } from '../assets/scripts/core/water-sort.ts';
 
 test('launch screen keeps every required element inside the 393 by 852 safe frame', () => {
   assert.deepEqual(LAUNCH_LAYOUT.ageBadge, { x: -155, y: 376, width: 42, height: 42 });
-  assert.deepEqual(LAUNCH_LAYOUT.title, { x: 0, y: 235, width: 306, height: 111 });
+  assert.deepEqual(LAUNCH_LAYOUT.title, { x: 0, y: 235, width: 306, height: 229.5 });
   assert.deepEqual(LAUNCH_LAYOUT.witch, { x: 0, y: 22, width: 260, height: 260 });
   assert.deepEqual(LAUNCH_LAYOUT.progressTrack, { x: 0, y: -230, width: 300, height: 18 });
   assert.deepEqual(LAUNCH_LAYOUT.percent, { x: 0, y: -265, width: 120, height: 32 });
@@ -76,7 +76,7 @@ test('home stamina bar stays in the left safe area aligned with the WeChat capsu
 });
 
 test('launch logo derives its height from the fixed display width without distortion', () => {
-  assert.equal(proportionalHeightForWidth(306, 612, 222), 111);
+  assert.equal(proportionalHeightForWidth(306, 612, 459), 229.5);
 });
 
 test('home stamina bar converts the WeChat capsule center into Cocos coordinates', () => {

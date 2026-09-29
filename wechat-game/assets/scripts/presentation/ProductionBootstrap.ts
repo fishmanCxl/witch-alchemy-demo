@@ -138,7 +138,9 @@ export class ProductionBootstrap extends Component {
   private endlessMessage = '';
   private completionSaveFailed = false;
   private completionReward: CompletionReward | null = null;
+  private celebratedCompletion = '';
   private collectionHasNewPiece = false;
+  private collectionScrollOffsetY = 0;
   private levelStartedAt = Date.now();
   private undoCount = 0;
   private launchState: LaunchLoadingState = createLaunchLoadingState(Date.now());
@@ -259,7 +261,7 @@ export class ProductionBootstrap extends Component {
     this.addAlchemyRoomBackground(root, token, color('#12081F', 94));
     this.addSprite(root, 'game/chibi/ui/launch-logo/spriteFrame',
       LAUNCH_LAYOUT.title.width,
-      proportionalHeightForWidth(LAUNCH_LAYOUT.title.width, 612, 222),
+      proportionalHeightForWidth(LAUNCH_LAYOUT.title.width, 612, 459),
       LAUNCH_LAYOUT.title.x, LAUNCH_LAYOUT.title.y, token);
     this.addLaunchWitch(root);
 
@@ -299,9 +301,18 @@ export class ProductionBootstrap extends Component {
         this.showLaunchFailure();
         return;
       }
-      this.launchState = completeLaunchResources(this.launchState, attempt);
-      this.updateLaunchView();
-      this.tryExitLaunch();
+      void WitchAnimator.preloadPourFrames().then(() => {
+        if (!this.node.isValid || !this.isCurrentLaunchAttempt(attempt)) return;
+        this.launchState = completeLaunchResources(this.launchState, attempt);
+        this.updateLaunchView();
+        this.tryExitLaunch();
+      }, () => {
+        if (!this.node.isValid || !this.isCurrentLaunchAttempt(attempt)) return;
+        this.launchState = failLaunchResources(
+          this.launchState, attempt, '动画资源加载失败，请重试',
+        );
+        this.showLaunchFailure();
+      });
     });
   }
 
@@ -538,6 +549,7 @@ export class ProductionBootstrap extends Component {
 
     POTION_COLLECTIONS.forEach((collection, index) =>
       this.renderCollectionCard(content, collection, index, tip, token));
+    scroll.scrollToOffset(new Vec2(0, this.collectionScrollOffsetY), 0);
     this.addRasterButton(root, '返回', 'purple', layout.backButton.width, layout.backButton.height,
       layout.backButton.x, layout.backButton.y, () => this.closeCollectionView(), false, undefined, 15);
   }
@@ -577,6 +589,7 @@ export class ProductionBootstrap extends Component {
         );
         if (nextFlow === this.flow) return;
         this.flow = nextFlow;
+        this.collectionScrollOffsetY = root.parent?.getComponent(ScrollView)?.getScrollOffset().y ?? 0;
         this.render();
       });
       return;
@@ -953,6 +966,7 @@ export class ProductionBootstrap extends Component {
     const nextFlow = openCollection(this.flow);
     if (nextFlow === this.flow) return;
     this.store.saveSession(this.session);
+    this.collectionScrollOffsetY = 0;
     this.flow = nextFlow;
     this.collectionHasNewPiece = false;
     this.render();
@@ -997,6 +1011,7 @@ export class ProductionBootstrap extends Component {
     this.addSprite(root, 'game/chibi/ui/settings-dialog-panel/spriteFrame',
       LEVEL_COMPLETE_LAYOUT.panel.width, LEVEL_COMPLETE_LAYOUT.panel.height,
       LEVEL_COMPLETE_LAYOUT.panel.x, LEVEL_COMPLETE_LAYOUT.panel.y, token);
+    this.playCompletionRibbons(root);
     this.addLabel(root, this.activeDailyCommission ? '今日委托完成！'
       : chapterComplete ? `${chapterLabel(chapter.id)}完成！` : '炼金完成！', 30,
       LEVEL_COMPLETE_LAYOUT.title.x, LEVEL_COMPLETE_LAYOUT.title.y,
@@ -1049,6 +1064,7 @@ export class ProductionBootstrap extends Component {
     this.addSprite(root, 'game/chibi/ui/settings-dialog-panel/spriteFrame',
       LEVEL_COMPLETE_LAYOUT.panel.width, LEVEL_COMPLETE_LAYOUT.panel.height,
       LEVEL_COMPLETE_LAYOUT.panel.x, LEVEL_COMPLETE_LAYOUT.panel.y, token);
+    this.playCompletionRibbons(root);
     this.addLabel(root, '无尽炼成！', 30,
       LEVEL_COMPLETE_LAYOUT.title.x, LEVEL_COMPLETE_LAYOUT.title.y,
       color('#FFF2CF'), LEVEL_COMPLETE_LAYOUT.title.width);
@@ -1062,6 +1078,55 @@ export class ProductionBootstrap extends Component {
       LEVEL_COMPLETE_LAYOUT.primaryButton.width, LEVEL_COMPLETE_LAYOUT.primaryButton.height,
       LEVEL_COMPLETE_LAYOUT.primaryButton.x, LEVEL_COMPLETE_LAYOUT.primaryButton.y,
       () => this.continueEndlessStage(), false, undefined, 16);
+  }
+
+  private playCompletionRibbons(root: Node): void {
+    const completion = `${this.levelStartedAt}:${this.session.levelId}`;
+    if (this.celebratedCompletion === completion) return;
+    this.celebratedCompletion = completion;
+    const burstY = LEVEL_COMPLETE_LAYOUT.title.y + 20;
+    const flash = this.addSprite(root, 'game/chibi/effects/completion-burst/spriteFrame',
+      78, 78, 0, burstY, this.renderToken);
+    flash.setScale(new Vec3(0.12, 0.12, 1));
+    const flashOpacity = flash.addComponent(UIOpacity);
+    flashOpacity.opacity = 0;
+    tween(flash).to(0.28, { scale: new Vec3(1.35, 1.35, 1) }, { easing: 'quadOut' }).start();
+    tween(flashOpacity).to(0.08, { opacity: 240 }).to(0.38, { opacity: 0 })
+      .call(() => { if (flash.isValid) flash.destroy(); }).start();
+
+    const ribbons = [
+      { name: 'gold', sourceWidth: 209, width: 82, x: -12, y: 270, angle: -20, driftX: -14, delay: 0 },
+      { name: 'purple', sourceWidth: 171, width: 69, x: -146, y: 212, angle: -65, driftX: -25, delay: 0.04 },
+      { name: 'pink', sourceWidth: 171, width: 69, x: 146, y: 210, angle: 65, driftX: 25, delay: 0.08 },
+      { name: 'blue', sourceWidth: 209, width: 82, x: 120, y: 90, angle: 105, driftX: 20, delay: 0.12 },
+      { name: 'orange', sourceWidth: 180, width: 72, x: -120, y: 92, angle: -105, driftX: -20, delay: 0.16 },
+    ] as const;
+    ribbons.forEach((ribbon) => {
+      const node = this.addSprite(root, `game/chibi/effects/completion-ribbons/${ribbon.name}/spriteFrame`,
+        ribbon.width, proportionalHeightForWidth(ribbon.width, ribbon.sourceWidth, 256),
+        0, burstY, this.renderToken);
+      node.setScale(new Vec3(0.12, 0.12, 1));
+      node.angle = ribbon.angle * 0.25;
+      const opacity = node.addComponent(UIOpacity);
+      opacity.opacity = 0;
+      tween(node).delay(ribbon.delay)
+        .to(0.18, {
+          position: new Vec3(ribbon.x * 0.45, burstY + (ribbon.y - burstY) * 0.45 + 12, 0),
+          scale: new Vec3(1.1, 1.1, 1), angle: ribbon.angle * 0.6,
+        }, { easing: 'quadOut' })
+        .to(0.46, {
+          position: new Vec3(ribbon.x, ribbon.y, 0),
+          scale: new Vec3(1, 1, 1), angle: ribbon.angle,
+        }, { easing: 'sineOut' })
+        .to(0.62, {
+          position: new Vec3(ribbon.x + ribbon.driftX, ribbon.y - 75, 0),
+          scale: new Vec3(0.8, 0.8, 1), angle: ribbon.angle + ribbon.driftX * 0.8,
+        }, { easing: 'quadIn' })
+        .start();
+      tween(opacity).delay(ribbon.delay).to(0.1, { opacity: 255 })
+        .delay(0.68).to(0.58, { opacity: 0 })
+        .call(() => { if (node.isValid) node.destroy(); }).start();
+    });
   }
 
   private continueEndlessStage(): void {
@@ -1284,7 +1349,7 @@ export class ProductionBootstrap extends Component {
         this.session.undoRemaining);
       this.addControlButton(controls, RESTART_LABEL, 'icon-restart', LEVEL_LAYOUT.controlCenters[1],
         () => { void this.handleRestart(); },
-        this.rewardBusy || this.session.levelComplete,
+        this.rewardBusy || this.session.levelComplete || this.session.game.moves === 0,
         this.session.restartRemaining);
       this.addControlButton(controls, this.session.game.rewardBottleUsed ? '已加瓶' : '加空瓶', 'icon-add-bottle',
         LEVEL_LAYOUT.controlCenters[2], () => { void this.handleRewardedBottle(); },
@@ -2288,8 +2353,11 @@ export class ProductionBootstrap extends Component {
   private animateDialogIn(shield: Node, panel: Node): void {
     const opacity = shield.getComponent(UIOpacity) ?? shield.addComponent(UIOpacity);
     opacity.opacity = 0;
+    this.setDialogBackdropOpacity(shield, 0);
     panel.setScale(new Vec3(DIALOG_TRANSITION.enter.fromScale, DIALOG_TRANSITION.enter.fromScale, 1));
-    tween(opacity).to(DIALOG_TRANSITION.enter.duration, { opacity: 255 }, { easing: 'quadOut' }).start();
+    tween(opacity).to(DIALOG_TRANSITION.enter.duration, { opacity: 255 }, {
+      easing: 'quadOut', onUpdate: () => this.setDialogBackdropOpacity(shield, opacity.opacity),
+    }).start();
     tween(panel).to(DIALOG_TRANSITION.enter.duration, { scale: new Vec3(1, 1, 1) }, { easing: 'quadOut' }).start();
   }
 
@@ -2297,14 +2365,26 @@ export class ProductionBootstrap extends Component {
     if (this.dialogClosing) return;
     this.dialogClosing = true;
     const opacity = shield.getComponent(UIOpacity) ?? shield.addComponent(UIOpacity);
-    tween(opacity).to(DIALOG_TRANSITION.exit.duration, { opacity: 0 }, { easing: 'quadIn' }).start();
+    tween(opacity).to(DIALOG_TRANSITION.exit.duration, { opacity: 0 }, {
+      easing: 'quadIn', onUpdate: () => this.setDialogBackdropOpacity(shield, opacity.opacity),
+    }).start();
     tween(panel).to(DIALOG_TRANSITION.exit.duration, {
       scale: new Vec3(DIALOG_TRANSITION.exit.toScale, DIALOG_TRANSITION.exit.toScale, 1),
     }, { easing: 'quadIn' }).start();
     this.scheduleOnce(() => {
+      this.setDialogBackdropOpacity(shield, 0);
       this.dialogClosing = false;
       onClosed();
     }, DIALOG_TRANSITION.exit.duration);
+  }
+
+  private setDialogBackdropOpacity(shield: Node, opacity: number): void {
+    const backdrop = shield.children[0].getComponent(Graphics)!;
+    const size = backdrop.getComponent(UITransform)!;
+    backdrop.clear();
+    backdrop.fillColor = color('#090411', Math.round(184 * opacity / 255));
+    backdrop.roundRect(-size.width / 2, -size.height / 2, size.width, size.height, 0);
+    backdrop.fill();
   }
 
   private addMessage(root: Node, text: string, token: number): Label {
